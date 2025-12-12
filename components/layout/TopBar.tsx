@@ -26,6 +26,7 @@ interface TopBarProps {
 export function TopBar({ onToggleSidebar }: TopBarProps) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [addressCount, setAddressCount] = useState(0);
 
   useEffect(() => {
     // Get user data from localStorage
@@ -33,7 +34,30 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
     if (userData) {
       setUser(JSON.parse(userData));
     }
+
+    // Fetch address count
+    fetchAddressCount();
   }, []);
+
+  const fetchAddressCount = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await fetch("/api/addresses", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok && data.data) {
+        setAddressCount(data.data.length);
+      }
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+    }
+  };
 
   const handleSignOut = () => {
     // Clear localStorage
@@ -122,6 +146,12 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email || ""}
                 </p>
+                {addressCount > 0 && (
+                  <p className="text-xs leading-none text-muted-foreground mt-1">
+                    📍 {addressCount} saved address
+                    {addressCount !== 1 ? "es" : ""}
+                  </p>
+                )}
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

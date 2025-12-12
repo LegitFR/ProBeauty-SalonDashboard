@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -21,6 +21,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "../../../components/ui/avatar";
+import { useToast } from "../../../components/ui/use-toast";
 import { Progress } from "../../../components/ui/progress";
 import { Calendar } from "../../../components/ui/calendar";
 import {
@@ -40,6 +41,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
+import { Switch } from "../../../components/ui/switch";
 import {
   Users,
   Plus,
@@ -61,15 +63,214 @@ import {
   MoreHorizontal,
   UserPlus,
   Settings,
+  Loader2,
 } from "lucide-react";
+
+interface Schedule {
+  start: string;
+  end: string;
+  booked: number;
+}
+
+interface StaffMember {
+  performance: any;
+  id: string;
+  user: {
+    name: string;
+    email?: string;
+    phone?: string;
+    avatar?: string;
+  };
+  role: string;
+  availability?: any;
+  salon?: {
+    name: string;
+  };
+  thisWeek?: Record<string, Schedule>;
+  avatar?: string;
+  name?: string;
+}
 
 export default function StaffPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date()
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const [salonOperatingHours, setSalonOperatingHours] = useState<
+    Record<string, { open: string; close: string; closed: boolean }>
+  >({});
 
-  const staffMembers = [
+  // Staff form state
+  const [staffForm, setStaffForm] = useState({
+    name: "",
+    role: "",
+    email: "",
+    phone: "",
+    availability: {
+      monday: { enabled: true, start: "09:00", end: "17:00" },
+      tuesday: { enabled: true, start: "09:00", end: "17:00" },
+      wednesday: { enabled: true, start: "09:00", end: "17:00" },
+      thursday: { enabled: true, start: "09:00", end: "17:00" },
+      friday: { enabled: true, start: "09:00", end: "17:00" },
+      saturday: { enabled: true, start: "10:00", end: "16:00" },
+      sunday: { enabled: false, start: "10:00", end: "16:00" },
+    },
+  });
+
+  const handleAvailabilityChange = (day: string, field: string, value: any) => {
+    // Prevent enabling days that are closed for the salon
+    if (
+      field === "enabled" &&
+      value === true &&
+      salonOperatingHours[day]?.closed
+    ) {
+      return;
+    }
+
+    setStaffForm((prev) => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [day]: {
+          ...prev.availability[day as keyof typeof prev.availability],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  useEffect(() => {
+    fetchStaff();
+    fetchSalonOperatingHours();
+  }, []);
+
+  const fetchSalonOperatingHours = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        "https://probeauty-backend.onrender.com/api/v1/salons/my-salons",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const salons = await response.json();
+        if (salons.length > 0 && salons[0].hours) {
+          const defaultHours = {
+            monday: { open: "09:00", close: "18:00", closed: false },
+            tuesday: { open: "09:00", close: "18:00", closed: false },
+            wednesday: { open: "09:00", close: "18:00", closed: false },
+            thursday: { open: "09:00", close: "19:00", closed: false },
+            friday: { open: "09:00", close: "19:00", closed: false },
+            saturday: { open: "08:00", close: "17:00", closed: false },
+            sunday: { open: "10:00", close: "16:00", closed: false },
+          };
+
+          const formattedHours: any = { ...defaultHours };
+
+          // Update with salon data - days present in salon data are open
+          Object.keys(salons[0].hours).forEach((day) => {
+            formattedHours[day] = {
+              ...salons[0].hours[day],
+              closed: false,
+            };
+          });
+
+          // Mark days NOT in salon data as closed
+          Object.keys(defaultHours).forEach((day) => {
+            if (!salons[0].hours[day]) {
+              formattedHours[day] = {
+                ...defaultHours[day as keyof typeof defaultHours],
+                closed: true,
+              };
+            }
+          });
+
+          setSalonOperatingHours(formattedHours);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching salon hours:", error);
+    }
+  };
+
+  const fetchStaff = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
+      const response = await fetch(`/api/staff/${salon.id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch staff");
+      }
+
+      const data = await response.json();
+      console.log(data);
+      console.log("Hoii");
+      setStaffMembers(data.staff || []);
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load staff members",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteStaff = async (staffId: string) => {
+    if (!confirm("Are you sure you want to delete this staff member?")) return;
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to delete staff",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/staff/${staffId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete staff member");
+      }
+
+      toast({
+        title: "Success",
+        description: "Staff member deleted successfully",
+      });
+
+      fetchStaff();
+    } catch (error) {
+      console.error("Error deleting staff:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete staff member",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const oldStaffMembers = [
     {
       id: 1,
       name: "Sarah Johnson",
@@ -223,7 +424,7 @@ export default function StaffPage() {
 
   const filteredStaff = staffMembers.filter(
     (staff) =>
-      staff.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      staff.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       staff.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -250,21 +451,33 @@ export default function StaffPage() {
                 Add Staff Member
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
+            <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+              <DialogHeader className="shrink-0">
                 <DialogTitle>Add New Staff Member</DialogTitle>
                 <DialogDescription>
                   Add a new team member to your salon
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 overflow-y-auto pr-2 flex-1">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" placeholder="Enter full name" />
+                  <Input
+                    id="name"
+                    placeholder="Enter full name"
+                    value={staffForm.name}
+                    onChange={(e) =>
+                      setStaffForm({ ...staffForm, name: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
-                  <Select>
+                  <Select
+                    value={staffForm.role}
+                    onValueChange={(value) =>
+                      setStaffForm({ ...staffForm, role: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -277,17 +490,130 @@ export default function StaffPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="email@example.com"
+                    value={staffForm.email}
+                    onChange={(e) =>
+                      setStaffForm({ ...staffForm, email: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="(555) 123-4567" />
+                  <Input
+                    id="phone"
+                    placeholder="(555) 123-4567"
+                    value={staffForm.phone}
+                    onChange={(e) =>
+                      setStaffForm({ ...staffForm, phone: e.target.value })
+                    }
+                  />
+                </div>
+
+                {/* Working Hours Section */}
+                <div className="space-y-3 pt-4 border-t">
+                  <Label className="text-base font-semibold">
+                    Working Hours
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Set available working hours for each day
+                  </p>
+
+                  <div className="space-y-3">
+                    {Object.entries(staffForm.availability).map(
+                      ([day, schedule]) => (
+                        <div
+                          key={day}
+                          className="flex items-center gap-3 p-3 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-2 min-w-[120px]">
+                            <Switch
+                              checked={schedule.enabled}
+                              disabled={salonOperatingHours[day]?.closed}
+                              onCheckedChange={(checked) =>
+                                handleAvailabilityChange(
+                                  day,
+                                  "enabled",
+                                  checked
+                                )
+                              }
+                            />
+                            <span className="text-sm font-medium capitalize">
+                              {day}
+                              {salonOperatingHours[day]?.closed && (
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  (Salon Closed)
+                                </span>
+                              )}
+                            </span>
+                          </div>
+
+                          {schedule.enabled && (
+                            <div className="flex items-center gap-2 flex-1">
+                              <Select
+                                value={schedule.start}
+                                onValueChange={(value) =>
+                                  handleAvailabilityChange(day, "start", value)
+                                }
+                              >
+                                <SelectTrigger className="w-[110px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 24 }, (_, i) => (
+                                    <SelectItem
+                                      key={i}
+                                      value={`${i
+                                        .toString()
+                                        .padStart(2, "0")}:00`}
+                                    >
+                                      {`${i.toString().padStart(2, "0")}:00`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <span className="text-sm text-muted-foreground">
+                                to
+                              </span>
+                              <Select
+                                value={schedule.end}
+                                onValueChange={(value) =>
+                                  handleAvailabilityChange(day, "end", value)
+                                }
+                              >
+                                <SelectTrigger className="w-[110px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 24 }, (_, i) => (
+                                    <SelectItem
+                                      key={i}
+                                      value={`${i
+                                        .toString()
+                                        .padStart(2, "0")}:00`}
+                                    >
+                                      {`${i.toString().padStart(2, "0")}:00`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {!schedule.enabled && (
+                            <span className="text-sm text-muted-foreground">
+                              Day off
+                            </span>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2 pt-4">
                   <Button className="flex-1">Add Staff Member</Button>
@@ -359,108 +685,112 @@ export default function StaffPage() {
           </div>
 
           {/* Staff Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredStaff.map((staff) => (
-              <Card
-                key={staff.id}
-                className="hover:shadow-lg transition-shadow"
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={staff.avatar} alt={staff.name} />
-                        <AvatarFallback>
-                          {staff.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-lg">{staff.name}</CardTitle>
-                        <CardDescription>{staff.role}</CardDescription>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(staff.status)}
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Contact Info */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground" />
-                        <span className="truncate">{staff.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
-                        <span>{staff.phone}</span>
-                      </div>
-                    </div>
-
-                    {/* Specialties */}
-                    <div>
-                      <p className="text-sm font-medium mb-2">Specialties</p>
-                      <div className="flex flex-wrap gap-1">
-                        {staff.specialties.map((specialty, index) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {specialty}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Performance Metrics */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-primary">
-                          {staff.performance.bookings}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Bookings
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">
-                          ${staff.performance.revenue.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Revenue</p>
-                      </div>
-                    </div>
-
+          {loading ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
+                <p className="text-muted-foreground mt-4">Loading staff...</p>
+              </CardContent>
+            </Card>
+          ) : filteredStaff.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <p className="text-muted-foreground">No staff members found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {filteredStaff.map((staff) => (
+                <Card
+                  key={staff.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">
-                          {staff.rating}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage
+                            src={
+                              staff.user.avatar ||
+                              `https://api.dicebear.com/7.x/initials/svg?seed=${staff.user.name}`
+                            }
+                            alt={staff.user.name}
+                          />
+                          <AvatarFallback>
+                            {staff.user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <CardTitle className="text-lg">
+                            {staff.user.name}
+                          </CardTitle>
+                          <CardDescription>{staff.role}</CardDescription>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Edit className="w-3 h-3 mr-1" />
-                          Edit
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <CalendarIcon className="w-3 h-3 mr-1" />
-                          Schedule
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                          Active
+                        </Badge>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Contact Info */}
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        {staff.user.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-muted-foreground" />
+                            <span className="truncate">{staff.user.email}</span>
+                          </div>
+                        )}
+                        {staff.user.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-muted-foreground" />
+                            <span>{staff.user.phone}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Salon Info */}
+                      {staff.salon && (
+                        <div>
+                          <p className="text-sm font-medium mb-2">Salon</p>
+                          <Badge variant="outline" className="text-xs">
+                            {staff.salon.name}
+                          </Badge>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteStaff(staff.id)}
+                            className="text-red-500 hover:text-red-600"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="schedule" className="space-y-6">
@@ -497,49 +827,53 @@ export default function StaffPage() {
                     <div key={staff.id} className="border rounded-lg p-4">
                       <div className="flex items-center gap-3 mb-3">
                         <Avatar className="w-8 h-8">
-                          <AvatarImage src={staff.avatar} alt={staff.name} />
+                          <AvatarImage
+                            src={staff.user.avatar}
+                            alt={staff.user.name}
+                          />
                           <AvatarFallback>
-                            {staff.name
+                            {staff.user.name
                               .split(" ")
                               .map((n) => n[0])
                               .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{staff.name}</p>
+                          <p className="font-medium">{staff.user.name}</p>
                           <p className="text-sm text-muted-foreground">
                             {staff.role}
                           </p>
                         </div>
                       </div>
                       <div className="grid grid-cols-7 gap-2 text-sm">
-                        {Object.entries(staff.thisWeek).map(
-                          ([day, schedule]) => (
-                            <div key={day} className="text-center">
-                              <p className="font-medium text-xs text-muted-foreground mb-1">
-                                {day}
-                              </p>
-                              {schedule.start === "OFF" ? (
-                                <div className="p-1 bg-gray-100 rounded text-xs">
-                                  OFF
-                                </div>
-                              ) : schedule.start === "LEAVE" ? (
-                                <div className="p-1 bg-yellow-100 text-yellow-800 rounded text-xs">
-                                  LEAVE
-                                </div>
-                              ) : (
-                                <div className="space-y-1">
-                                  <div className="p-1 bg-blue-50 border border-blue-200 rounded text-xs">
-                                    {schedule.start}-{schedule.end}
+                        {staff.thisWeek &&
+                          Object.entries(staff.thisWeek).map(
+                            ([day, schedule]) => (
+                              <div key={day} className="text-center">
+                                <p className="font-medium text-xs text-muted-foreground mb-1">
+                                  {day}
+                                </p>
+                                {schedule.start === "OFF" ? (
+                                  <div className="p-1 bg-gray-100 rounded text-xs">
+                                    OFF
                                   </div>
-                                  <div className="text-xs text-primary font-medium">
-                                    {schedule.booked} booked
+                                ) : schedule.start === "LEAVE" ? (
+                                  <div className="p-1 bg-yellow-100 text-yellow-800 rounded text-xs">
+                                    LEAVE
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        )}
+                                ) : (
+                                  <div className="space-y-1">
+                                    <div className="p-1 bg-blue-50 border border-blue-200 rounded text-xs">
+                                      {schedule.start}-{schedule.end}
+                                    </div>
+                                    <div className="text-xs text-primary font-medium">
+                                      {schedule.booked} booked
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          )}
                       </div>
                     </div>
                   ))}
@@ -556,16 +890,19 @@ export default function StaffPage() {
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={staff.avatar} alt={staff.name} />
+                      <AvatarImage
+                        src={staff.user.avatar}
+                        alt={staff.user.name}
+                      />
                       <AvatarFallback>
-                        {staff.name
+                        {staff.user.name
                           .split(" ")
                           .map((n) => n[0])
                           .join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle>{staff.name}</CardTitle>
+                      <CardTitle>{staff.user.name}</CardTitle>
                       <CardDescription>{staff.role}</CardDescription>
                     </div>
                   </div>
@@ -575,7 +912,7 @@ export default function StaffPage() {
                     <div className="grid grid-cols-2 gap-4 text-center">
                       <div>
                         <p className="text-2xl font-bold">
-                          {staff.performance.bookings}
+                          {staff.performance?.bookings || 0}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           Total Bookings
@@ -583,7 +920,7 @@ export default function StaffPage() {
                       </div>
                       <div>
                         <p className="text-2xl font-bold text-green-600">
-                          ${staff.performance.revenue.toLocaleString()}
+                          ${(staff.performance?.revenue || 0).toLocaleString()}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           Revenue Generated
@@ -595,10 +932,12 @@ export default function StaffPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Customer Satisfaction</span>
-                          <span>{staff.performance.satisfaction}/5.0</span>
+                          <span>
+                            {staff.performance?.satisfaction || 0}/5.0
+                          </span>
                         </div>
                         <Progress
-                          value={staff.performance.satisfaction * 20}
+                          value={(staff.performance?.satisfaction || 0) * 20}
                           className="h-2"
                         />
                       </div>
@@ -606,10 +945,10 @@ export default function StaffPage() {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Efficiency</span>
-                          <span>{staff.performance.efficiency}%</span>
+                          <span>{staff.performance?.efficiency || 0}%</span>
                         </div>
                         <Progress
-                          value={staff.performance.efficiency}
+                          value={staff.performance?.efficiency || 0}
                           className="h-2"
                         />
                       </div>
@@ -638,16 +977,19 @@ export default function StaffPage() {
                   >
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={staff.avatar} alt={staff.name} />
+                        <AvatarImage
+                          src={staff.user.avatar}
+                          alt={staff.user.name}
+                        />
                         <AvatarFallback>
-                          {staff.name
+                          {staff.user.name
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{staff.name}</p>
+                        <p className="font-medium">{staff.user.name}</p>
                         <p className="text-sm text-muted-foreground">
                           {staff.role}
                         </p>
@@ -655,7 +997,10 @@ export default function StaffPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium">
-                        ${(staff.performance.revenue * 0.4).toLocaleString()}
+                        $
+                        {(
+                          (staff.performance?.revenue || 0) * 0.4
+                        ).toLocaleString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         40% commission
@@ -670,7 +1015,8 @@ export default function StaffPage() {
                       $
                       {staffMembers
                         .reduce(
-                          (sum, staff) => sum + staff.performance.revenue * 0.4,
+                          (sum, staff) =>
+                            sum + (staff.performance?.revenue || 0) * 0.4,
                           0
                         )
                         .toLocaleString()}

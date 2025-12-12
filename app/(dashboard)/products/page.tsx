@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -25,7 +25,9 @@ import {
   EyeOff,
   ShoppingCart,
   Star,
+  Loader2,
 } from "lucide-react";
+import { useToast } from "../../../components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -43,12 +45,44 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import Image from "next/image";
+import { inherits } from "util";
+
+interface Product {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  stock: number;
+  images?: string[];
+  category?: string;
+  isActive?: boolean;
+  cost?: number;
+  sold?: number;
+  revenue?: number;
+  rating?: number;
+  brand?: string;
+  minStock?: number;
+}
+
+interface NewProduct {
+  salonId: string;
+  title: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  images: string[]; // https://plus.unsplash.com/premium_photo-1670537994863-5ad53a3214e0?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
+}
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [newProd, setNewProd] = useState<NewProduct | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const categories = [
     { id: "all", label: "All Products" },
@@ -67,7 +101,180 @@ export default function ProductsPage() {
     { id: "out-of-stock", label: "Out of Stock" },
   ];
 
-  const [products, setProducts] = useState([
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
+      const response = await fetch(`/api/products/salon/${salon.id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
+
+      const data = await response.json();
+      console.log(data.data);
+      setProducts(data.data || []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load products",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to delete products",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete product");
+      }
+
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
+      });
+
+      fetchProducts();
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete product",
+        variant: "destructive",
+      });
+    }
+  };
+
+  async function handleAddProduct() {
+    console.log("=== handleAddProduct called ===");
+    console.log("newProd state:", newProd);
+
+    const token = localStorage.getItem("accessToken");
+    const salonString = localStorage.getItem("salon");
+
+    console.log("Token:", token ? "Present" : "Missing");
+    console.log("Salon:", salonString);
+
+    if (!salonString) {
+      console.log("ERROR: No salon found");
+      toast({
+        title: "Error",
+        description: "Salon information not found. Please login again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const salon = JSON.parse(salonString);
+    console.log("Salon parsed:", salon);
+
+    // Validate required fields
+    console.log("Validating fields:", {
+      title: newProd?.title,
+      price: newProd?.price,
+      quantity: newProd?.quantity,
+    });
+
+    if (!newProd?.title || !newProd?.price || !newProd?.quantity) {
+      console.log("ERROR: Missing required fields");
+      toast({
+        title: "Error",
+        description:
+          "Please fill in all required fields (Product Name, Price, Stock)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Validation passed!");
+
+    const productData = {
+      salonId: salon.id,
+      title: newProd.title,
+      sku: newProd.sku || `SKU-${Date.now()}`, // Generate SKU if not provided
+      price: String(newProd.price), // Backend expects string
+      quantity: String(newProd.quantity), // Backend expects 'quantity'
+      images: [
+        "https://plus.unsplash.com/premium_photo-1670537994863-5ad53a3214e0?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+    };
+
+    console.log("Sending product data:", productData);
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(productData),
+      });
+
+      const data = await res.json();
+      console.log("Response:", data);
+
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to add product",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Product added successfully",
+      });
+
+      // Reset form and close dialog
+      setNewProd(null);
+      setShowAddDialog(false);
+      fetchProducts();
+    } catch (e) {
+      console.error("Error:", e);
+      toast({
+        title: "Error",
+        description: "Failed to add product",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const oldProducts = [
     {
       id: 1,
       name: "Premium Argan Oil Shampoo",
@@ -171,11 +378,11 @@ export default function ProductsPage() {
       rating: 4.8,
       brand: "Pure Botanicals",
     },
-  ]);
+  ];
 
-  const getStockStatus = (product: any) => {
+  const getStockStatus = (product: Product) => {
     if (product.stock === 0) return "out-of-stock";
-    if (product.stock <= product.minStock) return "low-stock";
+    if (product.stock <= 10) return "low-stock";
     return "in-stock";
   };
 
@@ -207,9 +414,9 @@ export default function ProductsPage() {
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase());
+      product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.description &&
+        product.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory =
       selectedCategory === "all" || product.category === selectedCategory;
     const matchesStatus =
@@ -217,14 +424,54 @@ export default function ProductsPage() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const toggleProductStatus = (productId: number) => {
-    setProducts(
-      products.map((product) =>
-        product.id === productId
-          ? { ...product, isActive: !product.isActive }
-          : product
-      )
-    );
+  const toggleProductStatus = async (productId: string) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to update products",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const product = products.find((p) => p.id === productId);
+      if (!product) return;
+
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          isActive: !product.isActive,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update product");
+      }
+
+      setProducts(
+        products.map((p) =>
+          p.id === productId ? { ...p, isActive: !p.isActive } : p
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Product status updated",
+      });
+    } catch (error) {
+      console.error("Error updating product:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update product status",
+        variant: "destructive",
+      });
+    }
   };
 
   const getCategoryLabel = (categoryId: string) => {
@@ -235,7 +482,10 @@ export default function ProductsPage() {
     return (((price - cost) / price) * 100).toFixed(1);
   };
 
-  const totalValue = products.reduce((sum, p) => sum + p.stock * p.cost, 0);
+  const totalValue = products.reduce(
+    (sum, p) => sum + p.stock * (p.cost || 0),
+    0
+  );
   const lowStockCount = products.filter(
     (p) => getStockStatus(p) === "low-stock"
   ).length;
@@ -260,28 +510,49 @@ export default function ProductsPage() {
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col">
+            <DialogHeader className="shrink-0">
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pr-2 flex-1">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="product-name">Product Name</Label>
+                  <Label htmlFor="product-name" className="mb-2">
+                    Product Name
+                  </Label>
                   <Input
                     id="product-name"
                     placeholder="e.g., Premium Argan Oil Shampoo"
+                    onChange={(e) => {
+                      setNewProd((prev) => {
+                        if (!prev) {
+                          return {
+                            salonId: "",
+                            title: e.target.value,
+                            sku: "",
+                            price: 0,
+                            quantity: 0,
+                            images: [],
+                          };
+                        }
+                        return { ...prev, title: e.target.value };
+                      });
+                    }}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="product-brand">Brand</Label>
+                  <Label htmlFor="product-brand" className="mb-2">
+                    Brand
+                  </Label>
                   <Input
                     id="product-brand"
                     placeholder="e.g., Luxury Hair Co."
                   />
                 </div>
                 <div>
-                  <Label htmlFor="product-category">Category</Label>
+                  <Label htmlFor="product-category" className="mb-2">
+                    Category
+                  </Label>
                   <Select>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -297,15 +568,34 @@ export default function ProductsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="product-price">Retail Price ($)</Label>
+                    <Label htmlFor="product-price" className="mb-2">
+                      Retail Price ($)
+                    </Label>
                     <Input
                       id="product-price"
                       type="number"
                       placeholder="28.99"
+                      onChange={(e) => {
+                        setNewProd((prev) => {
+                          if (!prev) {
+                            return {
+                              salonId: "",
+                              title: "",
+                              sku: "",
+                              price: Number(e.target.value),
+                              quantity: 0,
+                              images: [],
+                            };
+                          }
+                          return { ...prev, price: Number(e.target.value) };
+                        });
+                      }}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="product-cost">Cost Price ($)</Label>
+                    <Label htmlFor="product-cost" className="mb-2">
+                      Cost Price ($)
+                    </Label>
                     <Input
                       id="product-cost"
                       type="number"
@@ -315,22 +605,43 @@ export default function ProductsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="product-stock">Current Stock</Label>
+                    <Label htmlFor="product-stock" className="mb-2">
+                      Current Stock
+                    </Label>
                     <Input id="product-stock" type="number" placeholder="45" />
                   </div>
                   <div>
-                    <Label htmlFor="product-min-stock">Min Stock Level</Label>
+                    <Label htmlFor="product-min-stock" className="mb-2">
+                      Min Stock Level
+                    </Label>
                     <Input
                       id="product-min-stock"
                       type="number"
                       placeholder="10"
+                      onChange={(e) => {
+                        setNewProd((prev) => {
+                          if (!prev) {
+                            return {
+                              salonId: "",
+                              title: "",
+                              sku: "",
+                              price: 0,
+                              quantity: Number(e.target.value),
+                              images: [],
+                            };
+                          }
+                          return { ...prev, quantity: Number(e.target.value) };
+                        });
+                      }}
                     />
                   </div>
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="product-description">Description</Label>
+                  <Label htmlFor="product-description" className="mb-2">
+                    Description
+                  </Label>
                   <Textarea
                     id="product-description"
                     placeholder="Describe your product..."
@@ -338,7 +649,7 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
-                  <Label>Product Image</Label>
+                  <Label className="mb-2">Product Image</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
                     <Package className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
@@ -349,11 +660,26 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowAddDialog(false)}
+                disabled={submitting}
+              >
                 Cancel
               </Button>
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Add Product
+              <Button
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={handleAddProduct}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Product"
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -471,120 +797,161 @@ export default function ProductsPage() {
       </Card>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map((product) => {
-          const stockStatus = getStockStatus(product);
-          const StockIcon = getStockIcon(stockStatus);
+      {loading ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
+            <p className="text-muted-foreground mt-4">Loading products...</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProducts.map((product) => {
+            const stockStatus = getStockStatus(product);
+            const StockIcon = getStockIcon(stockStatus);
 
-          return (
-            <Card
-              key={product.id}
-              className="hover:shadow-lg transition-shadow"
-            >
-              <div className="relative">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-48 object-cover rounded-t-lg"
-                />
-                <div className="absolute top-2 left-2">
-                  <Badge className={getStockColor(stockStatus)}>
-                    <StockIcon className="w-3 h-3 mr-1" />
-                    {stockStatus.replace("-", " ")}
-                  </Badge>
-                </div>
-                <div className="absolute top-2 right-2">
-                  <Switch
-                    checked={product.isActive}
-                    onCheckedChange={() => toggleProductStatus(product.id)}
+            return (
+              <Card
+                key={product.id}
+                className="hover:shadow-lg transition-shadow"
+              >
+                <div className="relative">
+                  <img
+                    src={
+                      product.images?.[0] ||
+                      "https://images.unsplash.com/photo-1624574966266-1cdd65b74500?w=400"
+                    }
+                    alt={product.title}
+                    className="w-full h-48 object-cover rounded-t-lg"
                   />
-                </div>
-                {!product.isActive && (
-                  <div className="absolute inset-0 bg-black/50 rounded-t-lg flex items-center justify-center">
-                    <Badge variant="secondary" className="bg-white text-black">
-                      <EyeOff className="w-3 h-3 mr-1" />
-                      Hidden
+                  <div className="absolute top-2 left-2">
+                    <Badge className={getStockColor(stockStatus)}>
+                      <StockIcon className="w-3 h-3 mr-1" />
+                      {stockStatus.replace("-", " ")}
                     </Badge>
                   </div>
-                )}
-              </div>
-
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="font-heading text-lg font-semibold line-clamp-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {product.brand}
-                    </p>
-                    <Badge variant="outline" className="text-xs mt-1">
-                      {getCategoryLabel(product.category)}
-                    </Badge>
+                  <div className="absolute top-2 right-2">
+                    <Switch
+                      checked={product.isActive ?? true}
+                      onCheckedChange={() => toggleProductStatus(product.id)}
+                    />
                   </div>
-                  <div className="flex gap-1 ml-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Edit3 className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-600"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {product.description}
-                </p>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      Retail Price
-                    </p>
-                    <p className="text-lg font-bold text-primary">
-                      ${product.price}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Stock</p>
-                    <p className="text-lg font-bold">{product.stock}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 text-center border-t border-border pt-3">
-                  <div>
-                    <p className="text-sm font-medium">{product.sold}</p>
-                    <p className="text-xs text-muted-foreground">Sold</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      ${product.revenue.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {getMargin(product.price, product.cost)}%
-                    </p>
-                    <p className="text-xs text-muted-foreground">Margin</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-center gap-1">
-                      <Star className="w-3 h-3 fill-primary text-primary" />
-                      <p className="text-sm font-medium">{product.rating}</p>
+                  {!product.isActive && (
+                    <div className="absolute inset-0 bg-black/50 rounded-t-lg flex items-center justify-center">
+                      <Badge
+                        variant="secondary"
+                        className="bg-white text-black"
+                      >
+                        <EyeOff className="w-3 h-3 mr-1" />
+                        Hidden
+                      </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">Rating</p>
-                  </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h3 className="font-heading text-lg font-semibold line-clamp-1">
+                        {product.title}
+                      </h3>
+                      {product.brand && (
+                        <p className="text-sm text-muted-foreground">
+                          {product.brand}
+                        </p>
+                      )}
+                      {product.category && (
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {getCategoryLabel(product.category)}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Edit3 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        onClick={() => handleDeleteProduct(product.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    {product.description || "No description available"}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Retail Price
+                      </p>
+                      <p className="text-lg font-bold text-primary">
+                        ${product.price}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Stock</p>
+                      <p className="text-lg font-bold">{product.stock}</p>
+                    </div>
+                  </div>
+
+                  {(product.sold ||
+                    product.revenue ||
+                    product.cost ||
+                    product.rating) && (
+                    <div className="grid grid-cols-4 gap-2 text-center border-t border-border pt-3">
+                      {product.sold !== undefined && (
+                        <div>
+                          <p className="text-sm font-medium">{product.sold}</p>
+                          <p className="text-xs text-muted-foreground">Sold</p>
+                        </div>
+                      )}
+                      {product.revenue !== undefined && (
+                        <div>
+                          <p className="text-sm font-medium">
+                            ${product.revenue.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Revenue
+                          </p>
+                        </div>
+                      )}
+                      {product.cost !== undefined && (
+                        <div>
+                          <p className="text-sm font-medium">
+                            {getMargin(product.price, product.cost)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Margin
+                          </p>
+                        </div>
+                      )}
+                      {product.rating !== undefined && (
+                        <div>
+                          <div className="flex items-center justify-center gap-1">
+                            <Star className="w-3 h-3 fill-primary text-primary" />
+                            <p className="text-sm font-medium">
+                              {product.rating}
+                            </p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Rating
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* No results */}
       {filteredProducts.length === 0 && (

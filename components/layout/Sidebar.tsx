@@ -16,6 +16,7 @@ import {
   User,
   Sun,
   Moon,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
@@ -34,6 +35,7 @@ const navigation = [
   { id: "bookings", label: "Bookings", icon: Calendar },
   { id: "services", label: "Services", icon: Scissors },
   { id: "products", label: "Products", icon: Package },
+  { id: "orders", label: "Orders", icon: ShoppingBag },
   { id: "ai-insights", label: "AI Insights", icon: Brain },
   { id: "staff", label: "Staff", icon: Users },
   { id: "customers", label: "Customers", icon: UserSquare },

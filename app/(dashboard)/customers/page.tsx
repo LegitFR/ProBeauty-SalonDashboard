@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
+import { useToast } from "../../../components/ui/use-toast";
 import {
   Users,
   Plus,
@@ -64,15 +65,71 @@ import {
   MoreHorizontal,
   Eye,
   Target,
+  Loader2,
 } from "lucide-react";
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  status?: string;
+  joinDate?: string;
+  lastVisit?: string;
+  totalSpent?: number;
+  visits?: number;
+  avgSpend?: number;
+  satisfaction?: number;
+  preferences?: string[];
+  upcomingBooking?: string;
+  notes?: string;
+  segment?: string;
+  churnRisk?: string;
+}
 
 export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSegment, setSelectedSegment] = useState("all");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const customers = [
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch("/api/customers", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch customers");
+      }
+
+      const data = await response.json();
+      setCustomers(data.customers || data.data || []);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load customers. Using sample data.",
+        variant: "destructive",
+      });
+      // Set sample data as fallback - use empty array for now
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sampleCustomersData: Customer[] = [
     {
-      id: 1,
+      id: "1",
       name: "Emma Thompson",
       email: "emma.thompson@email.com",
       phone: "(555) 123-4567",
@@ -92,7 +149,7 @@ export default function CustomersPage() {
       churnRisk: "low",
     },
     {
-      id: 2,
+      id: "2",
       name: "James Wilson",
       email: "james.wilson@email.com",
       phone: "(555) 234-5678",
@@ -112,7 +169,7 @@ export default function CustomersPage() {
       churnRisk: "low",
     },
     {
-      id: 3,
+      id: "3",
       name: "Sofia Martinez",
       email: "sofia.martinez@email.com",
       phone: "(555) 345-6789",
@@ -126,13 +183,13 @@ export default function CustomersPage() {
       avgSpend: 70.0,
       satisfaction: 4.6,
       preferences: ["Manicure", "Pedicure", "Nail Art"],
-      upcomingBooking: null,
+      upcomingBooking: undefined,
       notes: "New customer. Show interest in loyalty program.",
       segment: "new",
       churnRisk: "medium",
     },
     {
-      id: 4,
+      id: "4",
       name: "Michael Brown",
       email: "michael.brown@email.com",
       phone: "(555) 456-7890",
@@ -146,13 +203,13 @@ export default function CustomersPage() {
       avgSpend: 86.7,
       satisfaction: 4.2,
       preferences: ["Massage", "Facial"],
-      upcomingBooking: null,
+      upcomingBooking: undefined,
       notes: "Has not visited in 3 months. Send retention offer.",
       segment: "at-risk",
       churnRisk: "high",
     },
     {
-      id: 5,
+      id: "5",
       name: "Isabella Garcia",
       email: "isabella.garcia@email.com",
       phone: "(555) 567-8901",
@@ -173,6 +230,9 @@ export default function CustomersPage() {
     },
   ];
 
+  const actualCustomers =
+    customers.length > 0 ? customers : sampleCustomersData;
+
   const customerStats = [
     { label: "Total Customers", value: "1,247", change: "+23", icon: Users },
     {
@@ -191,26 +251,26 @@ export default function CustomersPage() {
   ];
 
   const segments = [
-    { id: "all", name: "All Customers", count: customers.length },
+    { id: "all", name: "All Customers", count: actualCustomers.length },
     {
       id: "vip",
       name: "VIP",
-      count: customers.filter((c) => c.status === "vip").length,
+      count: actualCustomers.filter((c) => c.status === "vip").length,
     },
     {
       id: "regular",
       name: "Regular",
-      count: customers.filter((c) => c.status === "regular").length,
+      count: actualCustomers.filter((c) => c.status === "regular").length,
     },
     {
       id: "new",
       name: "New",
-      count: customers.filter((c) => c.segment === "new").length,
+      count: actualCustomers.filter((c) => c.segment === "new").length,
     },
     {
       id: "at-risk",
       name: "At Risk",
-      count: customers.filter((c) => c.status === "at-risk").length,
+      count: actualCustomers.filter((c) => c.status === "at-risk").length,
     },
   ];
 
@@ -252,7 +312,7 @@ export default function CustomersPage() {
     }
   };
 
-  const filteredCustomers = customers.filter((customer) => {
+  const filteredCustomers = actualCustomers.filter((customer) => {
     const matchesSearch =
       customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -405,146 +465,168 @@ export default function CustomersPage() {
           </div>
 
           {/* Customer List */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredCustomers.map((customer) => (
-              <Card
-                key={customer.id}
-                className="hover:shadow-lg transition-shadow"
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage
-                          src={customer.avatar}
-                          alt={customer.name}
-                        />
-                        <AvatarFallback>
-                          {customer.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-lg">
-                          {customer.name}
-                        </CardTitle>
-                        <CardDescription>
-                          Customer since{" "}
-                          {new Date(customer.joinDate).getFullYear()}
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(customer.status)}
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Contact Info */}
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground" />
-                        <span className="truncate">{customer.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
-                        <span>{customer.phone}</span>
-                      </div>
-                    </div>
-
-                    {/* Key Metrics */}
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-lg font-bold text-primary">
-                          {customer.visits}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Visits</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-green-600">
-                          ${customer.totalSpent}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Total Spent
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-blue-600">
-                          ${customer.avgSpend}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Avg Spend
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Satisfaction & Churn Risk */}
+          {loading ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
+                <p className="text-muted-foreground mt-4">
+                  Loading customers...
+                </p>
+              </CardContent>
+            </Card>
+          ) : filteredCustomers.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">No customers found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredCustomers.map((customer) => (
+                <Card
+                  key={customer.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">
-                          {customer.satisfaction}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage
+                            src={customer.avatar}
+                            alt={customer.name}
+                          />
+                          <AvatarFallback>
+                            {customer.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <CardTitle className="text-lg">
+                            {customer.name}
+                          </CardTitle>
+                          <CardDescription>
+                            Customer since{" "}
+                            {customer.joinDate
+                              ? new Date(customer.joinDate).getFullYear()
+                              : "N/A"}
+                          </CardDescription>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <AlertTriangle
-                          className={`w-4 h-4 ${getChurnRiskColor(
-                            customer.churnRisk
-                          )}`}
-                        />
-                        <span
-                          className={`text-sm font-medium ${getChurnRiskColor(
-                            customer.churnRisk
-                          )}`}
-                        >
-                          {customer.churnRisk} risk
-                        </span>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(customer.status || "regular")}
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-
-                    {/* Upcoming Booking */}
-                    {customer.upcomingBooking ? (
-                      <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm font-medium text-blue-800">
-                          Upcoming Booking
-                        </p>
-                        <p className="text-xs text-blue-600">
-                          {customer.upcomingBooking}
-                        </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Contact Info */}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <span className="truncate">{customer.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-muted-foreground" />
+                          <span>{customer.phone}</span>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm font-medium text-yellow-800">
-                          No Upcoming Booking
-                        </p>
-                        <p className="text-xs text-yellow-600">
-                          Consider reaching out
-                        </p>
-                      </div>
-                    )}
 
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Eye className="w-3 h-3 mr-1" />
-                        View Profile
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        Book Service
-                      </Button>
+                      {/* Key Metrics */}
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <p className="text-lg font-bold text-primary">
+                            {customer.visits}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Visits
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-green-600">
+                            ${customer.totalSpent}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Total Spent
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-blue-600">
+                            ${customer.avgSpend}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Avg Spend
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Satisfaction & Churn Risk */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-medium">
+                            {customer.satisfaction}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <AlertTriangle
+                            className={`w-4 h-4 ${getChurnRiskColor(
+                              customer.churnRisk || "low"
+                            )}`}
+                          />
+                          <span
+                            className={`text-sm font-medium ${getChurnRiskColor(
+                              customer.churnRisk || "low"
+                            )}`}
+                          >
+                            {customer.churnRisk || "low"} risk
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Upcoming Booking */}
+                      {customer.upcomingBooking ? (
+                        <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm font-medium text-blue-800">
+                            Upcoming Booking
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            {customer.upcomingBooking}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm font-medium text-yellow-800">
+                            No Upcoming Booking
+                          </p>
+                          <p className="text-xs text-yellow-600">
+                            Consider reaching out
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Eye className="w-3 h-3 mr-1" />
+                          View Profile
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          Book Service
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="segmentation" className="space-y-6">

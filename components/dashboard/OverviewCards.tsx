@@ -1,3 +1,4 @@
+"use client";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import {
@@ -7,9 +8,54 @@ import {
   TrendingUp,
   Clock,
   CheckCircle2,
+  ShoppingBag,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function OverviewCards() {
+  const [orderStats, setOrderStats] = useState({
+    total: 0,
+    pending: 0,
+    revenue: 0,
+  });
+
+  useEffect(() => {
+    fetchOrderStats();
+  }, []);
+
+  const fetchOrderStats = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await fetch("/api/orders?page=1&limit=100", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok && data.data) {
+        const orders = data.data;
+        const pending = orders.filter(
+          (o: any) => o.status === "PENDING"
+        ).length;
+        const revenue = orders.reduce(
+          (sum: number, o: any) => sum + (o.totalAmount || 0),
+          0
+        );
+
+        setOrderStats({
+          total: orders.length,
+          pending,
+          revenue,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching order stats:", error);
+    }
+  };
+
   const stats = [
     {
       title: "Today's Revenue",
@@ -28,12 +74,15 @@ export function OverviewCards() {
       description: "12 completed, 8 upcoming",
     },
     {
-      title: "Active Customers",
-      value: "342",
-      change: "+23%",
+      title: "Total Orders",
+      value: orderStats.total.toString(),
+      change:
+        orderStats.pending > 0
+          ? `${orderStats.pending} pending`
+          : "All processed",
       changeType: "positive" as const,
-      icon: Users,
-      description: "this month",
+      icon: ShoppingBag,
+      description: `$${orderStats.revenue.toFixed(0)} revenue`,
     },
     {
       title: "Staff Utilization",

@@ -47,6 +47,7 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
     name: "",
     address: "",
     phone: "",
+    venueType: "everyone" as "male" | "female" | "everyone",
   });
 
   // Step 2: Location & Hours
@@ -146,6 +147,7 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
       const requestBody: any = {
         name: formData.name,
         address: formData.address,
+        venueType: formData.venueType,
       };
 
       // Add optional phone
@@ -164,6 +166,8 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
       // Add hours
       requestBody.hours = hours;
 
+      console.log("🏢 Creating salon with data:", requestBody);
+
       const response = await fetch(API_BASE_URL, {
         method: "POST",
         headers: {
@@ -174,9 +178,21 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
       });
 
       const data = await response.json();
+      console.log("📨 Salon creation response:", data);
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create salon");
+        const errorMsg = data.message || "Failed to create salon";
+        const validationErrors = data.errors || data.validationErrors;
+
+        if (validationErrors) {
+          console.error("Validation errors:", validationErrors);
+          const errorMessages = validationErrors
+            .map((err: any) => `${err.path}: ${err.message}`)
+            .join(", ");
+          throw new Error(`Validation failed: ${errorMessages}`);
+        }
+
+        throw new Error(errorMsg);
       }
 
       // Store salon data
@@ -320,6 +336,38 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
                   />
                   <p className="text-xs text-muted-foreground">
                     10 digits starting with 6-9
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="venueType"
+                    className="flex items-center gap-2"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    Venue Type
+                  </Label>
+                  <select
+                    id="venueType"
+                    name="venueType"
+                    value={formData.venueType}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        venueType: e.target.value as
+                          | "male"
+                          | "female"
+                          | "everyone",
+                      })
+                    }
+                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="everyone">Everyone</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Who can visit your salon
                   </p>
                 </div>
 

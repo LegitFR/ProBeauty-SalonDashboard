@@ -57,7 +57,12 @@ export function LandingPage({
     // Check if user is authenticated
     const accessToken = localStorage.getItem("accessToken");
     const user = localStorage.getItem("user");
-    setIsAuthenticated(!!(accessToken && user));
+
+    // Also check cookies to ensure consistency
+    const hasCookie = document.cookie.includes("accessToken=");
+
+    // User is authenticated if both localStorage and cookie have the token
+    setIsAuthenticated(!!(accessToken && user && hasCookie));
   }, []);
 
   const handleDashboardClick = () => {

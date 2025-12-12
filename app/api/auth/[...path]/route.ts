@@ -10,12 +10,20 @@ export async function POST(
     const { path } = await params;
     const pathString = path.join("/");
     const body = await request.json();
+    const authHeader = request.headers.get("authorization");
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    // Add authorization header if present (for endpoints like change-password)
+    if (authHeader) {
+      headers.Authorization = authHeader;
+    }
 
     const response = await fetch(`${BACKEND_URL}/${pathString}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(body),
     });
 

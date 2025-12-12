@@ -71,6 +71,13 @@ export function LoginPage({ onBack, onLogin, onSignup }: LoginPageProps) {
         throw new Error(data.message || "Login failed");
       }
 
+      // Validate user has owner role
+      if (!data.user || data.user.role !== "owner") {
+        throw new Error(
+          "Access denied. This application is for salon owners only."
+        );
+      }
+
       // Store tokens
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("refreshToken", data.refreshToken);
@@ -114,6 +121,13 @@ export function LoginPage({ onBack, onLogin, onSignup }: LoginPageProps) {
 
       if (!res.ok) {
         throw new Error(data.message || "Google authentication failed");
+      }
+
+      // Validate user has owner role
+      if (!data.user || data.user.role !== "owner") {
+        throw new Error(
+          "Access denied. This application is for salon owners only."
+        );
       }
 
       // Store tokens
