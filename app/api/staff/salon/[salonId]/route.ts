@@ -4,10 +4,10 @@ const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { salonId: string } }
+  { params }: { params: Promise<{ salonId: string }> }
 ) {
   try {
-    const { salonId } = params;
+    const { salonId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
     const url = `${API_BASE_URL}/staff/salon/${salonId}${

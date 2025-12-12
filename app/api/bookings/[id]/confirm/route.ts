@@ -4,7 +4,7 @@ const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -15,7 +15,7 @@ export async function POST(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const response = await fetch(`${API_BASE_URL}/bookings/${id}/confirm`, {
       method: "POST",
