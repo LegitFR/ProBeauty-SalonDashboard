@@ -72,6 +72,7 @@ export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
+  const [salon, setSalon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -89,7 +90,7 @@ export default function ServicesPage() {
   });
 
   useEffect(() => {
-    fetchServices();
+    fetchSalon();
 
     // Debug: Check localStorage data
     console.log("=== Debug Info ===");
@@ -126,14 +127,63 @@ export default function ServicesPage() {
     console.log("==================");
   }, []);
 
+  const fetchSalon = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to continue",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch("/api/salons/my-salons", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch salon");
+      }
+
+      const data = await response.json();
+      if (data.data && data.data.length > 0) {
+        setSalon(data.data[0]); // Use first salon
+        // Fetch services after salon is loaded
+        fetchServicesForSalon(data.data[0].id);
+      } else {
+        toast({
+          title: "No salon found",
+          description: "Please create a salon first",
+          variant: "destructive",
+        });
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error fetching salon:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load salon information",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
   const fetchServices = async () => {
+    if (!salon?.id) return;
+    await fetchServicesForSalon(salon.id);
+  };
+
+  const fetchServicesForSalon = async (salonId: string) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
-      console.log("Fetching services for salon:", salon.id);
+      console.log("Fetching services for salon:", salonId);
 
-      const response = await fetch(`/api/services/salon/${salon.id}`, {
+      const response = await fetch(`/api/services/salon/${salonId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -148,7 +198,7 @@ export default function ServicesPage() {
 
       // Filter services by salon ID to ensure we only show services for this salon
       const filteredServices = (data.services || []).filter(
-        (service: Service) => service.salonId === salon.id
+        (service: Service) => service.salonId === salonId
       );
       console.log("Filtered services for salon:", filteredServices);
       setServices(filteredServices);
@@ -249,84 +299,20 @@ export default function ServicesPage() {
 
       console.log("✅ Token found:", token.substring(0, 20) + "...");
 
-      // Get salonId - need to fetch user's salon first
-      const userStr = localStorage.getItem("user");
-      console.log("User string from localStorage:", userStr);
-
-      let salonId = null;
-
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          console.log("Parsed user object:", user);
-          console.log("User role:", user.role);
-
-          // Check if salonId is directly in user object
-          salonId = user.salonId || user.salon?.id;
-
-          // If no salonId, try to fetch user's salon
-          if (!salonId && user.role === "owner") {
-            console.log("No salonId in user object, fetching user's salon...");
-            try {
-              const salonsResponse = await fetch("/api/salons", {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-
-              console.log("Salons API response status:", salonsResponse.status);
-
-              if (salonsResponse.ok) {
-                const salonsData = await salonsResponse.json();
-                console.log("Salons data received:", salonsData);
-
-                // Get the first salon (assuming owner owns one salon)
-                const userSalon =
-                  salonsData.salons?.[0] ||
-                  salonsData.data?.[0] ||
-                  salonsData[0];
-                if (userSalon) {
-                  salonId = userSalon.id;
-                  console.log("✅ Found salon from API:", salonId);
-                } else {
-                  console.warn("⚠️ No salon found in response");
-                }
-              } else {
-                const errorData = await salonsResponse.text();
-                console.error(
-                  "❌ Failed to fetch salons:",
-                  salonsResponse.status
-                );
-                console.error("❌ Error response:", errorData);
-              }
-            } catch (fetchError) {
-              console.error("❌ Exception fetching salons:", fetchError);
-            }
-          }
-
-          // Fallback: If still no salonId and user is owner, use user.id as salonId
-          if (!salonId && user.role === "owner") {
-            console.warn("⚠️ Using user.id as fallback salonId");
-            salonId = user.id;
-          }
-
-          console.log("Final salonId:", salonId);
-        } catch (e) {
-          console.error("Error parsing user data:", e);
-        }
-      }
-
-      if (!salonId) {
-        console.error("❌ No salonId found!");
+      // Use salon state instead of fetching from localStorage or API
+      if (!salon?.id) {
+        console.error("❌ No salon found in state!");
         toast({
           title: "Error",
-          description:
-            "Could not determine your salon. Please make sure you have a salon set up.",
+          description: "Salon information not found. Please refresh the page.",
           variant: "destructive",
         });
         setSubmitting(false);
         return;
       }
 
-      console.log("✅ Using salonId:", salonId);
+      const salonId = salon.id;
+      console.log("✅ Using salonId from state:", salonId);
 
       // Prepare request body matching backend API
       const requestBody = {

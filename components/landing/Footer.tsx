@@ -238,7 +238,7 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
                 Get the latest news, tips, and updates from our team.
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 px-4 sm:px-0">
               <input
                 type="email"
                 placeholder="Enter your email"
@@ -256,14 +256,14 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
-                className="bg-primary text-white hover:bg-primary/90"
+                className="btn-auto-width bg-primary text-white hover:bg-primary/90"
                 onClick={onGetStarted}
               >
                 Start Free Trial
               </Button>
               <Button
                 variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                className="btn-auto-width border-gray-600 text-black hover:bg-gray-800"
                 onClick={onCustomerSite}
               >
                 <Globe className="w-4 h-4 mr-2" />

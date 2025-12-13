@@ -1,4 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
 /*! tailwindcss v4.1.3 | MIT License | https://tailwindcss.com */
 @layer properties {
   @supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or
@@ -724,6 +726,10 @@
 
   .z-50 {
     z-index: 50;
+  }
+
+  .z-10 {
+    z-index: 10;
   }
 
   .col-start-2 {
@@ -2629,6 +2635,10 @@
     padding-right: calc(var(--spacing) * 8);
   }
 
+  .pr-4 {
+    padding-right: calc(var(--spacing) * 4);
+  }
+
   .pb-2 {
     padding-bottom: calc(var(--spacing) * 2);
   }
@@ -2651,6 +2661,10 @@
 
   .pl-10 {
     padding-left: calc(var(--spacing) * 10);
+  }
+
+  .pl-14 {
+    padding-left: calc(var(--spacing) * 14);
   }
 
   .text-center {
@@ -4993,4 +5007,305 @@ html {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Responsive button max-width utilities */
+@layer utilities {
+  .btn-auto-width {
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .btn-auto-width {
+      width: auto;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .btn-auto-width {
+      max-width: 280px;
+    }
+  }
+
+  /* Prevent horizontal overflow */
+  .responsive-text-xl {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .responsive-text-xl {
+      font-size: 1.25rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .responsive-text-xl {
+      font-size: 1.5rem;
+      line-height: 2rem;
+    }
+  }
+
+  .responsive-text-5xl {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .responsive-text-5xl {
+      font-size: 3rem;
+      line-height: 1;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .responsive-text-5xl {
+      font-size: 4.5rem;
+    }
+  }
+
+  /* Responsive padding */
+  .responsive-px {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .responsive-px {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .responsive-px {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  /* Gap utilities */
+  .responsive-gap {
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .responsive-gap {
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .responsive-gap {
+      gap: 2rem;
+    }
+  }
+
+  /* Prevent all potential overflow */
+  .no-overflow {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Responsive container with safe padding */
+  .safe-container {
+    width: 100%;
+    max-width: 100vw;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 640px) {
+    .safe-container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .safe-container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      max-width: 1280px;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .safe-container {
+      max-width: 1536px;
+    }
+  }
+
+  /* Safe width utilities */
+  .safe-w-full {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Text wrapping */
+  .safe-text {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Increased padding utilities for mobile and laptop */
+  .container-padding-mobile {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-padding-mobile {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-padding-mobile {
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
+  }
+
+  /* Section vertical padding - increased */
+  .section-padding-y {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  @media (min-width: 1024px) {
+    .section-padding-y {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+    }
+  }
+
+  /* Hero section padding - extra increased */
+  .hero-padding-y {
+    padding-top: 7rem;
+    padding-bottom: 5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .hero-padding-y {
+      padding-top: 9rem;
+      padding-bottom: 7rem;
+    }
+  }
+
+  /* Marketplace hero section */
+  .marketplace-hero {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 106, 0, 0.1) 0%,
+      rgba(255, 140, 0, 0.05) 100%
+    );
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+    text-align: center;
+  }
+
+  .dark .marketplace-hero {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 106, 0, 0.15) 0%,
+      rgba(255, 140, 0, 0.08) 100%
+    );
+  }
+
+  @media (min-width: 1024px) {
+    .marketplace-hero {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+    }
+  }
+
+  /* Search bar container */
+  .search-bar-container {
+    background: var(--card);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .dark .search-bar-container {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  @media (min-width: 768px) {
+    .search-bar-container {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  /* Marketplace input fields */
+  .marketplace-input {
+    width: 100%;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .marketplace-input::placeholder {
+    color: var(--muted-foreground);
+    opacity: 0.7;
+  }
+
+  /* Salon cards grid */
+  .salon-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .salon-cards-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .salon-cards-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .salon-cards-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* Salon card hover effect */
+  .salon-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  .salon-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(255, 106, 0, 0.15);
+  }
+
+  .dark .salon-card:hover {
+    box-shadow: 0 20px 40px rgba(255, 106, 0, 0.25);
+  }
+
+  .salon-card-image {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
 }

@@ -154,17 +154,17 @@ export function LandingPage({
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-lg border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+        <div className="safe-container max-w-7xl">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Sparkles className="w-5 h-5 text-white" />
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <span className="font-heading text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+              <span className="font-heading text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
                 ProBeauty
               </span>
             </div>
@@ -203,7 +203,7 @@ export function LandingPage({
             <div className="hidden lg:flex items-center space-x-4">
               {isAuthenticated ? (
                 <Button
-                  className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg"
+                  className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg px-6 py-3"
                   onClick={handleDashboardClick}
                 >
                   <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -215,12 +215,12 @@ export function LandingPage({
                   <Button
                     variant="ghost"
                     onClick={onLogin}
-                    className="text-gray-700 hover:text-primary"
+                    className="text-gray-700 hover:text-primary px-6 py-3"
                   >
                     Sign In
                   </Button>
                   <Button
-                    className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg"
+                    className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg px-6 py-3"
                     onClick={onGetStarted}
                   >
                     Start Free Trial
@@ -276,7 +276,7 @@ export function LandingPage({
               </Button>
               {isAuthenticated ? (
                 <Button
-                  className="w-full bg-gradient-to-r from-primary to-orange-600 text-white"
+                  className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white"
                   onClick={handleDashboardClick}
                 >
                   <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -286,13 +286,13 @@ export function LandingPage({
                 <>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start"
+                    className="btn-auto-width justify-start"
                     onClick={onLogin}
                   >
                     Sign In
                   </Button>
                   <Button
-                    className="w-full bg-gradient-to-r from-primary to-orange-600 text-white"
+                    className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white"
                     onClick={onGetStarted}
                   >
                     Start Free Trial
@@ -305,27 +305,31 @@ export function LandingPage({
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-24 pb-16 lg:pt-32 lg:pb-24 relative overflow-hidden">
+      <section className="hero-padding-y relative overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-orange-50 to-pink-50"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-orange-200/20 to-transparent rounded-full blur-3xl"></div>
+        <div className="hidden sm:block absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl"></div>
+        <div className="hidden sm:block absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-orange-200/20 to-transparent rounded-full blur-3xl"></div>
 
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 relative">
-          <div className="text-center mb-16">
-            <Badge className="mb-6 bg-gradient-to-r from-primary/10 to-orange-100 text-primary border-primary/20 text-sm px-4 py-2">
-              <Rocket className="w-4 h-4 mr-2" />
-              Trusted by 120,000+ beauty professionals worldwide
+        <div className="safe-container container-padding-mobile max-w-7xl relative">
+          <div className="text-center mb-12 sm:mb-16">
+            <Badge className="mb-4 sm:mb-6 bg-gradient-to-r from-primary/10 to-orange-100 text-primary border-primary/20 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 inline-flex items-center max-w-full">
+              <Rocket className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+              <span className="hidden sm:inline">
+                Trusted by 120,000+ beauty professionals worldwide
+              </span>
+              <span className="sm:hidden">Trusted by 120k+ pros</span>
             </Badge>
 
-            <h1 className="font-heading text-5xl lg:text-7xl font-bold mb-8 leading-tight">
+            <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-6xl xl:text-7xl font-bold mb-6 sm:mb-8 leading-tight px-2 safe-text">
               The Future of{" "}
-              <span className="bg-gradient-to-r from-primary via-orange-500 to-pink-500 bg-clip-text text-transparent relative">
+              <span className="bg-gradient-to-r from-primary via-orange-500 to-pink-500 bg-clip-text text-transparent relative inline-block">
                 Beauty Business
                 <svg
-                  className="absolute -bottom-4 left-0 w-full h-4 text-primary/30"
+                  className="hidden md:block absolute -bottom-2 md:-bottom-4 left-0 w-full h-3 md:h-4 text-primary/30"
                   viewBox="0 0 400 20"
                   fill="none"
+                  preserveAspectRatio="none"
                 >
                   <path
                     d="M5 15C100 5 200 5 395 15"
@@ -338,67 +342,69 @@ export function LandingPage({
               is Here
             </h1>
 
-            <p className="text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto mb-12 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-gray-600 max-w-4xl mx-auto mb-8 sm:mb-12 leading-relaxed px-4 safe-text">
               Supercharge your salon with AI-powered booking, intelligent
               insights, and seamless customer experiences. Join the beauty
               revolution and grow your business like never before.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-lg px-8 py-4 h-auto shadow-2xl shadow-primary/25"
+                className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto shadow-2xl shadow-primary/25"
                 onClick={onGetStarted}
               >
-                <Zap className="w-5 h-5 mr-2" />
-                Start Your Revolution
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">Start Your Revolution</span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5 sm:ml-2 flex-shrink-0" />
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="text-lg px-8 py-4 h-auto border-2 border-gray-200 hover:border-primary text-gray-700 hover:text-primary bg-white/80 backdrop-blur-sm"
+                className="btn-auto-width text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto border-2 border-gray-200 hover:border-primary text-gray-700 hover:text-primary bg-white/80 backdrop-blur-sm"
               >
-                <Play className="w-5 h-5 mr-2" />
-                Watch Demo (2 min)
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">Watch Demo (2 min)</span>
               </Button>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-8 text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>30-day free trial</span>
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 text-xs sm:text-sm text-gray-500 px-4">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span className="whitespace-nowrap">30-day free trial</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>No credit card required</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span className="whitespace-nowrap">
+                  No credit card required
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>Cancel anytime</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span className="whitespace-nowrap">Cancel anytime</span>
               </div>
             </div>
           </div>
 
           {/* Hero Image */}
-          <div className="max-w-6xl mx-auto">
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-orange-300/20 rounded-3xl blur-2xl"></div>
+          <div className="max-w-6xl mx-auto safe-w-full">
+            <div className="relative mx-4 sm:mx-0">
+              <div className="hidden sm:block absolute -inset-4 bg-gradient-to-r from-primary/20 to-orange-300/20 rounded-3xl blur-2xl"></div>
               <img
                 src={
                   "https://images.unsplash.com/photo-1653548410459-5dffc2cef115?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzYWxvbiUyMGRhc2hib2FyZCUyMGludGVyZmFjZXxlbnwxfHx8fDE3NTgzMTQ5MzF8MA&ixlib=rb-4.1.0&q=80&w=1080"
                 }
                 alt="ProBeauty Dashboard Interface"
-                className="relative w-full h-auto rounded-2xl shadow-2xl border border-white/20"
+                className="relative w-full h-auto rounded-xl sm:rounded-2xl shadow-2xl border border-white/20"
               />
 
               {/* Floating Elements */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-primary to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl rotate-12">
-                <Sparkles className="w-8 h-8 text-white" />
+              <div className="hidden md:flex absolute -top-2 -right-2 md:-top-4 md:-right-4 w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 bg-gradient-to-br from-primary to-orange-500 rounded-xl md:rounded-2xl items-center justify-center shadow-2xl rotate-12">
+                <Sparkles className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 text-white" />
               </div>
 
-              <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-2xl -rotate-12">
-                <Brain className="w-6 h-6 text-white" />
+              <div className="hidden md:flex absolute -bottom-2 -left-2 md:-bottom-4 md:-left-4 w-10 h-10 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl md:rounded-2xl items-center justify-center shadow-2xl -rotate-12">
+                <Brain className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
               </div>
             </div>
           </div>
@@ -406,8 +412,8 @@ export function LandingPage({
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-white relative">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+      <section className="section-padding-y bg-white relative">
+        <div className="safe-container container-padding-mobile max-w-7xl">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
@@ -427,25 +433,25 @@ export function LandingPage({
       {/* Features Section */}
       <section
         id="features"
-        className="py-16 lg:py-24 bg-gradient-to-b from-gray-50 to-white"
+        className="section-padding-y bg-gradient-to-b from-gray-50 to-white"
       >
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center mb-16">
+        <div className="safe-container container-padding-mobile max-w-7xl">
+          <div className="text-center mb-12 sm:mb-16">
             <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-primary border-primary/20">
               <Zap className="w-4 h-4 mr-2" />
               Revolutionary Features
             </Badge>
-            <h2 className="font-heading text-4xl lg:text-5xl font-bold mb-6">
+            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 px-2">
               Technology that <span className="text-primary">transforms</span>{" "}
               businesses
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2">
               Every feature is designed with one goal: to help your beauty
               business thrive in the digital age.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
@@ -483,17 +489,17 @@ export function LandingPage({
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center mb-16">
+      <section id="testimonials" className="section-padding-y bg-white">
+        <div className="safe-container container-padding-mobile max-w-7xl">
+          <div className="text-center mb-12 sm:mb-16">
             <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-primary border-primary/20">
               <Heart className="w-4 h-4 mr-2" />
               Success Stories
             </Badge>
-            <h2 className="font-heading text-4xl lg:text-5xl font-bold mb-6">
+            <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 px-2">
               Real results from real beauty professionals
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2">
               See how ProBeauty has transformed thousands of beauty businesses
               worldwide.
             </p>
@@ -549,44 +555,47 @@ export function LandingPage({
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 lg:py-24 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
+      <section className="section-padding-y bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-orange-500/10"></div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl"></div>
 
-        <div className="max-w-4xl mx-auto px-4 lg:px-8 text-center relative">
-          <h2 className="font-heading text-4xl lg:text-6xl font-bold mb-8">
+        <div className="safe-container container-padding-mobile max-w-4xl text-center relative">
+          <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-6 sm:mb-8">
             Ready to{" "}
             <span className="bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
               revolutionize
             </span>{" "}
             your business?
           </h2>
-          <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-2">
             Join over 120,000 beauty professionals who have already transformed
             their businesses with ProBeauty. Your success story starts today.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8 sm:mb-12">
             <Button
               size="lg"
-              className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-lg px-8 py-4 h-auto shadow-2xl shadow-primary/25"
+              className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 h-auto shadow-2xl shadow-primary/25"
               onClick={onGetStarted}
             >
-              <Rocket className="w-5 h-5 mr-2" />
-              Start Your 30-Day Free Trial
-              <ArrowRight className="w-5 h-5 ml-2" />
+              <Rocket className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              <span className="hidden sm:inline">
+                Start Your 30-Day Free Trial
+              </span>
+              <span className="sm:hidden">Start Free Trial</span>
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="text-lg px-8 py-4 h-auto border-2 border-white/20 text-white hover:bg-white/10 backdrop-blur-sm"
+              className="btn-auto-width text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 h-auto border-2 border-white/20 text-white hover:bg-white/10 backdrop-blur-sm"
             >
-              <Calendar className="w-5 h-5 mr-2" />
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Schedule a Demo
             </Button>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-8 text-sm text-gray-400">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 text-xs sm:text-sm text-gray-400 px-2">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-primary" />
               <span>Enterprise security</span>

@@ -62,6 +62,7 @@ interface Product {
   rating?: number;
   brand?: string;
   minStock?: number;
+  originalStock?: number; // Store original stock before hiding
 }
 
 interface NewProduct {
@@ -78,8 +79,12 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editProd, setEditProd] = useState<Partial<Product> | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [newProd, setNewProd] = useState<NewProduct | null>(null);
+  const [salon, setSalon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
@@ -102,15 +107,64 @@ export default function ProductsPage() {
   ];
 
   useEffect(() => {
-    fetchProducts();
+    fetchSalon();
   }, []);
 
+  const fetchSalon = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to continue",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch("/api/salons/my-salons", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch salon");
+      }
+
+      const data = await response.json();
+      if (data.data && data.data.length > 0) {
+        setSalon(data.data[0]); // Use first salon
+        // Fetch products after salon is loaded
+        fetchProductsForSalon(data.data[0].id);
+      } else {
+        toast({
+          title: "No salon found",
+          description: "Please create a salon first",
+          variant: "destructive",
+        });
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error fetching salon:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load salon information",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
   const fetchProducts = async () => {
+    if (!salon?.id) return;
+    await fetchProductsForSalon(salon.id);
+  };
+
+  const fetchProductsForSalon = async (salonId: string) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
-      const response = await fetch(`/api/products/salon/${salon.id}`, {
+      const response = await fetch(`/api/products/salon/${salonId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -120,7 +174,18 @@ export default function ProductsPage() {
 
       const data = await response.json();
       console.log(data.data);
-      setProducts(data.data || []);
+
+      // Map API fields to frontend fields
+      const mappedProducts = (data.data || []).map((product: any) => ({
+        ...product,
+        stock: product.quantity || 0, // Map 'quantity' from API to 'stock' for frontend
+        // If product has 0 quantity, it's hidden; otherwise it's visible
+        isActive: product.quantity > 0,
+        // Store original stock - if quantity is 0 (hidden), default to 1 so it can be re-enabled
+        originalStock: product.quantity > 0 ? product.quantity : 1,
+      }));
+
+      setProducts(mappedProducts);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast({
@@ -179,23 +244,21 @@ export default function ProductsPage() {
     console.log("newProd state:", newProd);
 
     const token = localStorage.getItem("accessToken");
-    const salonString = localStorage.getItem("salon");
 
     console.log("Token:", token ? "Present" : "Missing");
-    console.log("Salon:", salonString);
+    console.log("Salon:", salon);
 
-    if (!salonString) {
+    if (!salon?.id) {
       console.log("ERROR: No salon found");
       toast({
         title: "Error",
-        description: "Salon information not found. Please login again.",
+        description: "Salon information not found. Please refresh the page.",
         variant: "destructive",
       });
       return;
     }
 
-    const salon = JSON.parse(salonString);
-    console.log("Salon parsed:", salon);
+    console.log("Salon loaded:", salon);
 
     // Validate required fields
     console.log("Validating fields:", {
@@ -267,6 +330,84 @@ export default function ProductsPage() {
       toast({
         title: "Error",
         description: "Failed to add product",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleEditProduct() {
+    if (!selectedProduct || !editProd) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      toast({
+        title: "Error",
+        description: "Authentication required. Please login again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!editProd.title || !editProd.price) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields (Product Name, Price)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updateData: any = {};
+
+    // Only include fields that have values
+    if (editProd.title) updateData.title = editProd.title;
+    if (editProd.price !== undefined) updateData.price = String(editProd.price);
+    if (editProd.stock !== undefined)
+      updateData.quantity = String(editProd.stock);
+
+    console.log("Updating product:", selectedProduct.id, updateData);
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/products/${selectedProduct.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const data = await res.json();
+      console.log("Update response:", data);
+
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to update product",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
+      });
+
+      // Reset form and close dialog
+      setSelectedProduct(null);
+      setEditProd(null);
+      setShowEditDialog(false);
+      fetchProducts();
+    } catch (e) {
+      console.error("Error:", e);
+      toast({
+        title: "Error",
+        description: "Failed to update product",
         variant: "destructive",
       });
     } finally {
@@ -439,30 +580,90 @@ export default function ProductsPage() {
       const product = products.find((p) => p.id === productId);
       if (!product) return;
 
+      console.log("Toggle product:", {
+        id: productId,
+        currentStock: product.stock,
+        originalStock: product.originalStock,
+        isActive: product.isActive,
+      });
+
+      // Toggle visibility state
+      // isActive=true means visible (checked), isActive=false means hidden (unchecked)
+      const currentVisibleState = product.isActive ?? true;
+      const newVisibleState = !currentVisibleState;
+
+      // Calculate what quantity to send
+      let quantityToSend: string;
+      if (newVisibleState) {
+        // Showing the product - restore from originalStock
+        quantityToSend = String(product.originalStock || 1);
+      } else {
+        // Hiding the product - send "0"
+        quantityToSend = "0";
+      }
+
+      console.log("Sending quantity:", quantityToSend);
+
+      const updateData: any = {
+        quantity: quantityToSend,
+      };
+
       const response = await fetch(`/api/products/${productId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          isActive: !product.isActive,
-        }),
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update product");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update product");
       }
 
+      const responseData = await response.json();
+      console.log("Update response:", responseData);
+
+      // Update local state
       setProducts(
-        products.map((p) =>
-          p.id === productId ? { ...p, isActive: !p.isActive } : p
-        )
+        products.map((p) => {
+          if (p.id === productId) {
+            const updatedQuantity =
+              responseData.data?.quantity ?? parseInt(quantityToSend);
+
+            // Calculate originalStock to preserve
+            let newOriginalStock = p.originalStock;
+            if (!newVisibleState && p.stock > 0) {
+              // We're hiding a visible product - save its current stock
+              newOriginalStock = p.stock;
+            } else if (newVisibleState) {
+              // We're showing a product - keep the originalStock or use the restored value
+              newOriginalStock = p.originalStock || updatedQuantity;
+            }
+
+            console.log("State update:", {
+              isActive: newVisibleState,
+              stock: updatedQuantity,
+              originalStock: newOriginalStock,
+            });
+
+            return {
+              ...p,
+              isActive: newVisibleState,
+              stock: updatedQuantity,
+              originalStock: newOriginalStock,
+            };
+          }
+          return p;
+        })
       );
 
       toast({
         title: "Success",
-        description: "Product status updated",
+        description: `Product is now ${
+          newVisibleState ? "visible" : "hidden"
+        } on landing page`,
       });
     } catch (error) {
       console.error("Error updating product:", error);
@@ -684,6 +885,196 @@ export default function ProductsPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Product Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col">
+            <DialogHeader className="shrink-0">
+              <DialogTitle>Edit Product</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pr-2 flex-1">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-product-name" className="mb-2">
+                    Product Name
+                  </Label>
+                  <Input
+                    id="edit-product-name"
+                    value={editProd?.title || ""}
+                    onChange={(e) => {
+                      setEditProd((prev) => ({
+                        ...prev,
+                        title: e.target.value,
+                      }));
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-product-brand" className="mb-2">
+                    Brand
+                  </Label>
+                  <Input
+                    id="edit-product-brand"
+                    value={editProd?.brand || ""}
+                    onChange={(e) => {
+                      setEditProd((prev) => ({
+                        ...prev,
+                        brand: e.target.value,
+                      }));
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-product-category" className="mb-2">
+                    Category
+                  </Label>
+                  <Select
+                    value={editProd?.category || ""}
+                    onValueChange={(value) => {
+                      setEditProd((prev) => ({
+                        ...prev,
+                        category: value,
+                      }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.slice(1).map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-product-price" className="mb-2">
+                      Retail Price ($)
+                    </Label>
+                    <Input
+                      id="edit-product-price"
+                      type="number"
+                      value={editProd?.price || ""}
+                      onChange={(e) => {
+                        setEditProd((prev) => ({
+                          ...prev,
+                          price: Number(e.target.value),
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-product-cost" className="mb-2">
+                      Cost Price ($)
+                    </Label>
+                    <Input
+                      id="edit-product-cost"
+                      type="number"
+                      value={editProd?.cost || ""}
+                      onChange={(e) => {
+                        setEditProd((prev) => ({
+                          ...prev,
+                          cost: Number(e.target.value),
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-product-stock" className="mb-2">
+                      Current Stock
+                    </Label>
+                    <Input
+                      id="edit-product-stock"
+                      type="number"
+                      value={editProd?.stock || ""}
+                      onChange={(e) => {
+                        setEditProd((prev) => ({
+                          ...prev,
+                          stock: Number(e.target.value),
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-product-min-stock" className="mb-2">
+                      Min Stock Level
+                    </Label>
+                    <Input
+                      id="edit-product-min-stock"
+                      type="number"
+                      value={editProd?.minStock || ""}
+                      onChange={(e) => {
+                        setEditProd((prev) => ({
+                          ...prev,
+                          minStock: Number(e.target.value),
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-product-description" className="mb-2">
+                    Description
+                  </Label>
+                  <Textarea
+                    id="edit-product-description"
+                    value={editProd?.description || ""}
+                    onChange={(e) => {
+                      setEditProd((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }));
+                    }}
+                    className="min-h-[100px]"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-2">Product Image</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                    <Package className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to upload product image
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditDialog(false);
+                  setSelectedProduct(null);
+                  setEditProd(null);
+                }}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={handleEditProduct}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Product"
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Cards */}
@@ -830,14 +1221,14 @@ export default function ProductsPage() {
                       {stockStatus.replace("-", " ")}
                     </Badge>
                   </div>
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2 right-2 z-20 pointer-events-auto">
                     <Switch
                       checked={product.isActive ?? true}
                       onCheckedChange={() => toggleProductStatus(product.id)}
                     />
                   </div>
-                  {!product.isActive && (
-                    <div className="absolute inset-0 bg-black/50 rounded-t-lg flex items-center justify-center">
+                  {product.isActive === false && (
+                    <div className="absolute inset-0 bg-black/50 rounded-t-lg flex items-center justify-center z-10 pointer-events-none">
                       <Badge
                         variant="secondary"
                         className="bg-white text-black"
@@ -867,7 +1258,23 @@ export default function ProductsPage() {
                       )}
                     </div>
                     <div className="flex gap-1 ml-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setEditProd({
+                            title: product.title,
+                            price: product.price,
+                            stock: product.stock,
+                            description: product.description,
+                            category: product.category,
+                            brand: product.brand,
+                          });
+                          setShowEditDialog(true);
+                        }}
+                      >
                         <Edit3 className="w-3 h-3" />
                       </Button>
                       <Button

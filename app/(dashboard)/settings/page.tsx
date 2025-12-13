@@ -139,6 +139,11 @@ export default function SettingsPage() {
   const [editableBusinessInfo, setEditableBusinessInfo] = useState<any>({});
   const [editableHours, setEditableHours] = useState<any>({});
 
+  // Delete account states
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
   // Compute business info - this will update when salonData or userProfile changes
   const getBusinessInfo = () => {
     // Get default address if available
@@ -767,6 +772,51 @@ export default function SettingsPage() {
       alert(`Error changing password: ${error.message}`);
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") {
+      toast.error('Please type "DELETE" to confirm');
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+
+      if (!token) {
+        toast.error("Please login to delete account");
+        return;
+      }
+
+      const response = await fetch("/api/users/me", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        toast.success("Account deleted successfully");
+        // Clear all local storage
+        localStorage.clear();
+        // Redirect to home page after a short delay
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1500);
+      } else {
+        const data = await response.json();
+        toast.error(data.message || "Failed to delete account");
+      }
+    } catch (error: any) {
+      console.error("Error deleting account:", error);
+      toast.error(`Error deleting account: ${error.message}`);
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteDialog(false);
+      setDeleteConfirmText("");
     }
   };
 
@@ -1834,7 +1884,11 @@ export default function SettingsPage() {
                     Permanently delete your account and all associated data.
                     This action cannot be undone.
                   </p>
-                  <Button variant="destructive" size="sm">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
                     <Trash2 className="w-3 h-3 mr-1" />
                     Delete Account
                   </Button>
@@ -2005,6 +2059,77 @@ export default function SettingsPage() {
             </Button>
             <Button onClick={handleSaveAddress}>
               {editingAddress ? "Update Address" : "Add Address"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Delete Account
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete your
+              account and remove all your data from our servers.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">
+                Type <span className="font-bold text-red-600">DELETE</span> to
+                confirm:
+              </p>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE to confirm"
+                className="font-mono"
+              />
+            </div>
+            <div className="rounded-lg bg-red-50 p-3 border border-red-200">
+              <p className="text-sm text-red-800">
+                <strong>Warning:</strong> All your data will be permanently
+                deleted including:
+              </p>
+              <ul className="text-sm text-red-700 mt-2 ml-4 list-disc">
+                <li>Profile information</li>
+                <li>Booking history</li>
+                <li>Saved addresses</li>
+                <li>All associated data</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setDeleteConfirmText("");
+              }}
+              disabled={deletingAccount}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount || deleteConfirmText !== "DELETE"}
+            >
+              {deletingAccount ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete My Account
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

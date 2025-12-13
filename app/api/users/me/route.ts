@@ -64,3 +64,33 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+// DELETE /api/users/me - Delete current user account
+export async function DELETE(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("authorization");
+
+    if (!authHeader) {
+      return NextResponse.json(
+        { message: "Authorization header missing" },
+        { status: 401 }
+      );
+    }
+
+    const response = await fetch(`${API_BASE_URL}/users/me`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authHeader,
+      },
+    });
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error: any) {
+    return NextResponse.json(
+      { message: "Failed to delete user account", error: error.message },
+      { status: 500 }
+    );
+  }
+}
