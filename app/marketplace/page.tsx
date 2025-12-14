@@ -2,12 +2,69 @@
 import { useState, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Search, MapPin, Star, Calendar, Menu, Sun, Moon } from "lucide-react";
+import {
+  Search,
+  MapPin,
+  Star,
+  Calendar,
+  Menu,
+  Sun,
+  Moon,
+  Loader2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Toaster } from "../../components/ui/sonner";
+import { useToast } from "../../components/ui/use-toast";
+
+interface Salon {
+  _id: string;
+  name: string;
+  address:
+    | {
+        street?: string;
+        city?: string;
+        state?: string;
+        zipCode?: string;
+      }
+    | string;
+  phone: string;
+  verified: boolean;
+  geo?: {
+    type: string;
+    coordinates: [number, number];
+  };
+  openingHours?: Array<{
+    day: string;
+    open: string;
+    close: string;
+  }>;
+  hours?: Array<{
+    day: string;
+    open?: string;
+    close?: string;
+    openTime?: string;
+    closeTime?: string;
+  }>;
+  staff?: any[];
+  services?: any[];
+  products?: any[];
+  createdAt?: string;
+}
+
+interface SalonResponse {
+  message: string;
+  data: Salon[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
 export default function MarketplacePage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   // Initialize theme for marketplace visitors
   useEffect(() => {
@@ -31,6 +88,12 @@ export default function MarketplacePage() {
   const onBack = () => router.push("/");
   const [searchTerm, setSearchTerm] = useState("");
   const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
@@ -43,48 +106,43 @@ export default function MarketplacePage() {
     }
   };
 
-  const salons = [
-    {
-      id: 1,
-      name: "Luxe Beauty Salon",
-      rating: 4.9,
-      reviews: 340,
-      distance: "0.5 km",
-      image:
-        "https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZWF1dHklMjBzYWxvbiUyMGludGVyaW9yJTIwbW9kZXJufGVufDF8fHx8MTc1ODEwMzg0MHww&ixlib=rb-4.1.0&q=80&w=400",
-      address: "123 Beauty Street, Downtown",
-    },
-    {
-      id: 2,
-      name: "Glamour Studio",
-      rating: 4.8,
-      reviews: 189,
-      distance: "1.2 km",
-      image:
-        "https://images.unsplash.com/photo-1647462741268-e5724e5886c0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYWlyJTIwc2Fsb24lMjBzZXJ2aWNlc3xlbnwxfHx8fDE3NTgxMTg2MTV8MA&ixlib=rb-4.1.0&q=80&w=400",
-      address: "456 Style Avenue, Midtown",
-    },
-    {
-      id: 3,
-      name: "Zen Spa & Wellness",
-      rating: 4.7,
-      reviews: 256,
-      distance: "2.1 km",
-      image:
-        "https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZWF1dHklMjBzYWxvbiUyMGludGVyaW9yJTIwbW9kZXJufGVufDF8fHx8MTc1ODEwMzg0MHww&ixlib=rb-4.1.0&q=80&w=400",
-      address: "789 Wellness Way, Uptown",
-    },
-    {
-      id: 4,
-      name: "Modern Hair Studio",
-      rating: 4.9,
-      reviews: 412,
-      distance: "0.8 km",
-      image:
-        "https://images.unsplash.com/photo-1560066984-138dadb4c035?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHw1fHxoYWlyJTIwc2Fsb258ZW58MXx8fHwxNzU4MTE4NjE1fDA&ixlib=rb-4.1.0&q=80&w=400",
-      address: "321 Fashion Blvd, City Center",
-    },
-  ];
+  // Fetch salons from API
+  useEffect(() => {
+    const fetchSalons = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: "12",
+        });
+
+        const response = await fetch(`/api/salons?${params}`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch salons");
+        }
+
+        const data: SalonResponse = await response.json();
+        setSalons(data.data);
+        setTotalPages(data.pagination.totalPages);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load salons";
+        setError(errorMessage);
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSalons();
+  }, [page, toast]);
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -123,7 +181,19 @@ export default function MarketplacePage() {
               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
                 List your business
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-accent">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-accent"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log(
+                    "Desktop menu clicked, current state:",
+                    mobileMenuOpen
+                  );
+                  setMobileMenuOpen(!mobileMenuOpen);
+                }}
+              >
                 <Menu className="w-5 h-5" />
               </Button>
             </div>
@@ -142,13 +212,51 @@ export default function MarketplacePage() {
                   <Sun className="w-5 h-5" />
                 )}
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-accent">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-accent"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log(
+                    "Mobile menu clicked, current state:",
+                    mobileMenuOpen
+                  );
+                  setMobileMenuOpen(!mobileMenuOpen);
+                }}
+              >
                 <Menu className="w-5 h-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="bg-card border-b border-border shadow-lg relative z-40">
+          <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
+            <Button
+              variant="ghost"
+              className="w-full text-left justify-start text-foreground hover:text-primary font-medium"
+              onClick={() => {
+                onBack();
+                setMobileMenuOpen(false);
+              }}
+            >
+              Log In
+            </Button>
+            <Button
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              onClick={() => {
+                setMobileMenuOpen(false);
+              }}
+            >
+              List your business
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="marketplace-hero">
@@ -220,38 +328,114 @@ export default function MarketplacePage() {
           </div>
 
           {/* Salon Cards */}
-          <div className="salon-cards-grid">
-            {salons.map((salon) => (
-              <div key={salon.id} className="salon-card">
-                <div className="relative">
-                  <img
-                    src={salon.image}
-                    alt={salon.name}
-                    className="salon-card-image"
-                  />
-                </div>
-                <div className="p-5">
-                  <h3 className="font-semibold text-xl text-foreground mb-2">
-                    {salon.name}
-                  </h3>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 fill-primary text-primary" />
-                      <span className="text-sm font-semibold text-foreground ml-1">
-                        {salon.rating}
-                      </span>
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="ml-3 text-muted-foreground">
+                Loading salons...
+              </span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-destructive mb-4">{error}</p>
+              <Button onClick={() => setPage(1)} variant="outline">
+                Retry
+              </Button>
+            </div>
+          ) : salons.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground">No salons found</p>
+            </div>
+          ) : (
+            <div className="salon-cards-grid">
+              {salons.map((salon, index) => {
+                const salonId = (salon as any).id || salon._id;
+                return (
+                  <div
+                    key={salonId || `salon-${index}`}
+                    className="salon-card"
+                    onClick={() => {
+                      if (salonId) {
+                        router.push(`/marketplace/${salonId}`);
+                      } else {
+                        console.error("Salon ID is missing:", salon);
+                      }
+                    }}
+                  >
+                    <div className="relative">
+                      <img
+                        src={`https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400`}
+                        alt={salon.name}
+                        className="salon-card-image"
+                      />
+                      {salon.verified && (
+                        <div className="absolute top-3 right-3 bg-primary/90 text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-current" />
+                          Verified
+                        </div>
+                      )}
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      ({salon.reviews})
-                    </span>
+                    <div className="p-5">
+                      <h3 className="font-semibold text-xl text-foreground mb-2">
+                        {salon.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 text-primary" />
+                          <span className="text-sm text-muted-foreground ml-1">
+                            {typeof salon.address === "string"
+                              ? salon.address
+                              : `${salon.address?.city || "N/A"}, ${
+                                  salon.address?.state || "N/A"
+                                }`}
+                          </span>
+                        </div>
+                      </div>
+                      {typeof salon.address !== "string" &&
+                        salon.address?.street && (
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {salon.address.street}
+                          </p>
+                        )}
+                      {(salon.services?.length || salon.staff?.length) && (
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          {salon.services?.length && (
+                            <span>{salon.services.length} services</span>
+                          )}
+                          {salon.staff?.length && (
+                            <span>{salon.staff.length} staff</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {salon.address}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && !error && totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-12">
+              <Button
+                variant="outline"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
