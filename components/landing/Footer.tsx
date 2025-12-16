@@ -80,9 +80,9 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
     <footer className="bg-gray-900 text-white">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Company Info */}
-          <div className="lg:col-span-2">
+          <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center mb-6">
               <span className="text-2xl font-bold">Probeauty</span>
             </div>
@@ -159,7 +159,6 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
               </a>
             </div>
           </div>
-
           {/* Product Links */}
           <div>
             <h3 className="font-semibold text-white mb-4">Product</h3>

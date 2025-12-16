@@ -87,6 +87,8 @@ export default function ProductsPage() {
   const [salon, setSalon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [newProductImages, setNewProductImages] = useState<File[]>([]);
+  const [editProductImages, setEditProductImages] = useState<File[]>([]);
   const { toast } = useToast();
 
   const categories = [
@@ -179,6 +181,7 @@ export default function ProductsPage() {
       const mappedProducts = (data.data || []).map((product: any) => ({
         ...product,
         stock: product.quantity || 0, // Map 'quantity' from API to 'stock' for frontend
+        images: Array.isArray(product.images) ? product.images : [], // Ensure images is always an array
         // If product has 0 quantity, it's hidden; otherwise it's visible
         isActive: product.quantity > 0,
         // Store original stock - if quantity is 0 (hidden), default to 1 so it can be re-enabled
@@ -280,28 +283,30 @@ export default function ProductsPage() {
 
     console.log("Validation passed!");
 
-    const productData = {
-      salonId: salon.id,
-      title: newProd.title,
-      sku: newProd.sku || `SKU-${Date.now()}`, // Generate SKU if not provided
-      price: String(newProd.price), // Backend expects string
-      quantity: String(newProd.quantity), // Backend expects 'quantity'
-      images: [
-        "https://plus.unsplash.com/premium_photo-1670537994863-5ad53a3214e0?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
-    };
+    // Create FormData for multipart/form-data submission
+    const formData = new FormData();
+    formData.append("salonId", salon.id);
+    formData.append("title", newProd.title);
+    formData.append("sku", newProd.sku || `SKU-${Date.now()}`);
+    formData.append("price", String(newProd.price));
+    formData.append("quantity", String(newProd.quantity));
 
-    console.log("Sending product data:", productData);
+    // Append image files (up to 5)
+    newProductImages.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    console.log("Sending product data with", newProductImages.length, "images");
 
     setSubmitting(true);
     try {
       const res = await fetch(`/api/products`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          // Don't set Content-Type - browser will set it with boundary for FormData
         },
-        body: JSON.stringify(productData),
+        body: formData,
       });
 
       const data = await res.json();
@@ -323,6 +328,7 @@ export default function ProductsPage() {
 
       // Reset form and close dialog
       setNewProd(null);
+      setNewProductImages([]);
       setShowAddDialog(false);
       fetchProducts();
     } catch (e) {
@@ -360,26 +366,55 @@ export default function ProductsPage() {
       return;
     }
 
-    const updateData: any = {};
-
-    // Only include fields that have values
-    if (editProd.title) updateData.title = editProd.title;
-    if (editProd.price !== undefined) updateData.price = String(editProd.price);
-    if (editProd.stock !== undefined)
-      updateData.quantity = String(editProd.stock);
-
-    console.log("Updating product:", selectedProduct.id, updateData);
+    console.log(
+      "Updating product:",
+      selectedProduct.id,
+      "with",
+      editProductImages.length,
+      "new images"
+    );
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/products/${selectedProduct.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updateData),
-      });
+      let res;
+
+      // If there are images, use FormData; otherwise use JSON
+      if (editProductImages.length > 0) {
+        const formData = new FormData();
+        if (editProd.title) formData.append("title", editProd.title);
+        if (editProd.price !== undefined)
+          formData.append("price", String(editProd.price));
+        if (editProd.stock !== undefined)
+          formData.append("quantity", String(editProd.stock));
+
+        editProductImages.forEach((file) => {
+          formData.append("images", file);
+        });
+
+        res = await fetch(`/api/products/${selectedProduct.id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+      } else {
+        const updateData: any = {};
+        if (editProd.title) updateData.title = editProd.title;
+        if (editProd.price !== undefined)
+          updateData.price = String(editProd.price);
+        if (editProd.stock !== undefined)
+          updateData.quantity = String(editProd.stock);
+
+        res = await fetch(`/api/products/${selectedProduct.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateData),
+        });
+      }
 
       const data = await res.json();
       console.log("Update response:", data);
@@ -401,6 +436,7 @@ export default function ProductsPage() {
       // Reset form and close dialog
       setSelectedProduct(null);
       setEditProd(null);
+      setEditProductImages([]);
       setShowEditDialog(false);
       fetchProducts();
     } catch (e) {
@@ -629,8 +665,10 @@ export default function ProductsPage() {
       setProducts(
         products.map((p) => {
           if (p.id === productId) {
+            const parsedQuantity = parseInt(quantityToSend);
             const updatedQuantity =
-              responseData.data?.quantity ?? parseInt(quantityToSend);
+              responseData.data?.quantity ??
+              (!isNaN(parsedQuantity) ? parsedQuantity : 0);
 
             // Calculate originalStock to preserve
             let newOriginalStock = p.originalStock;
@@ -742,6 +780,33 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="product-sku" className="mb-2">
+                    SKU (Stock Keeping Unit)
+                  </Label>
+                  <Input
+                    id="product-sku"
+                    placeholder="e.g., ARG-SHAM-250"
+                    onChange={(e) => {
+                      setNewProd((prev) => {
+                        if (!prev) {
+                          return {
+                            salonId: "",
+                            title: "",
+                            sku: e.target.value,
+                            price: 0,
+                            quantity: 0,
+                            images: [],
+                          };
+                        }
+                        return { ...prev, sku: e.target.value };
+                      });
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Leave empty to auto-generate
+                  </p>
+                </div>
+                <div>
                   <Label htmlFor="product-brand" className="mb-2">
                     Brand
                   </Label>
@@ -778,17 +843,20 @@ export default function ProductsPage() {
                       placeholder="28.99"
                       onChange={(e) => {
                         setNewProd((prev) => {
+                          const value = Number(e.target.value);
+                          const price =
+                            !isNaN(value) && isFinite(value) ? value : 0;
                           if (!prev) {
                             return {
                               salonId: "",
                               title: "",
                               sku: "",
-                              price: Number(e.target.value),
+                              price: price,
                               quantity: 0,
                               images: [],
                             };
                           }
-                          return { ...prev, price: Number(e.target.value) };
+                          return { ...prev, price: price };
                         });
                       }}
                     />
@@ -805,15 +873,15 @@ export default function ProductsPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  {/* <div>
                     <Label htmlFor="product-stock" className="mb-2">
                       Current Stock
                     </Label>
                     <Input id="product-stock" type="number" placeholder="45" />
-                  </div>
+                  </div> */}
                   <div>
                     <Label htmlFor="product-min-stock" className="mb-2">
-                      Min Stock Level
+                      Stock
                     </Label>
                     <Input
                       id="product-min-stock"
@@ -821,17 +889,20 @@ export default function ProductsPage() {
                       placeholder="10"
                       onChange={(e) => {
                         setNewProd((prev) => {
+                          const value = Number(e.target.value);
+                          const quantity =
+                            !isNaN(value) && isFinite(value) ? value : 0;
                           if (!prev) {
                             return {
                               salonId: "",
                               title: "",
                               sku: "",
                               price: 0,
-                              quantity: Number(e.target.value),
+                              quantity: quantity,
                               images: [],
                             };
                           }
-                          return { ...prev, quantity: Number(e.target.value) };
+                          return { ...prev, quantity: quantity };
                         });
                       }}
                     />
@@ -850,20 +921,43 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="mb-2">Product Image</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                    <Package className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to upload product image
+                  <Label htmlFor="product-images" className="mb-2">
+                    Product Images (Max 5)
+                  </Label>
+                  <Input
+                    id="product-images"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 5) {
+                        toast({
+                          title: "Too many files",
+                          description: "You can only upload up to 5 images",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      setNewProductImages(files);
+                    }}
+                    className="cursor-pointer"
+                  />
+                  {newProductImages.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {newProductImages.length} file(s) selected
                     </p>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button
                 variant="outline"
-                onClick={() => setShowAddDialog(false)}
+                onClick={() => {
+                  setShowAddDialog(false);
+                  setNewProductImages([]);
+                }}
                 disabled={submitting}
               >
                 Cancel
@@ -959,9 +1053,10 @@ export default function ProductsPage() {
                       type="number"
                       value={editProd?.price || ""}
                       onChange={(e) => {
+                        const value = Number(e.target.value);
                         setEditProd((prev) => ({
                           ...prev,
-                          price: Number(e.target.value),
+                          price: !isNaN(value) && isFinite(value) ? value : 0,
                         }));
                       }}
                     />
@@ -975,9 +1070,10 @@ export default function ProductsPage() {
                       type="number"
                       value={editProd?.cost || ""}
                       onChange={(e) => {
+                        const value = Number(e.target.value);
                         setEditProd((prev) => ({
                           ...prev,
-                          cost: Number(e.target.value),
+                          cost: !isNaN(value) && isFinite(value) ? value : 0,
                         }));
                       }}
                     />
@@ -993,9 +1089,10 @@ export default function ProductsPage() {
                       type="number"
                       value={editProd?.stock || ""}
                       onChange={(e) => {
+                        const value = Number(e.target.value);
                         setEditProd((prev) => ({
                           ...prev,
-                          stock: Number(e.target.value),
+                          stock: !isNaN(value) && isFinite(value) ? value : 0,
                         }));
                       }}
                     />
@@ -1009,9 +1106,11 @@ export default function ProductsPage() {
                       type="number"
                       value={editProd?.minStock || ""}
                       onChange={(e) => {
+                        const value = Number(e.target.value);
                         setEditProd((prev) => ({
                           ...prev,
-                          minStock: Number(e.target.value),
+                          minStock:
+                            !isNaN(value) && isFinite(value) ? value : 0,
                         }));
                       }}
                     />
@@ -1036,13 +1135,38 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
-                  <Label className="mb-2">Product Image</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                    <Package className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to upload product image
+                  <Label htmlFor="edit-product-images" className="mb-2">
+                    Product Images (Max 5, replaces existing)
+                  </Label>
+                  <Input
+                    id="edit-product-images"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 5) {
+                        toast({
+                          title: "Too many files",
+                          description: "You can only upload up to 5 images",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      setEditProductImages(files);
+                    }}
+                    className="cursor-pointer"
+                  />
+                  {editProductImages.length > 0 ? (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {editProductImages.length} new file(s) selected
                     </p>
-                  </div>
+                  ) : selectedProduct?.images &&
+                    selectedProduct.images.length > 0 ? (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Current: {selectedProduct.images.length} image(s)
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1053,6 +1177,7 @@ export default function ProductsPage() {
                   setShowEditDialog(false);
                   setSelectedProduct(null);
                   setEditProd(null);
+                  setEditProductImages([]);
                 }}
                 disabled={submitting}
               >
@@ -1298,7 +1423,7 @@ export default function ProductsPage() {
                         Retail Price
                       </p>
                       <p className="text-lg font-bold text-primary">
-                        ${product.price}
+                        ${(product.price || 0).toFixed(2)}
                       </p>
                     </div>
                     <div>
@@ -1321,7 +1446,7 @@ export default function ProductsPage() {
                       {product.revenue !== undefined && (
                         <div>
                           <p className="text-sm font-medium">
-                            ${product.revenue.toLocaleString()}
+                            ${(product.revenue || 0).toLocaleString()}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Revenue

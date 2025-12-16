@@ -316,13 +316,20 @@ export default function FinancePage() {
                           <div className="h-8 bg-gray-100 rounded-md overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-primary to-orange-500 rounded-md transition-all duration-500"
-                              style={{ width: `${(day.amount / 3000) * 100}%` }}
+                              style={{
+                                width: `${Math.min(
+                                  ((day.amount || 0) / 3000) * 100,
+                                  100
+                                )}%`,
+                              }}
                             />
                           </div>
                         </div>
                       </div>
                       <div className="text-right min-w-20">
-                        <p className="font-medium">${day.amount}</p>
+                        <p className="font-medium">
+                          ${(day.amount || 0).toFixed(2)}
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           {day.transactions} txns
                         </p>
@@ -473,7 +480,10 @@ export default function FinancePage() {
               <CardContent>
                 <div className="space-y-4">
                   {expenses.map((expense, index) => {
-                    const utilization = (expense.amount / expense.budget) * 100;
+                    const utilization =
+                      expense.budget > 0
+                        ? ((expense.amount || 0) / expense.budget) * 100
+                        : 0;
                     const isOverBudget = utilization > 100;
 
                     return (

@@ -220,7 +220,7 @@ export function LandingPage({
                     Sign In
                   </Button>
                   <Button
-                    className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg px-6 py-3"
+                    className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg btn-trial-padding text-sm sm:text-base whitespace-nowrap"
                     onClick={onGetStarted}
                   >
                     Start Free Trial
@@ -292,7 +292,7 @@ export function LandingPage({
                     Sign In
                   </Button>
                   <Button
-                    className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white"
+                    className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white btn-trial-padding"
                     onClick={onGetStarted}
                   >
                     Start Free Trial
@@ -313,13 +313,18 @@ export function LandingPage({
 
         <div className="safe-container container-padding-mobile max-w-7xl relative">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge className="mb-4 sm:mb-6 bg-gradient-to-r from-primary/10 to-orange-100 text-primary border-primary/20 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 inline-flex items-center max-w-full">
-              <Rocket className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-              <span className="hidden sm:inline">
+            <div
+              className="mb-4 sm:mb-6 border-2 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 inline-flex items-center max-w-full shadow-md rounded-full"
+              style={{ backgroundColor: "#fef3c7", borderColor: "#fcd34d" }}
+            >
+              <Rocket
+                className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 sm:mr-2 shrink-0"
+                style={{ color: "#0f172a" }}
+              />
+              <span className="sm:inline font-medium">
                 Trusted by 120,000+ beauty professionals worldwide
               </span>
-              <span className="sm:hidden">Trusted by 120k+ pros</span>
-            </Badge>
+            </div>
 
             <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-6xl xl:text-7xl font-bold mb-6 sm:mb-8 leading-tight px-2 safe-text">
               The Future of{" "}
@@ -431,7 +436,7 @@ export function LandingPage({
       </section>
 
       {/* Features Section */}
-      <section
+      {/* <section
         id="features"
         className="section-padding-y bg-gradient-to-b from-gray-50 to-white"
       >
@@ -457,6 +462,66 @@ export function LandingPage({
               return (
                 <Card
                   key={index}
+                  className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 border-0 bg-gradient-to-br from-white to-gray-50/50"
+                >
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
+                  ></div>
+                  <CardContent className="p-6 sm:p-8 relative">
+                    <div
+                      className={`w-14 h-14 bg-linear-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}
+                    >
+                      <Icon
+                        className="w-7 h-7 text-white"
+                        style={{ color: "white" }}
+                      />
+                    </div>
+                    <h3 className="font-heading text-lg sm:text-xl font-semibold mb-3 sm:mb-4 group-hover:text-primary transition-colors">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-3 sm:mb-4">
+                      {feature.description}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      className="p-0 h-auto text-primary hover:text-primary/80 group-hover:translate-x-2 transition-transform text-sm sm:text-base"
+                    >
+                      Learn more <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section> */}
+
+      <section
+        id="features"
+        className="py-16 lg:py-24 bg-gradient-to-b from-gray-50 to-white"
+      >
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-primary border-primary/20">
+              <Zap className="w-4 h-4 mr-2" />
+              Revolutionary Features
+            </Badge>
+            <h2 className="font-heading text-4xl lg:text-5xl font-bold mb-6">
+              Technology that <span className="text-primary">transforms</span>{" "}
+              businesses
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Every feature is designed with one goal: to help your beauty
+              business thrive in the digital age.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <Card
+                  key={index}
                   className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 bg-white/80 backdrop-blur-sm overflow-hidden relative"
                 >
                   <div
@@ -466,7 +531,7 @@ export function LandingPage({
                     <div
                       className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}
                     >
-                      <Icon className="w-7 h-7 text-white" />
+                      <Icon className="w-7 h-7" />
                     </div>
                     <h3 className="font-heading text-xl font-semibold mb-4 group-hover:text-primary transition-colors">
                       {feature.title}
@@ -560,14 +625,14 @@ export function LandingPage({
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl"></div>
 
         <div className="safe-container container-padding-mobile max-w-4xl text-center relative">
-          <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-6 sm:mb-8">
+          <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-6 sm:mb-8 text-[#1e1e1e]">
             Ready to{" "}
             <span className="bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
               revolutionize
             </span>{" "}
             your business?
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-2">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-2">
             Join over 120,000 beauty professionals who have already transformed
             their businesses with ProBeauty. Your success story starts today.
           </p>
@@ -575,20 +640,20 @@ export function LandingPage({
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8 sm:mb-12">
             <Button
               size="lg"
-              className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 h-auto shadow-2xl shadow-primary/25"
+              className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-sm sm:text-base lg:text-lg px-4 sm:px-8 lg:px-12 py-3 sm:py-4 lg:py-5 h-auto shadow-2xl shadow-primary/25 btn-hero-width"
               onClick={onGetStarted}
             >
-              <Rocket className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              <span className="hidden sm:inline">
+              <Rocket className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 shrink-0" />
+              <span className="sm:inline whitespace-nowrap">
                 Start Your 30-Day Free Trial
               </span>
-              <span className="sm:hidden">Start Free Trial</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+              <span className="sm:hidden text-sm">Start Free Trial</span>
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5 sm:ml-2 shrink-0" />
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="btn-auto-width text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 h-auto border-2 border-white/20 text-white hover:bg-white/10 backdrop-blur-sm"
+              className="btn-auto-width text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 h-auto border-2 border-white/20 text-[#1e1e1e] hover:bg-white/10 backdrop-blur-sm"
             >
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Schedule a Demo

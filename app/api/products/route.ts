@@ -38,23 +38,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get JSON data from request
-    const body = await request.json();
+    // Get FormData from request (for image uploads)
+    const formData = await request.formData();
 
     console.log("Sending product to backend:", {
       url: `${API_BASE_URL}/products`,
       authHeader: authHeader ? "Present" : "Missing",
-      body,
+      formDataKeys: Array.from(formData.keys()),
     });
 
-    // Forward the JSON data to backend
+    // Forward the FormData to backend (supporting multipart/form-data for image uploads)
     const response = await fetch(`${API_BASE_URL}/products`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Authorization: authHeader,
+        // Don't set Content-Type - let the browser set it with boundary
       },
-      body: JSON.stringify(body),
+      body: formData,
     });
     console.log("Backend response status:", response.status);
     console.log(

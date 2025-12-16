@@ -2571,6 +2571,14 @@
     padding-inline: calc(var(--spacing) * 8);
   }
 
+  .px-10 {
+    padding-inline: calc(var(--spacing) * 10);
+  }
+
+  .px-20 {
+    padding-inline: calc(var(--spacing) * 20);
+  }
+
   .py-0\.5 {
     padding-block: calc(var(--spacing) * 0.5);
   }
@@ -5027,6 +5035,17 @@ html {
     }
   }
 
+  .btn-hero-width {
+    width: 100% !important;
+  }
+
+  @media (min-width: 640px) {
+    .btn-hero-width {
+      width: auto !important;
+      max-width: none !important;
+    }
+  }
+
   /* Prevent horizontal overflow */
   .responsive-text-xl {
     font-size: 1.125rem;
@@ -5068,6 +5087,32 @@ html {
   .responsive-px {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  /* Custom padding for start trial button */
+  .btn-trial-padding {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  @media (min-width: 640px) {
+    .btn-trial-padding {
+      padding-left: 2.5rem !important;
+      padding-right: 2.5rem !important;
+      padding-top: 1rem !important;
+      padding-bottom: 1rem !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .btn-trial-padding {
+      padding-left: 4rem !important;
+      padding-right: 4rem !important;
+      padding-top: 1.25rem !important;
+      padding-bottom: 1.25rem !important;
+    }
   }
 
   @media (min-width: 640px) {
@@ -5374,5 +5419,49 @@ html {
 
   .to-orange-600 {
     --tw-gradient-to: #ea580c;
+  }
+
+  /* Custom utility classes for better text visibility */
+  .text-primary-dark {
+    color: #ff6a00 !important;
+    font-weight: 600;
+  }
+
+  .text-orange-700 {
+    color: #c2410c !important;
+  }
+
+  .text-orange-800 {
+    color: #9a3412 !important;
+  }
+
+  .text-slate-900 {
+    color: #0f172a !important;
+  }
+
+  .bg-orange-50 {
+    background-color: #fff7ed;
+  }
+
+  .bg-orange-100 {
+    background-color: #ffedd5;
+  }
+
+  .bg-amber-100 {
+    background-color: #fef3c7;
+  }
+
+  .border-orange-200 {
+    border-color: #fed7aa;
+  }
+
+  .border-amber-300 {
+    border-color: #fcd34d;
+  }
+
+  /* Force white text visibility */
+  .text-force-white,
+  .text-force-white * {
+    color: #ffffff !important;
   }
 }

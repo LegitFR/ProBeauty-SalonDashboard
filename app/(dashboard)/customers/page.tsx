@@ -549,7 +549,7 @@ export default function CustomersPage() {
                         </div>
                         <div>
                           <p className="text-lg font-bold text-green-600">
-                            ${customer.totalSpent}
+                            ${(customer.totalSpent || 0).toFixed(2)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Total Spent
@@ -557,7 +557,7 @@ export default function CustomersPage() {
                         </div>
                         <div>
                           <p className="text-lg font-bold text-blue-600">
-                            ${customer.avgSpend}
+                            ${(customer.avgSpend || 0).toFixed(2)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Avg Spend

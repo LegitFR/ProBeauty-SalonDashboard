@@ -196,12 +196,34 @@ export default function ServicesPage() {
         throw new Error(data.message || "Failed to fetch services");
       }
 
-      // Filter services by salon ID to ensure we only show services for this salon
-      const filteredServices = (data.services || []).filter(
-        (service: Service) => service.salonId === salonId
-      );
-      console.log("Filtered services for salon:", filteredServices);
-      setServices(filteredServices);
+      // Transform and filter services by salon ID
+      const rawServices = data.data || [];
+      const transformedServices = rawServices
+        .filter((service: any) => service.salonId === salonId)
+        .map((service: any) => {
+          const parsedPrice =
+            typeof service.price === "string"
+              ? parseFloat(service.price)
+              : service.price;
+
+          return {
+            id: service.id,
+            salonId: service.salonId,
+            name: service.title || service.name || "",
+            description: service.description || "",
+            price:
+              !isNaN(parsedPrice) && isFinite(parsedPrice) ? parsedPrice : 0,
+            duration: service.durationMinutes || service.duration || 0,
+            category: service.category || "",
+            isActive: service.isActive ?? true,
+            image: service.image,
+            bookings: service.bookings || 0,
+            revenue: service.revenue || 0,
+            rating: service.rating || 0,
+          };
+        });
+      console.log("Filtered services for salon:", transformedServices);
+      setServices(transformedServices);
     } catch (error) {
       console.error("Error fetching services:", error);
       toast({
@@ -315,11 +337,34 @@ export default function ServicesPage() {
       console.log("✅ Using salonId from state:", salonId);
 
       // Prepare request body matching backend API
+      const duration = parseInt(serviceForm.duration);
+      const price = parseFloat(serviceForm.price);
+
+      if (isNaN(duration) || duration <= 0) {
+        toast({
+          title: "Invalid duration",
+          description: "Please enter a valid duration in minutes",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      if (isNaN(price) || price <= 0) {
+        toast({
+          title: "Invalid price",
+          description: "Please enter a valid price",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
+
       const requestBody = {
         salonId: salonId,
         title: serviceForm.name,
-        durationMinutes: parseInt(serviceForm.duration),
-        price: parseFloat(serviceForm.price),
+        durationMinutes: duration,
+        price: price,
       };
 
       console.log("📦 Request body prepared:", requestBody);
@@ -1068,7 +1113,9 @@ export default function ServicesPage() {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-primary" />
-                    <span className="font-semibold">${service.price}</span>
+                    <span className="font-semibold">
+                      ${(service.price || 0).toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-muted-foreground" />
@@ -1093,7 +1140,7 @@ export default function ServicesPage() {
                     {service.revenue !== undefined && (
                       <div>
                         <p className="text-sm font-medium">
-                          ${service.revenue.toLocaleString()}
+                          ${(service.revenue || 0).toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground">Revenue</p>
                       </div>

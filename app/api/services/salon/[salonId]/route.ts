@@ -12,7 +12,7 @@ export async function GET(
     console.log("Fetching services for salon:", salonId);
 
     // Backend expects salonId as a query parameter
-    const response = await fetch(`${API_BASE_URL}/services/${salonId}`, {
+    const response = await fetch(`${API_BASE_URL}/services?salonId=${salonId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

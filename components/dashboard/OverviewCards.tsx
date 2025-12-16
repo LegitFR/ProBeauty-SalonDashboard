@@ -82,7 +82,7 @@ export function OverviewCards() {
           : "All processed",
       changeType: "positive" as const,
       icon: ShoppingBag,
-      description: `$${orderStats.revenue.toFixed(0)} revenue`,
+      description: `$${(orderStats.revenue || 0).toFixed(0)} revenue`,
     },
     {
       title: "Staff Utilization",
