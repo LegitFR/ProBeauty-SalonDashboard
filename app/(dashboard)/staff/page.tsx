@@ -920,7 +920,10 @@ export default function StaffPage() {
                       </div>
                       <div>
                         <p className="text-2xl font-bold text-green-600">
-                          ${(staff.performance?.revenue || 0).toLocaleString()}
+                          $
+                          {(
+                            Number(staff.performance?.revenue) || 0
+                          ).toLocaleString()}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           Revenue Generated

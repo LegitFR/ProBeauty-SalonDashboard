@@ -1423,7 +1423,7 @@ export default function ProductsPage() {
                         Retail Price
                       </p>
                       <p className="text-lg font-bold text-primary">
-                        ${(product.price || 0).toFixed(2)}
+                        ${(Number(product.price) || 0).toFixed(2)}
                       </p>
                     </div>
                     <div>
@@ -1446,7 +1446,7 @@ export default function ProductsPage() {
                       {product.revenue !== undefined && (
                         <div>
                           <p className="text-sm font-medium">
-                            ${(product.revenue || 0).toLocaleString()}
+                            ${(Number(product.revenue) || 0).toLocaleString()}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Revenue

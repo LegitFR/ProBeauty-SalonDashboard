@@ -1114,7 +1114,7 @@ export default function ServicesPage() {
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-primary" />
                     <span className="font-semibold">
-                      ${(service.price || 0).toFixed(2)}
+                      ${(Number(service.price) || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

@@ -328,7 +328,7 @@ export default function FinancePage() {
                       </div>
                       <div className="text-right min-w-20">
                         <p className="font-medium">
-                          ${(day.amount || 0).toFixed(2)}
+                          ${(Number(day.amount) || 0).toFixed(2)}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {day.transactions} txns

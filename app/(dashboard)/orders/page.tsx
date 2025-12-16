@@ -507,7 +507,7 @@ export default function OrdersPage() {
                     Total Amount
                   </p>
                   <p className="font-medium text-lg">
-                    ${(selectedOrder.totalAmount || 0).toFixed(2)}
+                    ${(Number(selectedOrder.totalAmount) || 0).toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -563,11 +563,11 @@ export default function OrdersPage() {
                         <p className="font-medium">{item.productName}</p>
                         <p className="text-sm text-muted-foreground">
                           Quantity: {item.quantity} × $
-                          {(item.price || 0).toFixed(2)}
+                          {(Number(item.price) || 0).toFixed(2)}
                         </p>
                       </div>
                       <p className="font-semibold">
-                        ${(item.total || 0).toFixed(2)}
+                        ${(Number(item.total) || 0).toFixed(2)}
                       </p>
                     </div>
                   ))}

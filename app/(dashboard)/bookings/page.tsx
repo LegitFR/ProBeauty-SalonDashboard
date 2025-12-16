@@ -511,7 +511,7 @@ export default function BookingsPage() {
                           <div className="flex items-center justify-between w-full">
                             <span className="font-medium">{service.name}</span>
                             <span className="text-sm text-muted-foreground ml-4">
-                              ${(service.price || 0).toFixed(2)} •{" "}
+                              ${(Number(service.price) || 0).toFixed(2)} •{" "}
                               {service.duration} min
                             </span>
                           </div>
@@ -754,7 +754,7 @@ export default function BookingsPage() {
                         <p className="text-sm text-muted-foreground">Service</p>
                         <p className="font-semibold">{selectedService?.name}</p>
                         <p className="text-sm text-primary">
-                          ${(selectedService?.price || 0).toFixed(2)} •{" "}
+                          ${(Number(selectedService?.price) || 0).toFixed(2)} •{" "}
                           {selectedService?.duration} minutes
                         </p>
                       </div>
