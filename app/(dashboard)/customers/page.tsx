@@ -103,24 +103,162 @@ export default function CustomersPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("/api/customers", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to view customers",
+          variant: "destructive",
+        });
+        setCustomers([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch all bookings to get customers
+      const response = await fetch("/api/bookings", {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch customers");
+        throw new Error("Failed to fetch bookings");
       }
 
       const data = await response.json();
-      setCustomers(data.customers || data.data || []);
+      const bookings = data.data || [];
+
+      // Extract unique customers from bookings
+      const customerMap = new Map<string, Customer>();
+
+      bookings.forEach((booking: any) => {
+        if (booking.user && booking.userId) {
+          const customerId = booking.userId;
+
+          if (!customerMap.has(customerId)) {
+            // Create new customer entry
+            customerMap.set(customerId, {
+              id: customerId,
+              name: booking.user.name || "Unknown",
+              email: booking.user.email || "",
+              phone: booking.user.phone || "",
+              avatar: booking.user.avatar || undefined,
+              status: "regular",
+              joinDate: new Date(
+                booking.createdAt || Date.now()
+              ).toLocaleDateString(),
+              lastVisit: new Date(booking.startTime).toLocaleDateString(),
+              totalSpent: parseFloat(booking.service?.price || 0),
+              visits: 1,
+              avgSpend: parseFloat(booking.service?.price || 0),
+              satisfaction: 4.5,
+              preferences: booking.service?.title
+                ? [booking.service.title]
+                : [],
+              upcomingBooking:
+                booking.status === "CONFIRMED" || booking.status === "PENDING"
+                  ? `${new Date(booking.startTime).toLocaleDateString()} - ${
+                      booking.service?.title
+                    }`
+                  : undefined,
+              notes: "",
+              segment: "new",
+              churnRisk: "low",
+            });
+          } else {
+            // Update existing customer
+            const customer = customerMap.get(customerId)!;
+            customer.visits = (customer.visits || 0) + 1;
+            customer.totalSpent =
+              (customer.totalSpent || 0) +
+              parseFloat(booking.service?.price || 0);
+            customer.avgSpend = customer.totalSpent / customer.visits;
+
+            // Update last visit to most recent
+            const bookingDate = new Date(booking.startTime);
+            const lastVisitDate = new Date(customer.lastVisit || 0);
+            if (bookingDate > lastVisitDate) {
+              customer.lastVisit = bookingDate.toLocaleDateString();
+            }
+
+            // Add service to preferences if not already there
+            if (
+              booking.service?.title &&
+              !customer.preferences?.includes(booking.service.title)
+            ) {
+              customer.preferences = [
+                ...(customer.preferences || []),
+                booking.service.title,
+              ];
+            }
+
+            // Update upcoming booking if this booking is confirmed/pending and in future
+            if (
+              (booking.status === "CONFIRMED" ||
+                booking.status === "PENDING") &&
+              bookingDate > new Date()
+            ) {
+              customer.upcomingBooking = `${bookingDate.toLocaleDateString()} - ${
+                booking.service?.title
+              }`;
+            }
+          }
+        }
+      });
+
+      // Convert map to array and determine customer segments
+      const customersArray = Array.from(customerMap.values()).map(
+        (customer) => {
+          // Determine segment based on visits and spending
+          if (
+            customer.visits &&
+            customer.visits >= 20 &&
+            customer.totalSpent &&
+            customer.totalSpent >= 1500
+          ) {
+            customer.status = "vip";
+            customer.segment = "high-value";
+          } else if (customer.visits && customer.visits >= 10) {
+            customer.status = "regular";
+            customer.segment = "regular";
+          } else if (customer.visits && customer.visits <= 3) {
+            customer.segment = "new";
+          }
+
+          // Determine churn risk based on last visit
+          if (customer.lastVisit) {
+            const daysSinceLastVisit = Math.floor(
+              (Date.now() - new Date(customer.lastVisit).getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
+            if (daysSinceLastVisit > 90) {
+              customer.churnRisk = "high";
+              customer.status = "at-risk";
+            } else if (daysSinceLastVisit > 60) {
+              customer.churnRisk = "medium";
+            } else {
+              customer.churnRisk = "low";
+            }
+          }
+
+          return customer;
+        }
+      );
+
+      setCustomers(customersArray);
+
+      if (customersArray.length === 0) {
+        toast({
+          title: "No customers found",
+          description: "No customers with bookings yet",
+        });
+      }
     } catch (error) {
       console.error("Error fetching customers:", error);
       toast({
         title: "Error",
-        description: "Failed to load customers. Using sample data.",
+        description: "Failed to load customers",
         variant: "destructive",
       });
-      // Set sample data as fallback - use empty array for now
       setCustomers([]);
     } finally {
       setLoading(false);
@@ -233,21 +371,58 @@ export default function CustomersPage() {
   const actualCustomers =
     customers.length > 0 ? customers : sampleCustomersData;
 
+  // Calculate real statistics from actual customer data
+  const totalCustomers = actualCustomers.length;
+
+  // Active this month - customers with visits in the last 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const activeThisMonth = actualCustomers.filter((c) => {
+    if (!c.lastVisit) return false;
+    const lastVisitDate = new Date(c.lastVisit);
+    return lastVisitDate >= thirtyDaysAgo;
+  }).length;
+
+  // Average customer value
+  const totalRevenue = actualCustomers.reduce(
+    (sum, c) => sum + (c.totalSpent || 0),
+    0
+  );
+  const avgCustomerValue =
+    totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
+
+  // Retention rate - customers with churn risk "low" divided by total
+  const lowChurnCustomers = actualCustomers.filter(
+    (c) => c.churnRisk === "low"
+  ).length;
+  const retentionRate =
+    totalCustomers > 0 ? (lowChurnCustomers / totalCustomers) * 100 : 0;
+
   const customerStats = [
-    { label: "Total Customers", value: "1,247", change: "+23", icon: Users },
+    {
+      label: "Total Customers",
+      value: totalCustomers.toLocaleString(),
+      change: totalCustomers > 0 ? `${totalCustomers}` : "0",
+      icon: Users,
+    },
     {
       label: "Active This Month",
-      value: "892",
-      change: "+67",
+      value: activeThisMonth.toLocaleString(),
+      change: `${activeThisMonth}`,
       icon: CheckCircle,
     },
     {
       label: "Avg Customer Value",
-      value: "$156",
-      change: "+$12",
+      value: `$${avgCustomerValue.toFixed(0)}`,
+      change: `$${avgCustomerValue.toFixed(0)}`,
       icon: DollarSign,
     },
-    { label: "Retention Rate", value: "87%", change: "+3%", icon: Heart },
+    {
+      label: "Retention Rate",
+      value: `${retentionRate.toFixed(0)}%`,
+      change: `${retentionRate.toFixed(0)}%`,
+      icon: Heart,
+    },
   ];
 
   const segments = [
@@ -646,9 +821,28 @@ export default function CustomersPage() {
                       <span className="font-medium">VIP Customers</span>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">2</p>
+                      <p className="font-bold">
+                        {
+                          actualCustomers.filter((c) => c.status === "vip")
+                            .length
+                        }
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        $5,580 avg value
+                        $
+                        {actualCustomers.filter((c) => c.status === "vip")
+                          .length > 0
+                          ? (
+                              actualCustomers
+                                .filter((c) => c.status === "vip")
+                                .reduce(
+                                  (sum, c) => sum + (c.totalSpent || 0),
+                                  0
+                                ) /
+                              actualCustomers.filter((c) => c.status === "vip")
+                                .length
+                            ).toFixed(0)
+                          : 0}{" "}
+                        avg value
                       </p>
                     </div>
                   </div>
@@ -659,9 +853,29 @@ export default function CustomersPage() {
                       <span className="font-medium">Regular Customers</span>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">2</p>
+                      <p className="font-bold">
+                        {
+                          actualCustomers.filter((c) => c.status === "regular")
+                            .length
+                        }
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        $655 avg value
+                        $
+                        {actualCustomers.filter((c) => c.status === "regular")
+                          .length > 0
+                          ? (
+                              actualCustomers
+                                .filter((c) => c.status === "regular")
+                                .reduce(
+                                  (sum, c) => sum + (c.totalSpent || 0),
+                                  0
+                                ) /
+                              actualCustomers.filter(
+                                (c) => c.status === "regular"
+                              ).length
+                            ).toFixed(0)
+                          : 0}{" "}
+                        avg value
                       </p>
                     </div>
                   </div>
@@ -672,9 +886,28 @@ export default function CustomersPage() {
                       <span className="font-medium">New Customers</span>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">1</p>
+                      <p className="font-bold">
+                        {
+                          actualCustomers.filter((c) => c.segment === "new")
+                            .length
+                        }
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        $420 avg value
+                        $
+                        {actualCustomers.filter((c) => c.segment === "new")
+                          .length > 0
+                          ? (
+                              actualCustomers
+                                .filter((c) => c.segment === "new")
+                                .reduce(
+                                  (sum, c) => sum + (c.totalSpent || 0),
+                                  0
+                                ) /
+                              actualCustomers.filter((c) => c.segment === "new")
+                                .length
+                            ).toFixed(0)
+                          : 0}{" "}
+                        avg value
                       </p>
                     </div>
                   </div>
@@ -685,9 +918,17 @@ export default function CustomersPage() {
                       <span className="font-medium">At-Risk Customers</span>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">1</p>
+                      <p className="font-bold">
+                        {
+                          actualCustomers.filter((c) => c.status === "at-risk")
+                            .length
+                        }
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        Needs attention
+                        {actualCustomers.filter((c) => c.status === "at-risk")
+                          .length > 0
+                          ? "Needs attention"
+                          : "No at-risk customers"}
                       </p>
                     </div>
                   </div>
@@ -704,32 +945,72 @@ export default function CustomersPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm font-medium text-green-800">
-                      High Retention
-                    </p>
-                    <p className="text-xs text-green-700">
-                      VIP customers show 95% retention rate
-                    </p>
-                  </div>
+                  {actualCustomers.filter((c) => c.status === "vip").length >
+                    0 && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm font-medium text-green-800">
+                        High Retention
+                      </p>
+                      <p className="text-xs text-green-700">
+                        VIP customers show{" "}
+                        {actualCustomers.filter(
+                          (c) => c.status === "vip" && c.churnRisk === "low"
+                        ).length > 0
+                          ? Math.round(
+                              (actualCustomers.filter(
+                                (c) =>
+                                  c.status === "vip" && c.churnRisk === "low"
+                              ).length /
+                                actualCustomers.filter(
+                                  (c) => c.status === "vip"
+                                ).length) *
+                                100
+                            )
+                          : 0}
+                        % retention rate
+                      </p>
+                    </div>
+                  )}
 
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm font-medium text-blue-800">
-                      Growth Opportunity
-                    </p>
-                    <p className="text-xs text-blue-700">
-                      Regular customers can be upgraded to VIP
-                    </p>
-                  </div>
+                  {actualCustomers.filter((c) => c.status === "regular")
+                    .length > 0 && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm font-medium text-blue-800">
+                        Growth Opportunity
+                      </p>
+                      <p className="text-xs text-blue-700">
+                        {
+                          actualCustomers.filter((c) => c.status === "regular")
+                            .length
+                        }{" "}
+                        regular customers can be upgraded to VIP
+                      </p>
+                    </div>
+                  )}
 
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm font-medium text-yellow-800">
-                      Attention Needed
-                    </p>
-                    <p className="text-xs text-yellow-700">
-                      1 customer hasn't visited in 3+ months
-                    </p>
-                  </div>
+                  {actualCustomers.filter((c) => c.churnRisk === "high")
+                    .length > 0 && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm font-medium text-yellow-800">
+                        Attention Needed
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        {
+                          actualCustomers.filter((c) => c.churnRisk === "high")
+                            .length
+                        }{" "}
+                        customer(s) haven't visited in 3+ months
+                      </p>
+                    </div>
+                  )}
+
+                  {actualCustomers.length === 0 && (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        No customer data available
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -757,7 +1038,11 @@ export default function CustomersPage() {
                         Active
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        1 customer targeted
+                        {
+                          actualCustomers.filter((c) => c.status === "at-risk")
+                            .length
+                        }{" "}
+                        customer(s) targeted
                       </span>
                     </div>
                   </div>
@@ -778,7 +1063,11 @@ export default function CustomersPage() {
                         Scheduled
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        2 customers targeted
+                        {
+                          actualCustomers.filter((c) => c.status === "vip")
+                            .length
+                        }{" "}
+                        customer(s) targeted
                       </span>
                     </div>
                   </div>
@@ -811,25 +1100,124 @@ export default function CustomersPage() {
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span>30-Day Retention</span>
-                      <span>92%</span>
+                      <span>
+                        {actualCustomers.length > 0
+                          ? Math.round(
+                              (actualCustomers.filter((c) => {
+                                if (!c.lastVisit) return false;
+                                const daysSince = Math.floor(
+                                  (Date.now() -
+                                    new Date(c.lastVisit).getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                );
+                                return daysSince <= 30;
+                              }).length /
+                                actualCustomers.length) *
+                                100
+                            )
+                          : 0}
+                        %
+                      </span>
                     </div>
-                    <Progress value={92} className="h-2" />
+                    <Progress
+                      value={
+                        actualCustomers.length > 0
+                          ? (actualCustomers.filter((c) => {
+                              if (!c.lastVisit) return false;
+                              const daysSince = Math.floor(
+                                (Date.now() - new Date(c.lastVisit).getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              );
+                              return daysSince <= 30;
+                            }).length /
+                              actualCustomers.length) *
+                            100
+                          : 0
+                      }
+                      className="h-2"
+                    />
                   </div>
 
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span>90-Day Retention</span>
-                      <span>87%</span>
+                      <span>
+                        {actualCustomers.length > 0
+                          ? Math.round(
+                              (actualCustomers.filter((c) => {
+                                if (!c.lastVisit) return false;
+                                const daysSince = Math.floor(
+                                  (Date.now() -
+                                    new Date(c.lastVisit).getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                );
+                                return daysSince <= 90;
+                              }).length /
+                                actualCustomers.length) *
+                                100
+                            )
+                          : 0}
+                        %
+                      </span>
                     </div>
-                    <Progress value={87} className="h-2" />
+                    <Progress
+                      value={
+                        actualCustomers.length > 0
+                          ? (actualCustomers.filter((c) => {
+                              if (!c.lastVisit) return false;
+                              const daysSince = Math.floor(
+                                (Date.now() - new Date(c.lastVisit).getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              );
+                              return daysSince <= 90;
+                            }).length /
+                              actualCustomers.length) *
+                            100
+                          : 0
+                      }
+                      className="h-2"
+                    />
                   </div>
 
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span>1-Year Retention</span>
-                      <span>78%</span>
+                      <span>
+                        {actualCustomers.length > 0
+                          ? Math.round(
+                              (actualCustomers.filter((c) => {
+                                if (!c.lastVisit) return false;
+                                const daysSince = Math.floor(
+                                  (Date.now() -
+                                    new Date(c.lastVisit).getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                );
+                                return daysSince <= 365;
+                              }).length /
+                                actualCustomers.length) *
+                                100
+                            )
+                          : 0}
+                        %
+                      </span>
                     </div>
-                    <Progress value={78} className="h-2" />
+                    <Progress
+                      value={
+                        actualCustomers.length > 0
+                          ? (actualCustomers.filter((c) => {
+                              if (!c.lastVisit) return false;
+                              const daysSince = Math.floor(
+                                (Date.now() - new Date(c.lastVisit).getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              );
+                              return daysSince <= 365;
+                            }).length /
+                              actualCustomers.length) *
+                            100
+                          : 0
+                      }
+                      className="h-2"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -842,35 +1230,62 @@ export default function CustomersPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-4 h-4 text-red-600" />
-                      <span className="text-sm font-medium text-red-800">
-                        High Risk
-                      </span>
+                  {actualCustomers.filter((c) => c.churnRisk === "high")
+                    .length > 0 ? (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-4 h-4 text-red-600" />
+                        <span className="text-sm font-medium text-red-800">
+                          High Risk
+                        </span>
+                      </div>
+                      <p className="text-xs text-red-700">
+                        {
+                          actualCustomers.filter((c) => c.churnRisk === "high")
+                            .length
+                        }{" "}
+                        customer(s)
+                      </p>
+                      <p className="text-xs text-red-700">
+                        No visit in 3+ months
+                      </p>
                     </div>
-                    <p className="text-xs text-red-700">
-                      1 customer (Michael Brown)
-                    </p>
-                    <p className="text-xs text-red-700">
-                      No visit in 3+ months
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-700">
+                        No high-risk customers
+                      </p>
+                    </div>
+                  )}
 
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                      <span className="text-sm font-medium text-yellow-800">
-                        Medium Risk
-                      </span>
+                  {actualCustomers.filter((c) => c.churnRisk === "medium")
+                    .length > 0 ? (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm font-medium text-yellow-800">
+                          Medium Risk
+                        </span>
+                      </div>
+                      <p className="text-xs text-yellow-700">
+                        {
+                          actualCustomers.filter(
+                            (c) => c.churnRisk === "medium"
+                          ).length
+                        }{" "}
+                        customer(s)
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        Declining visit frequency
+                      </p>
                     </div>
-                    <p className="text-xs text-yellow-700">
-                      1 customer (Sofia Martinez)
-                    </p>
-                    <p className="text-xs text-yellow-700">
-                      Declining visit frequency
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-700">
+                        No medium-risk customers
+                      </p>
+                    </div>
+                  )}
 
                   <Button className="w-full" size="sm">
                     <Target className="w-3 h-3 mr-1" />

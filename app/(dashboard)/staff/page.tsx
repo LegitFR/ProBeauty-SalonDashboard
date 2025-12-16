@@ -75,20 +75,24 @@ interface Schedule {
 interface StaffMember {
   performance: any;
   id: string;
-  user: {
+  name: string;
+  userId: string | null;
+  salonId: string;
+  user?: {
     name: string;
     email?: string;
     phone?: string;
     avatar?: string;
   };
-  role: string;
+  role?: string;
   availability?: any;
   salon?: {
     name: string;
   };
   thisWeek?: Record<string, Schedule>;
   avatar?: string;
-  name?: string;
+  email?: string;
+  phone?: string;
 }
 
 export default function StaffPage() {
@@ -102,6 +106,10 @@ export default function StaffPage() {
   const [salonOperatingHours, setSalonOperatingHours] = useState<
     Record<string, { open: string; close: string; closed: boolean }>
   >({});
+  const [services, setServices] = useState<any[]>([]);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   // Staff form state
   const [staffForm, setStaffForm] = useState({
@@ -109,6 +117,7 @@ export default function StaffPage() {
     role: "",
     email: "",
     phone: "",
+    serviceId: "",
     availability: {
       monday: { enabled: true, start: "09:00", end: "17:00" },
       tuesday: { enabled: true, start: "09:00", end: "17:00" },
@@ -142,39 +151,266 @@ export default function StaffPage() {
     }));
   };
 
+  const handleAddStaff = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
+
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to add staff",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (
+        !staffForm.name ||
+        !staffForm.role ||
+        !staffForm.email ||
+        !staffForm.serviceId
+      ) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all required fields including service",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Transform availability format
+      const transformedAvailability: any = {};
+      Object.entries(staffForm.availability).forEach(([day, schedule]) => {
+        transformedAvailability[day] = {
+          isAvailable: schedule.enabled,
+          slots: schedule.enabled
+            ? [{ start: schedule.start, end: schedule.end }]
+            : [],
+        };
+      });
+
+      const requestBody = {
+        name: staffForm.name,
+        salonId: salon.id,
+        serviceId: staffForm.serviceId,
+        availability: transformedAvailability,
+      };
+
+      const response = await fetch("/api/staff", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to add staff member");
+      }
+
+      toast({
+        title: "Success",
+        description: "Staff member added successfully",
+      });
+
+      // Close dialog
+      setIsAddDialogOpen(false);
+
+      // Reset form
+      setStaffForm({
+        name: "",
+        role: "",
+        email: "",
+        phone: "",
+        serviceId: "",
+        availability: {
+          monday: { enabled: true, start: "09:00", end: "17:00" },
+          tuesday: { enabled: true, start: "09:00", end: "17:00" },
+          wednesday: { enabled: true, start: "09:00", end: "17:00" },
+          thursday: { enabled: true, start: "09:00", end: "17:00" },
+          friday: { enabled: true, start: "09:00", end: "17:00" },
+          saturday: { enabled: true, start: "10:00", end: "16:00" },
+          sunday: { enabled: false, start: "10:00", end: "16:00" },
+        },
+      });
+
+      // Refresh staff list
+      fetchStaff();
+    } catch (error: any) {
+      console.error("Error adding staff:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add staff member",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditStaff = (staff: StaffMember) => {
+    setEditingStaff(staff);
+
+    // Transform availability data to form format
+    const transformedAvailability: any = {};
+    const days = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ];
+
+    days.forEach((day) => {
+      const dayAvailability = staff.availability?.[day];
+      if (dayAvailability) {
+        transformedAvailability[day] = {
+          enabled: dayAvailability.isAvailable || false,
+          start: dayAvailability.slots?.[0]?.start || "09:00",
+          end: dayAvailability.slots?.[0]?.end || "17:00",
+        };
+      } else {
+        transformedAvailability[day] = {
+          enabled: false,
+          start: "09:00",
+          end: "17:00",
+        };
+      }
+    });
+
+    setStaffForm({
+      name: staff.name || staff.user?.name || "",
+      role: staff.role || "",
+      email: staff.email || staff.user?.email || "",
+      phone: staff.phone || staff.user?.phone || "",
+      serviceId: "", // Would need to get from staff.services if available
+      availability: transformedAvailability,
+    });
+
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateStaff = async () => {
+    if (!editingStaff) return;
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to update staff",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Transform availability format
+      const transformedAvailability: any = {};
+      Object.entries(staffForm.availability).forEach(([day, schedule]) => {
+        transformedAvailability[day] = {
+          isAvailable: schedule.enabled,
+          slots: schedule.enabled
+            ? [{ start: schedule.start, end: schedule.end }]
+            : [],
+        };
+      });
+
+      const requestBody: any = {
+        availability: transformedAvailability,
+      };
+
+      if (staffForm.serviceId) {
+        requestBody.serviceId = staffForm.serviceId;
+      }
+
+      const response = await fetch(`/api/staff/${editingStaff.id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("Update response status:", response.status);
+      const result = await response.json();
+      console.log("Update response data:", result);
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to update staff member");
+      }
+
+      toast({
+        title: "Success",
+        description: "Staff member updated successfully",
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingStaff(null);
+      fetchStaff();
+    } catch (error: any) {
+      console.error("Error updating staff:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update staff member",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchStaff();
     fetchSalonOperatingHours();
+    fetchServices();
   }, []);
+
+  const fetchServices = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
+
+      if (!salon.id) return;
+
+      const response = await fetch(`/api/services/salon/${salon.id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setServices(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching services:", error);
+    }
+  };
 
   const fetchSalonOperatingHours = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch(
-        "https://probeauty-backend.onrender.com/api/v1/salons/my-salons",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch("/api/salons/my-salons", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.ok) {
         const salons = await response.json();
         if (salons.length > 0 && salons[0].hours) {
-          const defaultHours = {
-            monday: { open: "09:00", close: "18:00", closed: false },
-            tuesday: { open: "09:00", close: "18:00", closed: false },
-            wednesday: { open: "09:00", close: "18:00", closed: false },
-            thursday: { open: "09:00", close: "19:00", closed: false },
-            friday: { open: "09:00", close: "19:00", closed: false },
-            saturday: { open: "08:00", close: "17:00", closed: false },
-            sunday: { open: "10:00", close: "16:00", closed: false },
-          };
+          const allDays = [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+          ];
+          const formattedHours: any = {};
 
-          const formattedHours: any = { ...defaultHours };
-
-          // Update with salon data - days present in salon data are open
+          // Only add days that exist in salon data as open
           Object.keys(salons[0].hours).forEach((day) => {
             formattedHours[day] = {
               ...salons[0].hours[day],
@@ -183,10 +419,11 @@ export default function StaffPage() {
           });
 
           // Mark days NOT in salon data as closed
-          Object.keys(defaultHours).forEach((day) => {
+          allDays.forEach((day) => {
             if (!salons[0].hours[day]) {
               formattedHours[day] = {
-                ...defaultHours[day as keyof typeof defaultHours],
+                open: "00:00",
+                close: "00:00",
                 closed: true,
               };
             }
@@ -205,18 +442,21 @@ export default function StaffPage() {
     try {
       const token = localStorage.getItem("accessToken");
       const salon = JSON.parse(localStorage.getItem("salon") || "{}");
-      const response = await fetch(`/api/staff/${salon.id}`, {
+      const response = await fetch(`/api/salons/${salon.id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
+      const result = await response.json();
+      console.log("Salon API Response:", result);
+
       if (!response.ok) {
-        throw new Error("Failed to fetch staff");
+        console.error("API Error Details:", result);
+        throw new Error(result.message || "Failed to fetch salon details");
       }
 
-      const data = await response.json();
-      console.log(data);
-      console.log("Hoii");
-      setStaffMembers(data.staff || []);
+      // Extract staff from salon data
+      const staffData = result.data?.staff || [];
+      setStaffMembers(Array.isArray(staffData) ? staffData : []);
     } catch (error) {
       console.error("Error fetching staff:", error);
       toast({
@@ -386,13 +626,44 @@ export default function StaffPage() {
   ];
 
   const teamStats = [
-    { label: "Total Staff", value: "4", change: "+0", icon: Users },
-    { label: "Active Today", value: "3", change: "+1", icon: CheckCircle },
-    { label: "Avg Rating", value: "4.8", change: "+0.1", icon: Star },
+    {
+      label: "Total Staff",
+      value: staffMembers.length.toString(),
+      change: "+0",
+      icon: Users,
+    },
+    {
+      label: "Active Today",
+      value: staffMembers.length.toString(),
+      change: "+0",
+      icon: CheckCircle,
+    },
+    {
+      label: "Avg Rating",
+      value:
+        staffMembers.length > 0
+          ? (
+              staffMembers.reduce(
+                (sum, staff) => sum + (staff.performance?.satisfaction || 0),
+                0
+              ) / staffMembers.length
+            ).toFixed(1)
+          : "0.0",
+      change: "+0",
+      icon: Star,
+    },
     {
       label: "Team Revenue",
-      value: "$25.6K",
-      change: "+12%",
+      value:
+        staffMembers.length > 0
+          ? `$${(
+              staffMembers.reduce(
+                (sum, staff) => sum + (staff.performance?.revenue || 0),
+                0
+              ) / 1000
+            ).toFixed(1)}K`
+          : "$0",
+      change: "+0%",
       icon: DollarSign,
     },
   ];
@@ -424,8 +695,10 @@ export default function StaffPage() {
 
   const filteredStaff = staffMembers.filter(
     (staff) =>
-      staff.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      staff.role.toLowerCase().includes(searchQuery.toLowerCase())
+      (staff?.name || staff?.user?.name)
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      staff?.role?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -444,7 +717,7 @@ export default function StaffPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Dialog>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90">
                 <UserPlus className="w-4 h-4 mr-2" />
@@ -487,6 +760,33 @@ export default function StaffPage() {
                       <SelectItem value="nail-tech">Nail Technician</SelectItem>
                       <SelectItem value="massage">Massage Therapist</SelectItem>
                       <SelectItem value="esthetician">Esthetician</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="service">Service *</Label>
+                  <Select
+                    value={staffForm.serviceId}
+                    onValueChange={(value) =>
+                      setStaffForm({ ...staffForm, serviceId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services.length === 0 ? (
+                        <SelectItem value="no-services" disabled>
+                          No services available
+                        </SelectItem>
+                      ) : (
+                        services.map((service) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.title} - ${service.price}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -616,8 +916,179 @@ export default function StaffPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 pt-4">
-                  <Button className="flex-1">Add Staff Member</Button>
+                  <Button className="flex-1" onClick={handleAddStaff}>
+                    Add Staff Member
+                  </Button>
                   <Button variant="outline" className="flex-1">
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Staff Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+              <DialogHeader className="shrink-0">
+                <DialogTitle>Edit Staff Member</DialogTitle>
+                <DialogDescription>
+                  Update staff member information and availability
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 overflow-y-auto pr-2 flex-1">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Full Name</Label>
+                  <Input
+                    id="edit-name"
+                    placeholder="Enter full name"
+                    value={staffForm.name}
+                    onChange={(e) =>
+                      setStaffForm({ ...staffForm, name: e.target.value })
+                    }
+                    disabled
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Name cannot be changed
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-service">Service</Label>
+                  <Select
+                    value={staffForm.serviceId}
+                    onValueChange={(value) =>
+                      setStaffForm({ ...staffForm, serviceId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services.length === 0 ? (
+                        <SelectItem value="no-services" disabled>
+                          No services available
+                        </SelectItem>
+                      ) : (
+                        services.map((service) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.title} - ${service.price}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Working Hours Section */}
+                <div className="space-y-3 pt-4 border-t">
+                  <Label className="text-base font-semibold">
+                    Working Hours
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Update available working hours for each day
+                  </p>
+
+                  <div className="space-y-3">
+                    {Object.entries(staffForm.availability).map(
+                      ([day, schedule]) => (
+                        <div
+                          key={day}
+                          className="flex items-center gap-3 p-3 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-2 min-w-[120px]">
+                            <Switch
+                              checked={schedule.enabled}
+                              disabled={salonOperatingHours[day]?.closed}
+                              onCheckedChange={(checked) =>
+                                handleAvailabilityChange(
+                                  day,
+                                  "enabled",
+                                  checked
+                                )
+                              }
+                            />
+                            <span className="text-sm font-medium capitalize">
+                              {day}
+                              {salonOperatingHours[day]?.closed && (
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  (Salon Closed)
+                                </span>
+                              )}
+                            </span>
+                          </div>
+
+                          {schedule.enabled && (
+                            <div className="flex items-center gap-2 flex-1">
+                              <Select
+                                value={schedule.start}
+                                onValueChange={(value) =>
+                                  handleAvailabilityChange(day, "start", value)
+                                }
+                              >
+                                <SelectTrigger className="w-[110px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 24 }, (_, i) => (
+                                    <SelectItem
+                                      key={i}
+                                      value={`${i
+                                        .toString()
+                                        .padStart(2, "0")}:00`}
+                                    >
+                                      {`${i.toString().padStart(2, "0")}:00`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <span className="text-sm text-muted-foreground">
+                                to
+                              </span>
+                              <Select
+                                value={schedule.end}
+                                onValueChange={(value) =>
+                                  handleAvailabilityChange(day, "end", value)
+                                }
+                              >
+                                <SelectTrigger className="w-[110px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 24 }, (_, i) => (
+                                    <SelectItem
+                                      key={i}
+                                      value={`${i
+                                        .toString()
+                                        .padStart(2, "0")}:00`}
+                                    >
+                                      {`${i.toString().padStart(2, "0")}:00`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {!schedule.enabled && (
+                            <span className="text-sm text-muted-foreground">
+                              Day off
+                            </span>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button className="flex-1" onClick={handleUpdateStaff}>
+                    Update Staff Member
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -711,13 +1182,16 @@ export default function StaffPage() {
                         <Avatar className="w-12 h-12">
                           <AvatarImage
                             src={
-                              staff.user.avatar ||
-                              `https://api.dicebear.com/7.x/initials/svg?seed=${staff.user.name}`
+                              staff.user?.avatar ||
+                              staff.avatar ||
+                              `https://api.dicebear.com/7.x/initials/svg?seed=${
+                                staff.name || staff.user?.name || "User"
+                              }`
                             }
-                            alt={staff.user.name}
+                            alt={staff.name || staff.user?.name || "User"}
                           />
                           <AvatarFallback>
-                            {staff.user.name
+                            {(staff.name || staff.user?.name || "U")
                               .split(" ")
                               .map((n) => n[0])
                               .join("")}
@@ -725,9 +1199,11 @@ export default function StaffPage() {
                         </Avatar>
                         <div>
                           <CardTitle className="text-lg">
-                            {staff.user.name}
+                            {staff.name || staff.user?.name || "Unknown"}
                           </CardTitle>
-                          <CardDescription>{staff.role}</CardDescription>
+                          <CardDescription>
+                            {staff.role || "Staff Member"}
+                          </CardDescription>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -744,16 +1220,18 @@ export default function StaffPage() {
                     <div className="space-y-4">
                       {/* Contact Info */}
                       <div className="grid grid-cols-2 gap-4 text-sm">
-                        {staff.user.email && (
+                        {(staff.email || staff.user?.email) && (
                           <div className="flex items-center gap-2">
                             <Mail className="w-4 h-4 text-muted-foreground" />
-                            <span className="truncate">{staff.user.email}</span>
+                            <span className="truncate">
+                              {staff.email || staff.user?.email}
+                            </span>
                           </div>
                         )}
-                        {staff.user.phone && (
+                        {(staff.phone || staff.user?.phone) && (
                           <div className="flex items-center gap-2">
                             <Phone className="w-4 h-4 text-muted-foreground" />
-                            <span>{staff.user.phone}</span>
+                            <span>{staff.phone || staff.user?.phone}</span>
                           </div>
                         )}
                       </div>
@@ -770,7 +1248,11 @@ export default function StaffPage() {
 
                       <div className="flex items-center justify-between">
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditStaff(staff)}
+                          >
                             <Edit className="w-3 h-3 mr-1" />
                             Edit
                           </Button>
@@ -828,20 +1310,22 @@ export default function StaffPage() {
                       <div className="flex items-center gap-3 mb-3">
                         <Avatar className="w-8 h-8">
                           <AvatarImage
-                            src={staff.user.avatar}
-                            alt={staff.user.name}
+                            src={staff.user?.avatar || staff.avatar}
+                            alt={staff.name || staff.user?.name || "User"}
                           />
                           <AvatarFallback>
-                            {staff.user.name
+                            {(staff.name || staff.user?.name || "U")
                               .split(" ")
                               .map((n) => n[0])
                               .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{staff.user.name}</p>
+                          <p className="font-medium">
+                            {staff.name || staff.user?.name || "Unknown"}
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            {staff.role}
+                            {staff.role || "Staff Member"}
                           </p>
                         </div>
                       </div>
@@ -891,19 +1375,23 @@ export default function StaffPage() {
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarImage
-                        src={staff.user.avatar}
-                        alt={staff.user.name}
+                        src={staff.user?.avatar || staff.avatar}
+                        alt={staff.name || staff.user?.name || "User"}
                       />
                       <AvatarFallback>
-                        {staff.user.name
+                        {(staff.name || staff.user?.name || "U")
                           .split(" ")
                           .map((n) => n[0])
                           .join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle>{staff.user.name}</CardTitle>
-                      <CardDescription>{staff.role}</CardDescription>
+                      <CardTitle>
+                        {staff.name || staff.user?.name || "Unknown"}
+                      </CardTitle>
+                      <CardDescription>
+                        {staff.role || "Staff Member"}
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -981,20 +1469,22 @@ export default function StaffPage() {
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarImage
-                          src={staff.user.avatar}
-                          alt={staff.user.name}
+                          src={staff.user?.avatar || staff.avatar}
+                          alt={staff.name || staff.user?.name || "User"}
                         />
                         <AvatarFallback>
-                          {staff.user.name
+                          {(staff.name || staff.user?.name || "U")
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{staff.user.name}</p>
+                        <p className="font-medium">
+                          {staff.name || staff.user?.name || "Unknown"}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          {staff.role}
+                          {staff.role || "Staff Member"}
                         </p>
                       </div>
                     </div>

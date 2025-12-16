@@ -95,6 +95,20 @@ interface Address {
   updatedAt: string;
 }
 
+interface StaffMember {
+  id: string;
+  name?: string;
+  role: string;
+  isAvailable?: boolean;
+  availability?: string[];
+  serviceId?: string;
+  user?: {
+    name: string;
+    email: string;
+    phone?: string;
+  };
+}
+
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -118,6 +132,11 @@ export default function SettingsPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
+
+  // Staff/Team management states
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState(true);
+  const [salon, setSalon] = useState<any>(null);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [addressForm, setAddressForm] = useState({
     fullName: "",
@@ -143,6 +162,11 @@ export default function SettingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Reset data states
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [resettingData, setResettingData] = useState(false);
 
   // Compute business info - this will update when salonData or userProfile changes
   const getBusinessInfo = () => {
@@ -271,38 +295,64 @@ export default function SettingsPage() {
     },
   ];
 
-  const teamMembers = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah@luxebeauty.com",
-      role: "Owner",
-      permissions: ["all"],
-      avatar:
-        "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "Marcus Williams",
-      email: "marcus@luxebeauty.com",
-      role: "Manager",
-      permissions: ["bookings", "customers", "staff"],
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-      status: "active",
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      email: "emily@luxebeauty.com",
-      role: "Staff",
-      permissions: ["bookings", "customers"],
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-      status: "active",
-    },
-  ];
+  // Fetch salon and staff data
+  useEffect(() => {
+    fetchSalon();
+  }, []);
+
+  useEffect(() => {
+    if (salon?.id) {
+      fetchStaff();
+    }
+  }, [salon]);
+
+  const fetchSalon = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await fetch("/api/salons/my-salons", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data && data.data.length > 0) {
+          setSalon(data.data[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching salon:", error);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      setLoadingStaff(true);
+      const token = localStorage.getItem("accessToken");
+      if (!token || !salon?.id) return;
+
+      const response = await fetch(`/api/salons/${salon.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data?.staff) {
+          setStaffMembers(data.data.staff);
+          console.log("Fetched staff members:", data.data.staff);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -330,28 +380,39 @@ export default function SettingsPage() {
   };
 
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "Owner":
-        return (
-          <Badge className="bg-purple-100 text-purple-800 border-purple-200">
-            Owner
-          </Badge>
-        );
-      case "Manager":
-        return (
-          <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-            Manager
-          </Badge>
-        );
-      case "Staff":
-        return (
-          <Badge className="bg-green-100 text-green-800 border-green-200">
-            Staff
-          </Badge>
-        );
-      default:
-        return <Badge>User</Badge>;
+    const normalizedRole = role?.toLowerCase() || "";
+
+    if (normalizedRole.includes("owner")) {
+      return (
+        <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+          Owner
+        </Badge>
+      );
     }
+    if (normalizedRole.includes("manager")) {
+      return (
+        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+          Manager
+        </Badge>
+      );
+    }
+    if (
+      normalizedRole.includes("stylist") ||
+      normalizedRole.includes("staff") ||
+      normalizedRole.includes("employee")
+    ) {
+      return (
+        <Badge className="bg-green-100 text-green-800 border-green-200">
+          Staff
+        </Badge>
+      );
+    }
+    // Default to Staff for any other role
+    return (
+      <Badge className="bg-green-100 text-green-800 border-green-200">
+        Staff
+      </Badge>
+    );
   };
 
   // Fetch addresses, user profile, and salon data on component mount
@@ -820,6 +881,210 @@ export default function SettingsPage() {
     }
   };
 
+  const handleResetData = async () => {
+    if (resetConfirmText !== "RESET") {
+      toast.error('Please type "RESET" to confirm');
+      return;
+    }
+
+    setResettingData(true);
+    let deletedCount = 0;
+    const errors: string[] = [];
+
+    try {
+      const token = localStorage.getItem("accessToken");
+
+      if (!token) {
+        toast.error("Please login to reset data");
+        return;
+      }
+
+      if (!salon?.id) {
+        toast.error("Salon information not found");
+        return;
+      }
+
+      toast.info("Starting data reset...");
+
+      // 1. Delete all bookings
+      try {
+        const bookingsResponse = await fetch("/api/bookings", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (bookingsResponse.ok) {
+          const bookingsData = await bookingsResponse.json();
+          const bookings = bookingsData.data || [];
+
+          for (const booking of bookings) {
+            try {
+              const deleteResponse = await fetch(
+                `/api/bookings/${booking.id}`,
+                {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              if (deleteResponse.ok) deletedCount++;
+            } catch (error) {
+              console.error(`Failed to delete booking ${booking.id}:`, error);
+            }
+          }
+          console.log(`Deleted ${bookings.length} bookings`);
+        }
+      } catch (error) {
+        console.error("Error deleting bookings:", error);
+        errors.push("Some bookings could not be deleted");
+      }
+
+      // 2. Delete all customers (if endpoint exists)
+      try {
+        const customersResponse = await fetch("/api/customers", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (customersResponse.ok) {
+          const customersData = await customersResponse.json();
+          const customers = customersData.data || [];
+
+          for (const customer of customers) {
+            try {
+              const deleteResponse = await fetch(
+                `/api/customers/${customer.id}`,
+                {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              if (deleteResponse.ok) deletedCount++;
+            } catch (error) {
+              console.error(`Failed to delete customer ${customer.id}:`, error);
+            }
+          }
+          console.log(`Deleted ${customers.length} customers`);
+        }
+      } catch (error) {
+        console.error("Error deleting customers:", error);
+        errors.push("Some customers could not be deleted");
+      }
+
+      // 3. Delete all services
+      try {
+        const servicesResponse = await fetch(
+          `/api/services/salon/${salon.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (servicesResponse.ok) {
+          const servicesData = await servicesResponse.json();
+          const services = servicesData.data || [];
+
+          for (const service of services) {
+            try {
+              const deleteResponse = await fetch(
+                `/api/services/${service.id}`,
+                {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              if (deleteResponse.ok) deletedCount++;
+            } catch (error) {
+              console.error(`Failed to delete service ${service.id}:`, error);
+            }
+          }
+          console.log(`Deleted ${services.length} services`);
+        }
+      } catch (error) {
+        console.error("Error deleting services:", error);
+        errors.push("Some services could not be deleted");
+      }
+
+      // 4. Delete all orders (if endpoint exists)
+      try {
+        const ordersResponse = await fetch("/api/orders", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (ordersResponse.ok) {
+          const ordersData = await ordersResponse.json();
+          const orders = ordersData.data || [];
+
+          for (const order of orders) {
+            try {
+              const deleteResponse = await fetch(`/api/orders/${order.id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (deleteResponse.ok) deletedCount++;
+            } catch (error) {
+              console.error(`Failed to delete order ${order.id}:`, error);
+            }
+          }
+          console.log(`Deleted ${orders.length} orders`);
+        }
+      } catch (error) {
+        console.error("Error deleting orders:", error);
+        // Orders might not exist, so don't add to errors
+      }
+
+      // 5. Delete all products (if endpoint exists)
+      try {
+        const productsResponse = await fetch(
+          `/api/products/salon/${salon.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (productsResponse.ok) {
+          const productsData = await productsResponse.json();
+          const products = productsData.data || [];
+
+          for (const product of products) {
+            try {
+              const deleteResponse = await fetch(
+                `/api/products/${product.id}`,
+                {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              if (deleteResponse.ok) deletedCount++;
+            } catch (error) {
+              console.error(`Failed to delete product ${product.id}:`, error);
+            }
+          }
+          console.log(`Deleted ${products.length} products`);
+        }
+      } catch (error) {
+        console.error("Error deleting products:", error);
+        // Products might not exist, so don't add to errors
+      }
+
+      if (errors.length > 0) {
+        toast.warning(
+          `Data reset completed with warnings. ${deletedCount} items deleted. ${errors.join(
+            ", "
+          )}`
+        );
+      } else {
+        toast.success(
+          `All data reset successfully! ${deletedCount} items deleted.`
+        );
+      }
+
+      // Refresh the page after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error resetting data:", error);
+      toast.error(`Error resetting data: ${error.message}`);
+    } finally {
+      setResettingData(false);
+      setShowResetDialog(false);
+      setResetConfirmText("");
+    }
+  };
+
   const handleSaveChanges = async () => {
     setSaving(true);
     try {
@@ -1252,56 +1517,71 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {teamMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={member.avatar} alt={member.name} />
-                        <AvatarFallback>
-                          {member.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {member.email}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getRoleBadge(member.role)}
-                          <span className="text-xs text-muted-foreground">
-                            {member.permissions.includes("all")
-                              ? "All permissions"
-                              : `${member.permissions.length} permissions`}
-                          </span>
+              {loadingStaff ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading team members...
+                </div>
+              ) : staffMembers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No team members found
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {staffMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarFallback>
+                            {(member.name || member.user?.name || "U")
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {member.name || member.user?.name || "Unknown"}
+                          </p>
+                          <div className="space-y-0.5">
+                            <p className="text-sm text-muted-foreground">
+                              {member.user?.email || "No email provided"}
+                            </p>
+                            {member.user?.phone && (
+                              <p className="text-xs text-muted-foreground">
+                                {member.user.phone}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            {getRoleBadge(member.role)}
+                            <span className="text-xs text-muted-foreground">
+                              {member.isAvailable ? "Available" : "Unavailable"}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="w-3 h-3 mr-1" />
-                        Edit
-                      </Button>
-                      {member.role !== "Owner" && (
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm">
+                          <Edit className="w-3 h-3 mr-1" />
+                          Edit
+                        </Button>
                         <Button variant="outline" size="sm">
                           <Trash2 className="w-3 h-3" />
                         </Button>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
-                <Button className="w-full" variant="outline">
-                  <Users className="w-4 h-4 mr-2" />
-                  Invite Team Member
-                </Button>
-              </div>
+                  <Button className="w-full" variant="outline">
+                    <Users className="w-4 h-4 mr-2" />
+                    Invite Team Member
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1906,6 +2186,7 @@ export default function SettingsPage() {
                     variant="outline"
                     size="sm"
                     className="border-yellow-300 text-yellow-700"
+                    onClick={() => setShowResetDialog(true)}
                   >
                     <AlertTriangle className="w-3 h-3 mr-1" />
                     Reset Data
@@ -2128,6 +2409,82 @@ export default function SettingsPage() {
                 <>
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete My Account
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Data Confirmation Dialog */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-600">
+              <AlertTriangle className="w-5 h-5" />
+              Reset All Data
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete all your salon data but keep your
+              account active. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">
+                Type <span className="font-bold text-yellow-600">RESET</span> to
+                confirm:
+              </p>
+              <Input
+                value={resetConfirmText}
+                onChange={(e) => setResetConfirmText(e.target.value)}
+                placeholder="Type RESET to confirm"
+                className="font-mono"
+              />
+            </div>
+            <div className="rounded-lg bg-yellow-50 p-3 border border-yellow-200">
+              <p className="text-sm text-yellow-800">
+                <strong>Warning:</strong> The following data will be permanently
+                deleted:
+              </p>
+              <ul className="text-sm text-yellow-700 mt-2 ml-4 list-disc">
+                <li>All bookings</li>
+                <li>All customers</li>
+                <li>Transaction history</li>
+                <li>Staff schedules</li>
+              </ul>
+              <p className="text-sm text-yellow-800 mt-2">
+                Your account, salon profile, and staff members will be
+                preserved.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowResetDialog(false);
+                setResetConfirmText("");
+              }}
+              disabled={resettingData}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              className="bg-yellow-600 hover:bg-yellow-700"
+              onClick={handleResetData}
+              disabled={resettingData || resetConfirmText !== "RESET"}
+            >
+              {resettingData ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Reset All Data
                 </>
               )}
             </Button>

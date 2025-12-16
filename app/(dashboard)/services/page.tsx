@@ -76,6 +76,7 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [serviceImages, setServiceImages] = useState<File[]>([]);
   const { toast } = useToast();
 
   // Service form state
@@ -85,8 +86,6 @@ export default function ServicesPage() {
     category: "",
     price: "",
     duration: "",
-    imageFile: null as File | null,
-    imagePreview: "",
   });
 
   useEffect(() => {
@@ -277,25 +276,6 @@ export default function ServicesPage() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "Image must be less than 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-      setServiceForm({
-        ...serviceForm,
-        imageFile: file,
-        imagePreview: URL.createObjectURL(file),
-      });
-    }
-  };
-
   const handleCreateService = async () => {
     console.log("🚀 handleCreateService CALLED!");
     console.log("Current form state:", serviceForm);
@@ -363,20 +343,46 @@ export default function ServicesPage() {
       const requestBody = {
         salonId: salonId,
         title: serviceForm.name,
+        description: serviceForm.description || "",
+        category: serviceForm.category,
         durationMinutes: duration,
         price: price,
       };
 
       console.log("📦 Request body prepared:", requestBody);
       console.log("🌐 Sending POST to /api/services...");
+      console.log("📷 Number of images:", serviceImages.length);
+
+      // ALWAYS use FormData - backend requires multipart/form-data or x-www-form-urlencoded
+      const formData = new FormData();
+      formData.append("salonId", salonId);
+      formData.append("title", serviceForm.name);
+      formData.append("description", serviceForm.description || "");
+      formData.append("category", serviceForm.category);
+      formData.append("durationMinutes", String(duration));
+      formData.append("price", String(price));
+
+      // Append image files if any
+      serviceImages.forEach((file) => {
+        formData.append("images", file);
+      });
+
+      // Log FormData contents
+      console.log("📋 FormData contents:");
+      for (const [key, value] of formData.entries()) {
+        console.log(
+          `  ${key}:`,
+          value instanceof File ? `File: ${value.name}` : value
+        );
+      }
 
       const response = await fetch("/api/services", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          // Don't set Content-Type - browser will set it with boundary for FormData
         },
-        body: JSON.stringify(requestBody),
+        body: formData,
       });
 
       console.log("📥 Response received, status:", response.status);
@@ -387,6 +393,15 @@ export default function ServicesPage() {
       if (!response.ok) {
         console.error("❌ API Error - Status:", response.status);
         console.error("❌ API Error - Data:", data);
+        if (data.errors && Array.isArray(data.errors)) {
+          console.error(
+            "❌ Validation Errors:",
+            JSON.stringify(data.errors, null, 2)
+          );
+          data.errors.forEach((err: any, index: number) => {
+            console.error(`❌ Error ${index + 1}:`, err);
+          });
+        }
         throw new Error(data.message || "Failed to create service");
       }
 
@@ -406,9 +421,8 @@ export default function ServicesPage() {
         category: "",
         price: "",
         duration: "",
-        imageFile: null,
-        imagePreview: "",
       });
+      setServiceImages([]);
 
       // Refresh services
       console.log("🔄 Refreshing services list...");
@@ -663,9 +677,8 @@ export default function ServicesPage() {
               category: "",
               price: "",
               duration: "",
-              imageFile: null,
-              imagePreview: "",
             });
+            setServiceImages([]);
           }
         }}
       >
@@ -810,47 +823,33 @@ export default function ServicesPage() {
             {currentStep === 3 && (
               <div className="space-y-4 mt-4">
                 <div>
-                  <Label>Service Image (Optional)</Label>
-                  <div className="mt-2">
-                    {serviceForm.imagePreview ? (
-                      <div className="relative">
-                        <Image
-                          src={serviceForm.imagePreview}
-                          alt="Service preview"
-                          width={400}
-                          height={200}
-                          className="w-full h-48 object-cover rounded-lg"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={() => {
-                            setServiceForm({
-                              ...serviceForm,
-                              imageFile: null,
-                              imagePreview: "",
-                            });
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ) : (
-                      <label className="border-2 border-dashed border-border rounded-lg p-8 text-center block cursor-pointer hover:border-primary transition-colors">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleImageChange}
-                        />
-                        <Camera className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Click to upload image
-                        </p>
-                      </label>
-                    )}
-                  </div>
+                  <Label htmlFor="service-images">
+                    Service Images (Max 5, Optional)
+                  </Label>
+                  <Input
+                    id="service-images"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 5) {
+                        toast({
+                          title: "Too many files",
+                          description: "You can only upload up to 5 images",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      setServiceImages(files);
+                    }}
+                    className="cursor-pointer mt-2"
+                  />
+                  {serviceImages.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {serviceImages.length} file(s) selected
+                    </p>
+                  )}
                 </div>
 
                 {/* Final Preview */}
