@@ -12,16 +12,22 @@ export async function GET(
     console.log("Fetching services for salon:", salonId);
 
     // Backend expects salonId as a query parameter
-    const response = await fetch(`${API_BASE_URL}/services?salonId=${salonId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/services?salonId=${salonId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     console.log("Backend response status:", response.status);
     const data = await response.json();
-    console.log("Backend response data:", data);
+    console.log(
+      "Backend response data (services):",
+      JSON.stringify(data, null, 2)
+    );
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {

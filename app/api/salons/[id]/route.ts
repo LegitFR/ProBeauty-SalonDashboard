@@ -41,16 +41,41 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json();
 
-    const response = await fetch(`${API_BASE_URL}/salons/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
-      },
-      body: JSON.stringify(body),
-    });
+    // Check content type to handle both JSON and FormData
+    const contentType = request.headers.get("content-type") || "";
+
+    let response;
+
+    if (contentType.includes("multipart/form-data")) {
+      // Handle FormData (with file upload) - forward directly
+      console.log("📦 Handling multipart/form-data for salon update...");
+      const formData = await request.formData();
+
+      console.log("FormData keys:", Array.from(formData.keys()));
+
+      // Forward the FormData directly to backend
+      response = await fetch(`${API_BASE_URL}/salons/${id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: authHeader,
+          // Don't set Content-Type - let fetch set it with boundary
+        },
+        body: formData,
+      });
+    } else {
+      // Handle JSON (without file upload)
+      const body = await request.json();
+
+      response = await fetch(`${API_BASE_URL}/salons/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+        },
+        body: JSON.stringify(body),
+      });
+    }
 
     const data = await response.json();
 

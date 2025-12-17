@@ -19,6 +19,9 @@ import {
   Loader2,
   Sparkles,
   CheckCircle,
+  Image as ImageIcon,
+  Upload,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -62,6 +65,12 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
     open: "09:00",
     close: "18:00",
   });
+
+  // Image uploads
+  const [thumbnail, setThumbnail] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>("");
+  const [galleryImages, setGalleryImages] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -117,6 +126,69 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
     }
   };
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+      setThumbnail(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGalleryImagesChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`${file.name} is not a valid image file`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 5MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (galleryImages.length + validFiles.length > 5) {
+      toast.error("You can upload maximum 5 gallery images");
+      return;
+    }
+
+    setGalleryImages([...galleryImages, ...validFiles]);
+
+    // Generate previews
+    validFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setGalleryPreviews((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryImages(galleryImages.filter((_, i) => i !== index));
+    setGalleryPreviews(galleryPreviews.filter((_, i) => i !== index));
+  };
+
+  const removeThumbnail = () => {
+    setThumbnail(null);
+    setThumbnailPreview("");
+  };
+
   const handleNextStep = () => {
     if (!formData.name || formData.name.length < 2) {
       toast.error("Salon name must be at least 2 characters");
@@ -143,39 +215,115 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
         throw new Error("Please login first");
       }
 
-      // Build request body
-      const requestBody: any = {
-        name: formData.name,
-        address: formData.address,
-        venueType: formData.venueType,
-      };
+      // Validate location data
+      let geoData = null;
+      if (locationData.latitude?.trim() && locationData.longitude?.trim()) {
+        const lat = parseFloat(locationData.latitude);
+        const lng = parseFloat(locationData.longitude);
 
-      // Add optional phone
-      if (formData.phone) {
-        requestBody.phone = formData.phone;
+        if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng)) {
+          geoData = { latitude: lat, longitude: lng };
+        } else {
+          toast.error("Invalid latitude or longitude values");
+          setIsLoading(false);
+          return;
+        }
+      } else if (
+        locationData.latitude?.trim() ||
+        locationData.longitude?.trim()
+      ) {
+        toast.error(
+          "Please provide both latitude and longitude or leave both empty"
+        );
+        setIsLoading(false);
+        return;
       }
 
-      // Add optional geo coordinates
-      if (locationData.latitude && locationData.longitude) {
-        requestBody.geo = {
-          latitude: parseFloat(locationData.latitude),
-          longitude: parseFloat(locationData.longitude),
+      // Check if we have any files to upload
+      const hasFiles = thumbnail || galleryImages.length > 0;
+
+      console.log("🔍 Debug - Has files?", hasFiles);
+      console.log("🔍 Debug - Thumbnail?", thumbnail);
+      console.log("🔍 Debug - Gallery images?", galleryImages.length);
+
+      let response;
+
+      if (hasFiles) {
+        // Use FormData for multipart/form-data request with files
+        const formDataToSend = new FormData();
+
+        // Add text fields
+        formDataToSend.append("name", formData.name);
+        formDataToSend.append("address", formData.address);
+        formDataToSend.append("venueType", formData.venueType);
+
+        if (formData.phone) {
+          formDataToSend.append("phone", formData.phone);
+        }
+
+        // Add geo location as JSON string
+        if (geoData) {
+          formDataToSend.append("geo", JSON.stringify(geoData));
+        }
+
+        // Add hours as JSON string
+        formDataToSend.append("hours", JSON.stringify(hours));
+
+        // Add thumbnail image
+        if (thumbnail) {
+          formDataToSend.append("thumbnail", thumbnail);
+        }
+
+        // Add gallery images
+        if (galleryImages.length > 0) {
+          galleryImages.forEach((image) => {
+            formDataToSend.append("images", image);
+          });
+        }
+
+        console.log("🏢 Creating salon with files:");
+        console.log("- Thumbnail:", thumbnail ? thumbnail.name : "none");
+        console.log(
+          "- Gallery images:",
+          galleryImages.map((img) => img.name)
+        );
+
+        response = await fetch(API_BASE_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            // Don't set Content-Type - browser will set it with boundary for multipart/form-data
+          },
+          body: formDataToSend,
+        });
+      } else {
+        // Use JSON for simple request without files
+        const requestBody: any = {
+          name: formData.name,
+          address: formData.address,
+          venueType: formData.venueType,
+          hours: hours,
         };
+
+        if (formData.phone) {
+          requestBody.phone = formData.phone;
+        }
+
+        if (geoData) {
+          requestBody.geo = geoData;
+        }
+
+        console.log("🏢 Creating salon (JSON):", requestBody);
+
+        response = await fetch(API_BASE_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
       }
-
-      // Add hours
-      requestBody.hours = hours;
-
-      console.log("🏢 Creating salon with data:", requestBody);
-
-      const response = await fetch(API_BASE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
 
       const data = await response.json();
       console.log("📨 Salon creation response:", data);
@@ -185,9 +333,12 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
         const validationErrors = data.errors || data.validationErrors;
 
         if (validationErrors) {
-          console.error("Validation errors:", validationErrors);
+          console.error(
+            "❌ Validation errors:",
+            JSON.stringify(validationErrors, null, 2)
+          );
           const errorMessages = validationErrors
-            .map((err: any) => `${err.path}: ${err.message}`)
+            .map((err: any) => `${err.path || err.field}: ${err.message}`)
             .join(", ");
           throw new Error(`Validation failed: ${errorMessages}`);
         }
@@ -195,10 +346,9 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
         throw new Error(errorMsg);
       }
 
-      // Store salon data
       localStorage.setItem("salon", JSON.stringify(data.data));
-
       toast.success("Salon created successfully! Welcome to ProBeauty!");
+
       setTimeout(() => {
         onSalonCreated();
       }, 1500);
@@ -503,6 +653,115 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Image Uploads Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-primary" />
+                    Images (Optional)
+                  </h3>
+
+                  {/* Thumbnail Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="thumbnail" className="text-sm">
+                      Salon Thumbnail
+                    </Label>
+                    <div className="flex items-start gap-3">
+                      {thumbnailPreview ? (
+                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-primary">
+                          <img
+                            src={thumbnailPreview}
+                            alt="Thumbnail preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={removeThumbnail}
+                            className="absolute top-1 right-1 p-1 bg-destructive text-white rounded-full hover:bg-destructive/90"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label
+                          htmlFor="thumbnail"
+                          className="w-32 h-32 flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                        >
+                          <Upload className="w-6 h-6 text-muted-foreground mb-2" />
+                          <span className="text-xs text-muted-foreground text-center px-2">
+                            Click to upload
+                          </span>
+                        </label>
+                      )}
+                      <input
+                        id="thumbnail"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleThumbnailChange}
+                        className="hidden"
+                      />
+                      <div className="flex-1 text-xs text-muted-foreground">
+                        <p className="mb-1">Main image for your salon</p>
+                        <p>• Max size: 5MB</p>
+                        <p>• Format: JPG, PNG, WebP</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gallery Images Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="gallery" className="text-sm">
+                      Gallery Images (Up to 5)
+                    </Label>
+                    <div className="space-y-3">
+                      {galleryPreviews.length > 0 && (
+                        <div className="grid grid-cols-5 gap-2">
+                          {galleryPreviews.map((preview, index) => (
+                            <div
+                              key={index}
+                              className="relative aspect-square rounded-lg overflow-hidden border-2 border-muted"
+                            >
+                              <img
+                                src={preview}
+                                alt={`Gallery ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeGalleryImage(index)}
+                                className="absolute top-1 right-1 p-0.5 bg-destructive text-white rounded-full hover:bg-destructive/90"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {galleryImages.length < 5 && (
+                        <label
+                          htmlFor="gallery"
+                          className="flex items-center justify-center h-24 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                        >
+                          <div className="text-center">
+                            <Upload className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                            <span className="text-xs text-muted-foreground">
+                              Click to add gallery images (
+                              {galleryImages.length}/5)
+                            </span>
+                          </div>
+                        </label>
+                      )}
+                      <input
+                        id="gallery"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleGalleryImagesChange}
+                        className="hidden"
+                      />
+                    </div>
                   </div>
                 </div>
 

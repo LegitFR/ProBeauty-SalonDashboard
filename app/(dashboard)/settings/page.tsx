@@ -128,6 +128,11 @@ export default function SettingsPage() {
   });
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Logo upload states
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
   // Address management states
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
@@ -188,7 +193,8 @@ export default function SettingsPage() {
       description:
         "Premium beauty salon offering comprehensive hair, nail, and wellness services.",
       logo:
-        userProfile?.profilePicture ||
+        salonData?.thumbnail ||
+        salon?.thumbnail ||
         "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop",
       timezone: "America/Los_Angeles",
       currency: "USD",
@@ -721,6 +727,81 @@ export default function SettingsPage() {
     }));
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogoUpload = async () => {
+    if (!logoFile || !salon?.id) {
+      toast.error("Please select an image first");
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Please login to update logo");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("thumbnail", logoFile);
+
+      console.log("📤 Uploading logo for salon:", salon.id);
+
+      const response = await fetch(`/api/salons/${salon.id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log("📥 Logo upload response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to upload logo");
+      }
+
+      toast.success("Logo updated successfully!");
+
+      // Update both salon states
+      setSalon(data.data);
+      setSalonData(data.data);
+      setLogoFile(null);
+      setLogoPreview("");
+
+      // Update business info with new thumbnail
+      setBusinessInfo((prev) => ({
+        ...prev,
+        logo: data.data.thumbnail,
+      }));
+    } catch (error: any) {
+      console.error("Error uploading logo:", error);
+      toast.error(error.message || "Failed to upload logo");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const handlePasswordChange = async () => {
     setChangingPassword(true);
     try {
@@ -1215,17 +1296,50 @@ export default function SettingsPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="w-16 h-16">
-                    <AvatarImage src={businessInfo.logo} alt="Business Logo" />
+                    <AvatarImage
+                      src={logoPreview || businessInfo.logo || salon?.thumbnail}
+                      alt="Business Logo"
+                    />
                     <AvatarFallback>LB</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <Button variant="outline" size="sm">
-                      <Camera className="w-3 h-3 mr-1" />
-                      Change Logo
-                    </Button>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      id="logo-upload"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          document.getElementById("logo-upload")?.click()
+                        }
+                        disabled={uploadingLogo}
+                      >
+                        <Camera className="w-3 h-3 mr-1" />
+                        {logoFile ? "Change" : "Select"} Logo
+                      </Button>
+                      {logoFile && (
+                        <Button
+                          size="sm"
+                          onClick={handleLogoUpload}
+                          disabled={uploadingLogo}
+                        >
+                          {uploadingLogo ? "Uploading..." : "Upload"}
+                        </Button>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      PNG, JPG up to 2MB
+                      PNG, JPG, WebP up to 5MB
                     </p>
+                    {logoFile && (
+                      <p className="text-xs text-green-600 mt-1">
+                        ✓ {logoFile.name} selected
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -37,165 +37,199 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Always receive FormData from frontend
-    const formData = await request.formData();
+    // Check content type to determine how to parse the body
+    const contentType = request.headers.get("content-type") || "";
 
-    console.log(
-      "API Route - Received FormData with keys:",
-      Array.from(formData.keys())
-    );
+    if (contentType.includes("multipart/form-data")) {
+      // Handle FormData (with file upload) - forward directly like products API
+      console.log("📦 Handling multipart/form-data - forwarding to backend...");
+      const formData = await request.formData();
 
-    // Extract all fields
-    const salonId = formData.get("salonId");
-    const title = formData.get("title");
-    const description = formData.get("description");
-    const category = formData.get("category");
-    const durationMinutes = formData.get("durationMinutes");
-    const price = formData.get("price");
-    const images = formData.getAll("images");
+      console.log("FormData keys:", Array.from(formData.keys()));
+      console.log("=== SENDING TO BACKEND (FormData) ===");
+      console.log("URL:", `${API_BASE_URL}/services`);
+      console.log("Method: POST (multipart/form-data)");
 
-    console.log("API Route - Parsed fields:", {
-      salonId,
-      title,
-      description,
-      category,
-      durationMinutes,
-      price,
-      imageCount: images.filter((img) => img instanceof File).length,
-    });
-
-    console.log("API Route - Field types:", {
-      salonIdType: typeof salonId,
-      titleType: typeof title,
-      categoryType: typeof category,
-      categoryValue: category,
-      categoryEmpty: category === "" || !category,
-    });
-
-    // Validate required fields (category must not be empty)
-    if (!salonId || !title || !category || !durationMinutes || price === null) {
-      console.error("Missing required fields:", {
-        hasSalonId: !!salonId,
-        hasTitle: !!title,
-        hasCategory: !!category,
-        hasDuration: !!durationMinutes,
-        hasPrice: price !== null,
-      });
-      return NextResponse.json(
-        {
-          message:
-            "Missing required fields: salonId, title, category, durationMinutes, and price are required",
+      // Forward the FormData directly to backend (like products API does)
+      const response = await fetch(`${API_BASE_URL}/services`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          // Don't set Content-Type - let fetch set it with boundary
         },
-        { status: 400 }
-      );
-    }
-
-    // Check if there are actual image files
-    const actualImages = images.filter(
-      (img) => img instanceof File && img.size > 0
-    );
-    const hasImages = actualImages.length > 0;
-
-    console.log(
-      "API Route - Has images:",
-      hasImages,
-      "Count:",
-      actualImages.length
-    );
-
-    // ALWAYS send as FormData - backend requires multipart/form-data or x-www-form-urlencoded
-    const backendFormData = new FormData();
-    backendFormData.append("salonId", salonId as string);
-    backendFormData.append("title", title as string);
-    backendFormData.append("description", (description as string) || "");
-    backendFormData.append("category", category as string);
-    backendFormData.append("durationMinutes", durationMinutes as string);
-    backendFormData.append("price", price as string);
-
-    // Try adding isActive field which might be required
-    backendFormData.append("isActive", "true");
-
-    // Append images if present
-    if (hasImages) {
-      actualImages.forEach((img) => {
-        backendFormData.append("images", img);
+        body: formData,
       });
-      console.log("API Route - Sending FormData with images to backend");
-    } else {
-      console.log("API Route - Sending FormData without images to backend");
-    }
 
-    // Log what we're sending to backend
-    console.log("=== SENDING TO BACKEND ===");
-    console.log("URL:", `${API_BASE_URL}/services`);
-    console.log("Method: POST");
-    console.log("FormData keys:", Array.from(backendFormData.keys()));
-    for (const [key, value] of backendFormData.entries()) {
+      console.log("Backend response status:", response.status);
+
+      // Get response text first
+      const responseText = await response.text();
       console.log(
-        `  ${key}:`,
-        value instanceof File ? `File: ${value.name}` : value
-      );
-    }
-
-    const response = await fetch(`${API_BASE_URL}/services`, {
-      method: "POST",
-      headers: {
-        Authorization: authHeader,
-        // Don't set Content-Type for FormData - browser sets it with boundary
-      },
-      body: backendFormData,
-    });
-
-    console.log("Backend response status:", response.status);
-
-    // Get response text first
-    const responseText = await response.text();
-    console.log(
-      "Backend response (first 500 chars):",
-      responseText.substring(0, 500)
-    );
-
-    // Check if response is JSON
-    const responseContentType = response.headers.get("content-type");
-    if (
-      !responseContentType ||
-      !responseContentType.includes("application/json")
-    ) {
-      console.error(
-        "Backend returned non-JSON response:",
+        "Backend response (first 500 chars):",
         responseText.substring(0, 500)
       );
-      return NextResponse.json(
-        {
-          message: "Backend returned invalid response",
-          error:
-            "Expected JSON but got HTML. The backend endpoint may not exist or is returning an error page.",
-          details: responseText.substring(0, 500),
-          backendStatus: response.status,
+
+      // Check if response is JSON
+      const responseContentType = response.headers.get("content-type");
+      if (
+        !responseContentType ||
+        !responseContentType.includes("application/json")
+      ) {
+        console.error(
+          "Backend returned non-JSON response:",
+          responseText.substring(0, 500)
+        );
+        return NextResponse.json(
+          {
+            message: "Backend returned invalid response",
+            error:
+              "Expected JSON but got HTML. The backend endpoint may not exist or is returning an error page.",
+            details: responseText.substring(0, 500),
+            backendStatus: response.status,
+          },
+          { status: 500 }
+        );
+      }
+
+      // Parse JSON from text
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        return NextResponse.json(
+          {
+            message: "Backend returned invalid JSON",
+            error: String(e),
+            details: responseText.substring(0, 500),
+          },
+          { status: 500 }
+        );
+      }
+
+      console.log("API Route - Backend response data:", data);
+
+      return NextResponse.json(data, { status: response.status });
+    } else {
+      // Handle JSON (without file upload)
+      console.log("📦 Parsing JSON...");
+      const body = await request.json();
+      console.log("API Route - Received JSON body:", body);
+
+      // Extract all fields
+      const { salonId, title, description, category, durationMinutes, price } =
+        body;
+
+      console.log("API Route - Parsed fields:", {
+        salonId,
+        title,
+        description,
+        category,
+        durationMinutes,
+        price,
+      });
+
+      // Validate required fields
+      if (
+        !salonId ||
+        !title ||
+        !category ||
+        !durationMinutes ||
+        price === null ||
+        price === undefined
+      ) {
+        console.error("Missing required fields:", {
+          hasSalonId: !!salonId,
+          hasTitle: !!title,
+          hasCategory: !!category,
+          hasDuration: !!durationMinutes,
+          hasPrice: price !== null && price !== undefined,
+        });
+        return NextResponse.json(
+          {
+            message:
+              "Missing required fields: salonId, title, category, durationMinutes, and price are required",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Send JSON to backend
+      const requestBody = {
+        salonId,
+        title,
+        description: description || "",
+        category,
+        durationMinutes,
+        price,
+        isActive: true,
+      };
+
+      console.log("=== SENDING TO BACKEND (JSON) ===");
+      console.log("URL:", `${API_BASE_URL}/services`);
+      console.log("Method: POST");
+      console.log("Body:", JSON.stringify(requestBody, null, 2));
+
+      const response = await fetch(`${API_BASE_URL}/services`, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
         },
-        { status: 500 }
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("Backend response status:", response.status);
+
+      // Get response text first
+      const responseText = await response.text();
+      console.log(
+        "Backend response (first 500 chars):",
+        responseText.substring(0, 500)
       );
+
+      // Check if response is JSON
+      const responseContentType = response.headers.get("content-type");
+      if (
+        !responseContentType ||
+        !responseContentType.includes("application/json")
+      ) {
+        console.error(
+          "Backend returned non-JSON response:",
+          responseText.substring(0, 500)
+        );
+        return NextResponse.json(
+          {
+            message: "Backend returned invalid response",
+            error:
+              "Expected JSON but got HTML. The backend endpoint may not exist or is returning an error page.",
+            details: responseText.substring(0, 500),
+            backendStatus: response.status,
+          },
+          { status: 500 }
+        );
+      }
+
+      // Parse JSON from text
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        return NextResponse.json(
+          {
+            message: "Backend returned invalid JSON",
+            error: String(e),
+            response: responseText.substring(0, 500),
+          },
+          { status: 500 }
+        );
+      }
+
+      console.log("API Route - Backend response data:", data);
+
+      return NextResponse.json(data, { status: response.status });
     }
-
-    // Parse JSON from text
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      console.error("Failed to parse JSON:", e);
-      return NextResponse.json(
-        {
-          message: "Backend returned invalid JSON",
-          error: String(e),
-          response: responseText.substring(0, 500),
-        },
-        { status: 500 }
-      );
-    }
-
-    console.log("API Route - Backend response data:", data);
-
-    return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
     console.error("Error in POST /api/services:", error);
     return NextResponse.json(

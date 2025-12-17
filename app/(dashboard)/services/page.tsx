@@ -176,6 +176,82 @@ export default function ServicesPage() {
     await fetchServicesForSalon(salon.id);
   };
 
+  const fetchBookingsForServices = async (
+    serviceIds: string[],
+    salonId: string,
+    currentServices: Service[]
+  ) => {
+    if (serviceIds.length === 0) return;
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      console.log("Fetching bookings for services:", serviceIds);
+      console.log("Using salonId:", salonId);
+
+      // Fetch all bookings for the salon
+      const response = await fetch(`/api/bookings?salonId=${salonId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch bookings");
+        return;
+      }
+
+      const data = await response.json();
+      const bookings = data.data || [];
+      console.log("📊 Total bookings fetched:", bookings.length);
+      console.log("📊 Bookings data sample:", bookings.slice(0, 2));
+
+      // Calculate booking count and revenue per service
+      const serviceStats = serviceIds.reduce((acc, serviceId) => {
+        const serviceBookings = bookings.filter(
+          (b: any) => b.serviceId === serviceId
+        );
+
+        // Count only completed or confirmed bookings
+        const completedBookings = serviceBookings.filter((b: any) => {
+          const status = b.status?.toLowerCase();
+          return status === "completed" || status === "confirmed";
+        });
+
+        const bookingCount = completedBookings.length;
+
+        // Find the service to get its price from the passed currentServices
+        const service = currentServices.find((s) => s.id === serviceId);
+        const servicePrice = service?.price || 0;
+
+        // Calculate revenue: service price × number of bookings
+        const revenue = servicePrice * bookingCount;
+
+        console.log(
+          `📈 Service ${serviceId}: ${bookingCount} completed bookings × $${servicePrice} = $${revenue.toFixed(
+            2
+          )} revenue`
+        );
+
+        acc[serviceId] = { bookings: bookingCount, revenue };
+        return acc;
+      }, {} as Record<string, { bookings: number; revenue: number }>);
+
+      console.log("📊 Final service stats:", serviceStats);
+
+      // Update services with booking data
+      setServices((prevServices) =>
+        prevServices.map((service) => ({
+          ...service,
+          bookings: serviceStats[service.id]?.bookings || 0,
+          revenue: serviceStats[service.id]?.revenue || 0,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      // Don't show error toast as bookings are supplementary data
+    }
+  };
+
   const fetchServicesForSalon = async (salonId: string) => {
     setLoading(true);
     try {
@@ -197,6 +273,11 @@ export default function ServicesPage() {
 
       // Transform and filter services by salon ID
       const rawServices = data.data || [];
+      console.log(
+        "Raw services from backend:",
+        JSON.stringify(rawServices, null, 2)
+      );
+
       const transformedServices = rawServices
         .filter((service: any) => service.salonId === salonId)
         .map((service: any) => {
@@ -204,6 +285,12 @@ export default function ServicesPage() {
             typeof service.price === "string"
               ? parseFloat(service.price)
               : service.price;
+
+          console.log(`Service ${service.id} isActive field:`, {
+            rawValue: service.isActive,
+            type: typeof service.isActive,
+            willBecome: service.isActive ?? true,
+          });
 
           return {
             id: service.id,
@@ -223,6 +310,13 @@ export default function ServicesPage() {
         });
       console.log("Filtered services for salon:", transformedServices);
       setServices(transformedServices);
+
+      // Fetch bookings data for services - pass the current services
+      await fetchBookingsForServices(
+        transformedServices.map((s: Service) => s.id),
+        salonId,
+        transformedServices
+      );
     } catch (error) {
       console.error("Error fetching services:", error);
       toast({
@@ -340,50 +434,66 @@ export default function ServicesPage() {
         return;
       }
 
-      const requestBody = {
-        salonId: salonId,
-        title: serviceForm.name,
-        description: serviceForm.description || "",
-        category: serviceForm.category,
-        durationMinutes: duration,
-        price: price,
-      };
+      const hasImage = serviceImages.length > 0;
+      let response;
 
-      console.log("📦 Request body prepared:", requestBody);
-      console.log("🌐 Sending POST to /api/services...");
-      console.log("📷 Number of images:", serviceImages.length);
+      if (hasImage) {
+        // Use FormData for multipart/form-data with image
+        const formData = new FormData();
+        formData.append("salonId", salonId);
+        formData.append("title", serviceForm.name);
+        formData.append("category", serviceForm.category);
+        // Backend automatically converts string to number for these fields
+        formData.append("durationMinutes", duration.toString());
+        formData.append("price", price.toString());
 
-      // ALWAYS use FormData - backend requires multipart/form-data or x-www-form-urlencoded
-      const formData = new FormData();
-      formData.append("salonId", salonId);
-      formData.append("title", serviceForm.name);
-      formData.append("description", serviceForm.description || "");
-      formData.append("category", serviceForm.category);
-      formData.append("durationMinutes", String(duration));
-      formData.append("price", String(price));
+        if (serviceForm.description) {
+          formData.append("description", serviceForm.description);
+        }
 
-      // Append image files if any
-      serviceImages.forEach((file) => {
-        formData.append("images", file);
-      });
+        formData.append("image", serviceImages[0]);
 
-      // Log FormData contents
-      console.log("📋 FormData contents:");
-      for (const [key, value] of formData.entries()) {
-        console.log(
-          `  ${key}:`,
-          value instanceof File ? `File: ${value.name}` : value
-        );
+        console.log("📦 Sending with FormData (with image):", {
+          salonId,
+          title: serviceForm.name,
+          category: serviceForm.category,
+          durationMinutes: duration,
+          price: price,
+          image: serviceImages[0].name,
+        });
+        console.log("🌐 Sending POST to /api/services with image...");
+
+        response = await fetch("/api/services", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Don't set Content-Type - browser will set it with boundary
+          },
+          body: formData,
+        });
+      } else {
+        // Use JSON for request without image
+        const requestBody = {
+          salonId: salonId,
+          title: serviceForm.name,
+          description: serviceForm.description || "",
+          category: serviceForm.category,
+          durationMinutes: duration,
+          price: price,
+        };
+
+        console.log("📦 Request body prepared (JSON):", requestBody);
+        console.log("🌐 Sending POST to /api/services...");
+
+        response = await fetch("/api/services", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
       }
-
-      const response = await fetch("/api/services", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Don't set Content-Type - browser will set it with boundary for FormData
-        },
-        body: formData,
-      });
 
       console.log("📥 Response received, status:", response.status);
 
@@ -423,6 +533,7 @@ export default function ServicesPage() {
         duration: "",
       });
       setServiceImages([]);
+      setServiceImages([]);
 
       // Refresh services
       console.log("🔄 Refreshing services list...");
@@ -461,8 +572,12 @@ export default function ServicesPage() {
       });
       return;
     }
-    if (currentStep < 3) {
+    // Step 3 (image upload) temporarily disabled - skip directly to creation
+    if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
+    } else if (currentStep === 2) {
+      // After step 2, directly create the service
+      handleCreateService();
     }
   };
 
@@ -597,26 +712,44 @@ export default function ServicesPage() {
       const service = services.find((s) => s.id === serviceId);
       if (!service) return;
 
+      const updateData = {
+        salonId: service.salonId,
+        title: service.name,
+        description: service.description,
+        category: service.category,
+        durationMinutes: service.duration,
+        price: service.price,
+        isActive: !service.isActive,
+      };
+
+      console.log("🔄 Updating service:", serviceId);
+      console.log("📦 Update data:", updateData);
+
+      // Send complete service object for PUT request
       const response = await fetch(`/api/services/${serviceId}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          isActive: !service.isActive,
-        }),
+        body: JSON.stringify(updateData),
       });
 
+      console.log("📥 Update response status:", response.status);
+
+      const data = await response.json();
+      console.log("📥 Update response data:", data);
+      console.log("📥 Updated service from backend:", data.data);
+      console.log("📥 isActive in response:", data.data?.isActive);
+
       if (!response.ok) {
-        throw new Error("Failed to update service");
+        console.error("❌ Update failed:", data);
+        throw new Error(data.message || "Failed to update service");
       }
 
-      setServices(
-        services.map((s) =>
-          s.id === serviceId ? { ...s, isActive: !s.isActive } : s
-        )
-      );
+      console.log("✅ Update successful, fetching fresh data from backend...");
+      // Refresh services from backend to ensure sync
+      await fetchServices();
 
       toast({
         title: "Success",
@@ -689,7 +822,7 @@ export default function ServicesPage() {
               <DialogTitle>Add New Service</DialogTitle>
               {/* Progress Stepper */}
               <div className="flex items-center justify-center gap-1 sm:gap-2 mt-4">
-                {[1, 2, 3].map((step) => (
+                {[1, 2].map((step) => (
                   <div key={step} className="flex items-center">
                     <div
                       className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold ${
@@ -702,7 +835,7 @@ export default function ServicesPage() {
                     >
                       {step < currentStep ? "✓" : step}
                     </div>
-                    {step < 3 && (
+                    {step < 2 && (
                       <div
                         className={`w-8 sm:w-12 h-1 mx-0.5 sm:mx-1 ${
                           step < currentStep ? "bg-primary/80" : "bg-muted"
@@ -715,7 +848,6 @@ export default function ServicesPage() {
               <p className="text-center text-xs sm:text-sm text-muted-foreground mt-2">
                 {currentStep === 1 && "Basic Information"}
                 {currentStep === 2 && "Pricing & Duration"}
-                {currentStep === 3 && "Image & Preview"}
               </p>
             </DialogHeader>
 
@@ -816,11 +948,51 @@ export default function ServicesPage() {
                     />
                   </div>
                 </div>
+
+                {/* Image Upload */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="service-image"
+                    className="flex items-center gap-2"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Service Image (Optional)
+                  </Label>
+                  <Input
+                    id="service-image"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast({
+                            title: "File too large",
+                            description: "Image must be less than 5MB",
+                            variant: "destructive",
+                          });
+                          e.target.value = "";
+                          return;
+                        }
+                        setServiceImages([file]);
+                      }
+                    }}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Supported: JPEG, PNG, WebP, GIF • Max 5MB
+                  </p>
+                  {serviceImages.length > 0 && (
+                    <p className="text-sm text-green-600 font-medium">
+                      ✓ {serviceImages[0].name} selected
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Step 3: Image & Preview */}
-            {currentStep === 3 && (
+            {/* Step 3: Image & Preview - TEMPORARILY DISABLED */}
+            {false && currentStep === 3 && (
               <div className="space-y-4 mt-4">
                 <div>
                   <Label htmlFor="service-images">
@@ -890,7 +1062,7 @@ export default function ServicesPage() {
           </div>
 
           {/* Fixed Navigation Buttons */}
-          <div className="border-t bg-background p-4 sm:p-6 flex justify-between gap-2 flex-shrink-0">
+          <div className="border-t bg-background p-4 sm:p-6 flex justify-between gap-2 shrink-0">
             <Button
               variant="outline"
               onClick={
@@ -903,7 +1075,7 @@ export default function ServicesPage() {
               {currentStep === 1 ? "Cancel" : "Back"}
             </Button>
 
-            {currentStep < 3 ? (
+            {currentStep < 2 ? (
               <Button
                 onClick={handleNextStep}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
@@ -912,12 +1084,7 @@ export default function ServicesPage() {
               </Button>
             ) : (
               <Button
-                onClick={(e) => {
-                  console.log("🖱️ CREATE SERVICE BUTTON CLICKED!");
-                  console.log("Event:", e);
-                  console.log("Submitting state:", submitting);
-                  handleCreateService();
-                }}
+                onClick={handleNextStep}
                 disabled={submitting}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
@@ -927,7 +1094,7 @@ export default function ServicesPage() {
                     Creating...
                   </>
                 ) : (
-                  "Add Service"
+                  "Create Service"
                 )}
               </Button>
             )}
@@ -1064,12 +1231,12 @@ export default function ServicesPage() {
                   alt={service.name}
                   className="w-full h-48 object-cover rounded-t-lg"
                 />
-                <div className="absolute top-2 right-2">
+                {/*<div className="absolute top-2 right-2">
                   <Switch
                     checked={service.isActive ?? true}
                     onCheckedChange={() => toggleServiceStatus(service.id)}
                   />
-                </div>
+                </div>*/}
                 {!service.isActive && (
                   <div className="absolute inset-0 bg-black/50 rounded-t-lg flex items-center justify-center">
                     <Badge variant="secondary" className="bg-white text-black">
@@ -1124,34 +1291,27 @@ export default function ServicesPage() {
                   </div>
                 </div>
 
-                {(service.bookings || service.revenue || service.rating) && (
-                  <div className="grid grid-cols-3 gap-2 text-center border-t border-border pt-3">
-                    {service.bookings !== undefined && (
-                      <div>
-                        <p className="text-sm font-medium">
-                          {service.bookings}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Bookings
-                        </p>
-                      </div>
-                    )}
-                    {service.revenue !== undefined && (
-                      <div>
-                        <p className="text-sm font-medium">
-                          ${(service.revenue || 0).toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Revenue</p>
-                      </div>
-                    )}
-                    {service.rating !== undefined && (
-                      <div>
-                        <p className="text-sm font-medium">{service.rating}</p>
-                        <p className="text-xs text-muted-foreground">Rating</p>
-                      </div>
-                    )}
+                {/* Always show stats section */}
+                <div className="grid grid-cols-3 gap-2 text-center border-t border-border pt-3">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {service.bookings ?? 0}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Bookings</p>
                   </div>
-                )}
+                  <div>
+                    <p className="text-sm font-medium">
+                      ${(service.revenue ?? 0).toFixed(2)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Revenue</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {service.rating ? service.rating.toFixed(1) : "0.0"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Rating</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))}

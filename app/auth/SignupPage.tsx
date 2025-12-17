@@ -63,27 +63,73 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
     setIsLoading(true);
 
     try {
+      // Frontend validation
+      if (!formData.name || formData.name.trim().length < 2) {
+        throw new Error("Name must be at least 2 characters");
+      }
+
+      if (
+        !formData.email ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+      ) {
+        throw new Error("Please enter a valid email address");
+      }
+
+      if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) {
+        throw new Error("Phone must be 10 digits starting with 6-9");
+      }
+
+      if (!formData.password || formData.password.length < 8) {
+        throw new Error("Password must be at least 8 characters");
+      }
+
+      // Check password complexity
+      const hasUpperCase = /[A-Z]/.test(formData.password);
+      const hasLowerCase = /[a-z]/.test(formData.password);
+      const hasNumber = /\d/.test(formData.password);
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
+
+      if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+        throw new Error(
+          "Password must contain uppercase, lowercase, number, and special character"
+        );
+      }
+
+      const requestBody = {
+        ...formData,
+        role: "salon_owner", // Fixed role as salon_owner
+      };
+
+      console.log("=== SIGNUP REQUEST ===");
+      console.log("Request body:", requestBody);
+
       const response = await fetch(`${API_BASE_URL}/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          role: "owner", // Fixed role as owner
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Signup failed");
-      }
+      console.log("=== SIGNUP RESPONSE ===");
+      console.log("Status:", response.status);
+      console.log("Response data:", data);
+      console.log("=====================");
 
-      // TODO: Remove this console log when email service is set up
-      console.log("=== SIGNUP RESPONSE (Contains OTP) ===");
-      console.log(data);
-      console.log("=====================================");
+      if (!response.ok) {
+        // Show detailed error message from backend
+        if (data.errors && Array.isArray(data.errors)) {
+          const errorMessages = data.errors
+            .map((err: any) => err.message || err.msg)
+            .join(", ");
+          throw new Error(errorMessages || data.message);
+        }
+        const errorMessage =
+          data.message || data.error || JSON.stringify(data) || "Signup failed";
+        throw new Error(errorMessage);
+      }
 
       setUserId(data.userId);
       setStep("verify");
@@ -91,6 +137,7 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
         "Registration successful! Please check your email for the OTP."
       );
     } catch (error: any) {
+      console.error("Signup error:", error);
       toast.error(
         error.message || "Failed to create account. Please try again."
       );
@@ -310,7 +357,11 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
                     onChange={handleInputChange}
                     required
                     className="h-11"
+                    maxLength={10}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Must be 10 digits starting with 6, 7, 8, or 9
+                  </p>
                 </div>
 
                 <div className="space-y-2">

@@ -21,6 +21,8 @@ export async function POST(
       headers.Authorization = authHeader;
     }
 
+    console.log(`[AUTH PROXY] POST /${pathString}`, { body });
+
     const response = await fetch(`${BACKEND_URL}/${pathString}`, {
       method: "POST",
       headers,
@@ -29,8 +31,17 @@ export async function POST(
 
     const data = await response.json();
 
+    if (!response.ok) {
+      console.error(`[AUTH PROXY] Error response from backend:`, {
+        status: response.status,
+        data,
+        errors: JSON.stringify(data.errors, null, 2),
+      });
+    }
+
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
+    console.error("[AUTH PROXY] Proxy error:", error);
     return NextResponse.json(
       { message: error.message || "Proxy request failed" },
       { status: 500 }

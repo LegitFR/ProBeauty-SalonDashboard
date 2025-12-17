@@ -43,6 +43,9 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    console.log("🔵 PUT /api/services/[id] - Service ID:", id);
+    console.log("📦 Request body:", JSON.stringify(body, null, 2));
+
     const response = await fetch(`${API_BASE_URL}/services/${id}`, {
       method: "PUT",
       headers: {
@@ -53,6 +56,7 @@ export async function PUT(
     });
 
     const data = await response.json();
+    console.log("📥 Backend response:", JSON.stringify(data, null, 2));
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
