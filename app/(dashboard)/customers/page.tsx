@@ -86,6 +86,31 @@ interface Customer {
   notes?: string;
   segment?: string;
   churnRisk?: string;
+  reviewCount?: number;
+  averageRating?: number;
+}
+
+interface Review {
+  id: string;
+  userId: string;
+  salonId: string;
+  serviceId?: string;
+  productId?: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+  };
+  service?: {
+    id: string;
+    title: string;
+  };
+  product?: {
+    id: string;
+    name: string;
+  };
 }
 
 export default function CustomersPage() {
@@ -93,10 +118,12 @@ export default function CustomersPage() {
   const [selectedSegment, setSelectedSegment] = useState("all");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [salonReviews, setSalonReviews] = useState<Review[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchCustomers();
+    fetchSalonAndReviews();
   }, []);
 
   const fetchCustomers = async () => {
@@ -262,6 +289,63 @@ export default function CustomersPage() {
       setCustomers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSalonAndReviews = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      // Fetch salon
+      const salonResponse = await fetch("/api/salons/my-salons", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!salonResponse.ok) return;
+
+      const salonData = await salonResponse.json();
+      if (!salonData.data || salonData.data.length === 0) return;
+
+      const salon = salonData.data[0];
+
+      // Fetch reviews for salon
+      const reviewsResponse = await fetch(`/api/reviews/salon/${salon.id}`);
+      if (!reviewsResponse.ok) return;
+
+      const reviewsData = await reviewsResponse.json();
+      const reviews = reviewsData.data || [];
+      setSalonReviews(reviews);
+
+      // Calculate review stats per customer
+      const customerReviewStats = reviews.reduce((acc: any, review: Review) => {
+        const userId = review.userId;
+        if (!acc[userId]) {
+          acc[userId] = { total: 0, count: 0, reviews: [] };
+        }
+        acc[userId].total += review.rating;
+        acc[userId].count += 1;
+        acc[userId].reviews.push(review);
+        return acc;
+      }, {});
+
+      // Update customers with review data
+      setCustomers((prevCustomers) =>
+        prevCustomers.map((customer) => {
+          const stats = customerReviewStats[customer.id];
+          if (stats) {
+            return {
+              ...customer,
+              averageRating: stats.total / stats.count,
+              reviewCount: stats.count,
+              satisfaction: stats.total / stats.count,
+            };
+          }
+          return customer;
+        })
+      );
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
     }
   };
 
@@ -742,11 +826,23 @@ export default function CustomersPage() {
 
                       {/* Satisfaction & Churn Risk */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-medium">
-                            {customer.satisfaction}
-                          </span>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-medium">
+                              {customer.averageRating
+                                ? customer.averageRating.toFixed(1)
+                                : customer.satisfaction
+                                ? customer.satisfaction.toFixed(1)
+                                : "N/A"}
+                            </span>
+                          </div>
+                          {customer.reviewCount && customer.reviewCount > 0 && (
+                            <span className="text-xs text-muted-foreground ml-5">
+                              {customer.reviewCount} review
+                              {customer.reviewCount !== 1 ? "s" : ""}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           <AlertTriangle

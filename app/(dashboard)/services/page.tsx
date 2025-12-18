@@ -24,6 +24,7 @@ import {
   TrendingUp,
   Camera,
   Loader2,
+  Star,
 } from "lucide-react";
 import { useToast } from "../../../components/ui/use-toast";
 
@@ -40,6 +41,23 @@ interface Service {
   bookings?: number;
   revenue?: number;
   rating?: number;
+  reviewCount?: number;
+  averageRating?: number;
+}
+
+interface Review {
+  id: string;
+  userId: string;
+  salonId: string;
+  serviceId?: string;
+  productId?: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+  };
 }
 
 interface NewService {
@@ -77,6 +95,8 @@ export default function ServicesPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [serviceImages, setServiceImages] = useState<File[]>([]);
+  const [salonReviews, setSalonReviews] = useState<Review[]>([]);
+  const [salonAverageRating, setSalonAverageRating] = useState<number>(0);
   const { toast } = useToast();
 
   // Service form state
@@ -252,6 +272,62 @@ export default function ServicesPage() {
     }
   };
 
+  const fetchReviewsForSalon = async (salonId: string) => {
+    try {
+      const response = await fetch(`/api/reviews/salon/${salonId}`);
+
+      if (!response.ok) {
+        console.error("Failed to fetch reviews");
+        return;
+      }
+
+      const data = await response.json();
+      const reviews = data.data || [];
+      const averageRating = data.averageRating || 0;
+
+      console.log(
+        "📊 Reviews fetched:",
+        reviews.length,
+        "Average:",
+        averageRating
+      );
+
+      setSalonReviews(reviews);
+      setSalonAverageRating(averageRating);
+
+      // Calculate review stats per service
+      const serviceReviewStats = reviews.reduce((acc: any, review: Review) => {
+        if (review.serviceId) {
+          if (!acc[review.serviceId]) {
+            acc[review.serviceId] = { total: 0, count: 0, reviews: [] };
+          }
+          acc[review.serviceId].total += review.rating;
+          acc[review.serviceId].count += 1;
+          acc[review.serviceId].reviews.push(review);
+        }
+        return acc;
+      }, {});
+
+      // Update services with review data
+      setServices((prevServices) =>
+        prevServices.map((service) => {
+          const stats = serviceReviewStats[service.id];
+          if (stats) {
+            return {
+              ...service,
+              averageRating: stats.total / stats.count,
+              reviewCount: stats.count,
+              rating: stats.total / stats.count,
+            };
+          }
+          return service;
+        })
+      );
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
+
   const fetchServicesForSalon = async (salonId: string) => {
     setLoading(true);
     try {
@@ -317,6 +393,9 @@ export default function ServicesPage() {
         salonId,
         transformedServices
       );
+
+      // Fetch reviews for services
+      await fetchReviewsForSalon(salonId);
     } catch (error) {
       console.error("Error fetching services:", error);
       toast({
@@ -1306,10 +1385,21 @@ export default function ServicesPage() {
                     <p className="text-xs text-muted-foreground">Revenue</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">
-                      {service.rating ? service.rating.toFixed(1) : "0.0"}
+                    <div className="flex items-center gap-1 justify-center">
+                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                      <p className="text-sm font-medium">
+                        {service.averageRating
+                          ? service.averageRating.toFixed(1)
+                          : service.rating
+                          ? service.rating.toFixed(1)
+                          : "0.0"}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {service.reviewCount
+                        ? `${service.reviewCount} reviews`
+                        : "No reviews"}
                     </p>
-                    <p className="text-xs text-muted-foreground">Rating</p>
                   </div>
                 </div>
               </CardContent>
