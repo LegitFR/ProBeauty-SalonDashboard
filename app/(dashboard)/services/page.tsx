@@ -97,6 +97,8 @@ export default function ServicesPage() {
   const [serviceImages, setServiceImages] = useState<File[]>([]);
   const [salonReviews, setSalonReviews] = useState<Review[]>([]);
   const [salonAverageRating, setSalonAverageRating] = useState<number>(0);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Service form state
@@ -408,6 +410,19 @@ export default function ServicesPage() {
     }
   };
 
+  const handleEditService = (service: Service) => {
+    setIsEditMode(true);
+    setEditingServiceId(service.id);
+    setServiceForm({
+      name: service.name,
+      description: service.description || "",
+      category: service.category || "",
+      price: service.price.toString(),
+      duration: service.duration.toString(),
+    });
+    setShowAddDialog(true);
+  };
+
   const handleDeleteService = async (serviceId: string) => {
     if (!confirm("Are you sure you want to delete this service?")) return;
 
@@ -446,6 +461,140 @@ export default function ServicesPage() {
         description: "Failed to delete service",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleUpdateService = async () => {
+    if (!editingServiceId) return;
+
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem("accessToken");
+
+      if (!token) {
+        toast({
+          title: "Authentication required",
+          description: "Please login to update services",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      if (!salon?.id) {
+        toast({
+          title: "Error",
+          description: "Salon information not found. Please refresh the page.",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      const duration = parseInt(serviceForm.duration);
+      const price = parseFloat(serviceForm.price);
+
+      if (isNaN(duration) || duration <= 0) {
+        toast({
+          title: "Invalid duration",
+          description: "Please enter a valid duration in minutes",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      if (isNaN(price) || price <= 0) {
+        toast({
+          title: "Invalid price",
+          description: "Please enter a valid price",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
+
+      const hasImage = serviceImages.length > 0;
+      let response;
+
+      if (hasImage) {
+        const formData = new FormData();
+        formData.append("salonId", salon.id);
+        formData.append("title", serviceForm.name);
+        formData.append("category", serviceForm.category);
+        formData.append("durationMinutes", duration.toString());
+        formData.append("price", price.toString());
+
+        if (serviceForm.description) {
+          formData.append("description", serviceForm.description);
+        }
+
+        formData.append("image", serviceImages[0]);
+
+        response = await fetch(`/api/services/${editingServiceId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+      } else {
+        const updateData = {
+          salonId: salon.id,
+          title: serviceForm.name,
+          description: serviceForm.description || "",
+          category: serviceForm.category,
+          durationMinutes: duration,
+          price: price,
+        };
+
+        response = await fetch(`/api/services/${editingServiceId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateData),
+        });
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update service");
+      }
+
+      toast({
+        title: "Success!",
+        description: "Service updated successfully",
+      });
+
+      // Reset form
+      setShowAddDialog(false);
+      setIsEditMode(false);
+      setEditingServiceId(null);
+      setCurrentStep(1);
+      setServiceForm({
+        name: "",
+        description: "",
+        category: "",
+        price: "",
+        duration: "",
+      });
+      setServiceImages([]);
+
+      // Refresh services
+      await fetchServices();
+    } catch (error) {
+      console.error("Error updating service:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to update service",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -655,8 +804,12 @@ export default function ServicesPage() {
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
     } else if (currentStep === 2) {
-      // After step 2, directly create the service
-      handleCreateService();
+      // After step 2, create or update the service
+      if (isEditMode) {
+        handleUpdateService();
+      } else {
+        handleCreateService();
+      }
     }
   };
 
@@ -882,6 +1035,8 @@ export default function ServicesPage() {
         onOpenChange={(open) => {
           setShowAddDialog(open);
           if (!open) {
+            setIsEditMode(false);
+            setEditingServiceId(null);
             setCurrentStep(1);
             setServiceForm({
               name: "",
@@ -898,7 +1053,9 @@ export default function ServicesPage() {
           {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <DialogHeader>
-              <DialogTitle>Add New Service</DialogTitle>
+              <DialogTitle>
+                {isEditMode ? "Edit Service" : "Add New Service"}
+              </DialogTitle>
               {/* Progress Stepper */}
               <div className="flex items-center justify-center gap-1 sm:gap-2 mt-4">
                 {[1, 2].map((step) => (
@@ -1170,8 +1327,10 @@ export default function ServicesPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
+                    {isEditMode ? "Updating..." : "Creating..."}
                   </>
+                ) : isEditMode ? (
+                  "Update Service"
                 ) : (
                   "Create Service"
                 )}
@@ -1337,7 +1496,12 @@ export default function ServicesPage() {
                     </Badge>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleEditService(service)}
+                    >
                       <Edit3 className="w-3 h-3" />
                     </Button>
                     <Button
