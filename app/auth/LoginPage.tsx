@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
-import { Separator } from "../../components/ui/separator";
 import { Calendar, ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,27 +26,6 @@ export function LoginPage({ onBack, onLogin, onSignup }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // Initialize Google Sign-In
-    if (typeof window !== "undefined" && (window as any).google) {
-      (window as any).google.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-        callback: handleGoogleCallback,
-      });
-
-      // Render the Google button
-      (window as any).google.accounts.id.renderButton(
-        document.getElementById("googleSignInButton"),
-        {
-          theme: "outline",
-          size: "large",
-          width: "100%",
-          text: "continue_with",
-        }
-      );
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,58 +76,6 @@ export function LoginPage({ onBack, onLogin, onSignup }: LoginPageProps) {
       });
     } catch (error: any) {
       toast.error(error.message || "Invalid credentials. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleCallback = async (response: any) => {
-    setIsLoading(true);
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/google`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          idToken: response.credential,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Google authentication failed");
-      }
-
-      // Validate user has owner role
-      if (!data.user || data.user.role !== "owner") {
-        throw new Error(
-          "Access denied. This application is for salon owners only."
-        );
-      }
-
-      // Store tokens
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // Also store in cookies for middleware
-      document.cookie = `accessToken=${data.accessToken}; path=/; max-age=${
-        3 * 60 * 60
-      }`; // 3 hours
-      document.cookie = `refreshToken=${data.refreshToken}; path=/; max-age=${
-        15 * 24 * 60 * 60
-      }`; // 15 days
-
-      toast.success("Google sign-in successful!");
-      onLogin(data.user, {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
-    } catch (error: any) {
-      toast.error(error.message || "Google sign-in failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -252,25 +178,6 @@ export function LoginPage({ onBack, onLogin, onSignup }: LoginPageProps) {
                 )}
               </Button>
             </form>
-
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              {/* Google Sign-In Button */}
-              <div
-                id="googleSignInButton"
-                className="mt-4 flex justify-center"
-              ></div>
-            </div>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
               Don't have an account?{" "}

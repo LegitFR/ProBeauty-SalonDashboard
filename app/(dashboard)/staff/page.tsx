@@ -129,14 +129,82 @@ export default function StaffPage() {
     },
   });
 
+  // Helper function to generate time slots filtered by salon operating hours
+  const getAvailableTimeSlots = (day: string): string[] => {
+    const salonHours = salonOperatingHours[day];
+
+    // If salon is closed on this day, return empty array
+    if (!salonHours || salonHours.closed) {
+      return [];
+    }
+
+    // Validate salon hours exist
+    if (!salonHours.open || !salonHours.close) {
+      return [];
+    }
+
+    // Parse salon hours
+    const salonOpen = parseInt(salonHours.open.split(":")[0]);
+    const salonClose = parseInt(salonHours.close.split(":")[0]);
+
+    // Validate parsed hours
+    if (isNaN(salonOpen) || isNaN(salonClose)) {
+      return [];
+    }
+
+    // Generate time slots within salon operating hours
+    const slots: string[] = [];
+    for (let i = salonOpen; i <= salonClose; i++) {
+      slots.push(`${i.toString().padStart(2, "0")}:00`);
+    }
+
+    return slots;
+  };
+
   const handleAvailabilityChange = (day: string, field: string, value: any) => {
-    // Prevent enabling days that are closed for the salon
-    if (
-      field === "enabled" &&
-      value === true &&
-      salonOperatingHours[day]?.closed
-    ) {
-      return;
+    // Prevent enabling days that are closed for the salon or not loaded
+    if (field === "enabled" && value === true) {
+      const salonHours = salonOperatingHours[day];
+
+      // If salon hours not loaded yet
+      if (!salonHours) {
+        toast({
+          title: "Loading salon hours",
+          description: "Please wait for salon hours to load",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // If salon is closed on this day
+      if (salonHours.closed) {
+        toast({
+          title: "Salon closed",
+          description: `The salon is closed on ${day}s`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Validate time slots are within salon operating hours
+    if (field === "start" || field === "end") {
+      const salonHours = salonOperatingHours[day];
+      if (salonHours && !salonHours.closed) {
+        const selectedHour = parseInt(value.split(":")[0]);
+        const salonOpen = parseInt(salonHours.open.split(":")[0]);
+        const salonClose = parseInt(salonHours.close.split(":")[0]);
+
+        // Prevent selecting times outside salon hours
+        if (selectedHour < salonOpen || selectedHour > salonClose) {
+          toast({
+            title: "Invalid time",
+            description: `Time must be within salon operating hours (${salonHours.open} - ${salonHours.close})`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
     }
 
     setStaffForm((prev) => ({
@@ -367,6 +435,46 @@ export default function StaffPage() {
     fetchServices();
   }, []);
 
+  // Update staff form availability when salon hours are loaded or when opening Add dialog
+  useEffect(() => {
+    if (isAddDialogOpen && Object.keys(salonOperatingHours).length > 0) {
+      const updatedAvailability: any = {};
+      const days = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ];
+
+      days.forEach((day) => {
+        const salonHours = salonOperatingHours[day];
+        if (salonHours && !salonHours.closed) {
+          // Salon is open on this day - enable with salon hours
+          updatedAvailability[day] = {
+            enabled: true,
+            start: salonHours.open,
+            end: salonHours.close,
+          };
+        } else {
+          // Salon is closed on this day - disable
+          updatedAvailability[day] = {
+            enabled: false,
+            start: "09:00",
+            end: "17:00",
+          };
+        }
+      });
+
+      setStaffForm((prev) => ({
+        ...prev,
+        availability: updatedAvailability,
+      }));
+    }
+  }, [isAddDialogOpen, salonOperatingHours]);
+
   const fetchServices = async () => {
     try {
       const token = localStorage.getItem("accessToken");
@@ -390,15 +498,23 @@ export default function StaffPage() {
   const fetchSalonOperatingHours = async () => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("/api/salons/my-salons", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
+
+      if (!salon.id) {
+        console.error("No salon ID found");
+        return;
+      }
+
+      const response = await fetch(`/api/salons/${salon.id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       if (response.ok) {
-        const salons = await response.json();
-        if (salons.length > 0 && salons[0].hours) {
+        const result = await response.json();
+        console.log("Salon hours response:", result);
+
+        const salonData = result.data;
+        if (salonData && salonData.hours) {
           const allDays = [
             "monday",
             "tuesday",
@@ -411,16 +527,16 @@ export default function StaffPage() {
           const formattedHours: any = {};
 
           // Only add days that exist in salon data as open
-          Object.keys(salons[0].hours).forEach((day) => {
+          Object.keys(salonData.hours).forEach((day) => {
             formattedHours[day] = {
-              ...salons[0].hours[day],
+              ...salonData.hours[day],
               closed: false,
             };
           });
 
           // Mark days NOT in salon data as closed
           allDays.forEach((day) => {
-            if (!salons[0].hours[day]) {
+            if (!salonData.hours[day]) {
               formattedHours[day] = {
                 open: "00:00",
                 close: "00:00",
@@ -429,6 +545,7 @@ export default function StaffPage() {
             }
           });
 
+          console.log("Formatted salon hours:", formattedHours);
           setSalonOperatingHours(formattedHours);
         }
       }
@@ -826,92 +943,102 @@ export default function StaffPage() {
 
                   <div className="space-y-3">
                     {Object.entries(staffForm.availability).map(
-                      ([day, schedule]) => (
-                        <div
-                          key={day}
-                          className="flex items-center gap-3 p-3 border rounded-lg"
-                        >
-                          <div className="flex items-center gap-2 min-w-[120px]">
-                            <Switch
-                              checked={schedule.enabled}
-                              disabled={salonOperatingHours[day]?.closed}
-                              onCheckedChange={(checked) =>
-                                handleAvailabilityChange(
-                                  day,
-                                  "enabled",
-                                  checked
-                                )
-                              }
-                            />
-                            <span className="text-sm font-medium capitalize">
-                              {day}
-                              {salonOperatingHours[day]?.closed && (
-                                <span className="text-xs text-muted-foreground ml-1">
-                                  (Salon Closed)
-                                </span>
-                              )}
-                            </span>
-                          </div>
+                      ([day, schedule]) => {
+                        const salonDayHours = salonOperatingHours[day];
+                        const isSalonClosed =
+                          !salonDayHours || salonDayHours.closed === true;
 
-                          {schedule.enabled && (
-                            <div className="flex items-center gap-2 flex-1">
-                              <Select
-                                value={schedule.start}
-                                onValueChange={(value) =>
-                                  handleAvailabilityChange(day, "start", value)
+                        return (
+                          <div
+                            key={day}
+                            className="flex items-center gap-3 p-3 border rounded-lg"
+                          >
+                            <div className="flex items-center gap-2 min-w-[120px]">
+                              <Switch
+                                checked={schedule.enabled}
+                                disabled={isSalonClosed}
+                                onCheckedChange={(checked) =>
+                                  handleAvailabilityChange(
+                                    day,
+                                    "enabled",
+                                    checked
+                                  )
                                 }
-                              >
-                                <SelectTrigger className="w-[110px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: 24 }, (_, i) => (
-                                    <SelectItem
-                                      key={i}
-                                      value={`${i
-                                        .toString()
-                                        .padStart(2, "0")}:00`}
-                                    >
-                                      {`${i.toString().padStart(2, "0")}:00`}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <span className="text-sm text-muted-foreground">
-                                to
+                              />
+                              <span className="text-sm font-medium capitalize">
+                                {day}
+                                {isSalonClosed && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    (Salon Closed)
+                                  </span>
+                                )}
                               </span>
-                              <Select
-                                value={schedule.end}
-                                onValueChange={(value) =>
-                                  handleAvailabilityChange(day, "end", value)
-                                }
-                              >
-                                <SelectTrigger className="w-[110px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: 24 }, (_, i) => (
-                                    <SelectItem
-                                      key={i}
-                                      value={`${i
-                                        .toString()
-                                        .padStart(2, "0")}:00`}
-                                    >
-                                      {`${i.toString().padStart(2, "0")}:00`}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
                             </div>
-                          )}
 
-                          {!schedule.enabled && (
-                            <span className="text-sm text-muted-foreground">
-                              Day off
-                            </span>
-                          )}
-                        </div>
-                      )
+                            {schedule.enabled && (
+                              <div className="flex items-center gap-2 flex-1">
+                                <Select
+                                  value={schedule.start}
+                                  onValueChange={(value) =>
+                                    handleAvailabilityChange(
+                                      day,
+                                      "start",
+                                      value
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger className="w-[110px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {getAvailableTimeSlots(day).map(
+                                      (timeSlot) => (
+                                        <SelectItem
+                                          key={timeSlot}
+                                          value={timeSlot}
+                                        >
+                                          {timeSlot}
+                                        </SelectItem>
+                                      )
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <span className="text-sm text-muted-foreground">
+                                  to
+                                </span>
+                                <Select
+                                  value={schedule.end}
+                                  onValueChange={(value) =>
+                                    handleAvailabilityChange(day, "end", value)
+                                  }
+                                >
+                                  <SelectTrigger className="w-[110px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {getAvailableTimeSlots(day).map(
+                                      (timeSlot) => (
+                                        <SelectItem
+                                          key={timeSlot}
+                                          value={timeSlot}
+                                        >
+                                          {timeSlot}
+                                        </SelectItem>
+                                      )
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {!schedule.enabled && (
+                              <span className="text-sm text-muted-foreground">
+                                Day off
+                              </span>
+                            )}
+                          </div>
+                        );
+                      }
                     )}
                   </div>
                 </div>
@@ -991,92 +1118,102 @@ export default function StaffPage() {
 
                   <div className="space-y-3">
                     {Object.entries(staffForm.availability).map(
-                      ([day, schedule]) => (
-                        <div
-                          key={day}
-                          className="flex items-center gap-3 p-3 border rounded-lg"
-                        >
-                          <div className="flex items-center gap-2 min-w-[120px]">
-                            <Switch
-                              checked={schedule.enabled}
-                              disabled={salonOperatingHours[day]?.closed}
-                              onCheckedChange={(checked) =>
-                                handleAvailabilityChange(
-                                  day,
-                                  "enabled",
-                                  checked
-                                )
-                              }
-                            />
-                            <span className="text-sm font-medium capitalize">
-                              {day}
-                              {salonOperatingHours[day]?.closed && (
-                                <span className="text-xs text-muted-foreground ml-1">
-                                  (Salon Closed)
-                                </span>
-                              )}
-                            </span>
-                          </div>
+                      ([day, schedule]) => {
+                        const salonDayHours = salonOperatingHours[day];
+                        const isSalonClosed =
+                          !salonDayHours || salonDayHours.closed === true;
 
-                          {schedule.enabled && (
-                            <div className="flex items-center gap-2 flex-1">
-                              <Select
-                                value={schedule.start}
-                                onValueChange={(value) =>
-                                  handleAvailabilityChange(day, "start", value)
+                        return (
+                          <div
+                            key={day}
+                            className="flex items-center gap-3 p-3 border rounded-lg"
+                          >
+                            <div className="flex items-center gap-2 min-w-[120px]">
+                              <Switch
+                                checked={schedule.enabled}
+                                disabled={isSalonClosed}
+                                onCheckedChange={(checked) =>
+                                  handleAvailabilityChange(
+                                    day,
+                                    "enabled",
+                                    checked
+                                  )
                                 }
-                              >
-                                <SelectTrigger className="w-[110px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: 24 }, (_, i) => (
-                                    <SelectItem
-                                      key={i}
-                                      value={`${i
-                                        .toString()
-                                        .padStart(2, "0")}:00`}
-                                    >
-                                      {`${i.toString().padStart(2, "0")}:00`}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <span className="text-sm text-muted-foreground">
-                                to
+                              />
+                              <span className="text-sm font-medium capitalize">
+                                {day}
+                                {isSalonClosed && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    (Salon Closed)
+                                  </span>
+                                )}
                               </span>
-                              <Select
-                                value={schedule.end}
-                                onValueChange={(value) =>
-                                  handleAvailabilityChange(day, "end", value)
-                                }
-                              >
-                                <SelectTrigger className="w-[110px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: 24 }, (_, i) => (
-                                    <SelectItem
-                                      key={i}
-                                      value={`${i
-                                        .toString()
-                                        .padStart(2, "0")}:00`}
-                                    >
-                                      {`${i.toString().padStart(2, "0")}:00`}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
                             </div>
-                          )}
 
-                          {!schedule.enabled && (
-                            <span className="text-sm text-muted-foreground">
-                              Day off
-                            </span>
-                          )}
-                        </div>
-                      )
+                            {schedule.enabled && (
+                              <div className="flex items-center gap-2 flex-1">
+                                <Select
+                                  value={schedule.start}
+                                  onValueChange={(value) =>
+                                    handleAvailabilityChange(
+                                      day,
+                                      "start",
+                                      value
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger className="w-[110px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {getAvailableTimeSlots(day).map(
+                                      (timeSlot) => (
+                                        <SelectItem
+                                          key={timeSlot}
+                                          value={timeSlot}
+                                        >
+                                          {timeSlot}
+                                        </SelectItem>
+                                      )
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <span className="text-sm text-muted-foreground">
+                                  to
+                                </span>
+                                <Select
+                                  value={schedule.end}
+                                  onValueChange={(value) =>
+                                    handleAvailabilityChange(day, "end", value)
+                                  }
+                                >
+                                  <SelectTrigger className="w-[110px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {getAvailableTimeSlots(day).map(
+                                      (timeSlot) => (
+                                        <SelectItem
+                                          key={timeSlot}
+                                          value={timeSlot}
+                                        >
+                                          {timeSlot}
+                                        </SelectItem>
+                                      )
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {!schedule.enabled && (
+                              <span className="text-sm text-muted-foreground">
+                                Day off
+                              </span>
+                            )}
+                          </div>
+                        );
+                      }
                     )}
                   </div>
                 </div>

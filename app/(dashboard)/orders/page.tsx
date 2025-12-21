@@ -25,6 +25,8 @@ import {
   Calendar,
   Eye,
   RefreshCw,
+  AlertCircle,
+  CreditCard,
 } from "lucide-react";
 import {
   Tabs,
@@ -49,37 +51,79 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { Separator } from "../../../components/ui/separator";
+import { useToast } from "../../../components/ui/use-toast";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "../../../components/ui/avatar";
+
+interface Product {
+  id: string;
+  salonId: string;
+  title: string;
+  sku?: string;
+  price: string;
+  quantity: number;
+  images?: string[];
+}
 
 interface OrderItem {
   id: string;
+  orderId: string;
   productId: string;
-  productName: string;
   quantity: number;
-  price: number;
-  total: number;
+  unitPrice: string;
+  product: Product;
+}
+
+interface Address {
+  id: string;
+  userId: string;
+  name: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
+interface Salon {
+  id: string;
+  ownerId?: string;
+  name: string;
+  address?: string;
+  verified?: boolean;
 }
 
 interface Order {
   id: string;
   userId: string;
   salonId: string;
-  addressId: string;
-  totalAmount: number;
-  status: "PENDING" | "CONFIRMED" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  total: string;
+  status:
+    | "PENDING"
+    | "PAYMENT_PENDING"
+    | "PAYMENT_FAILED"
+    | "CONFIRMED"
+    | "SHIPPED"
+    | "DELIVERED"
+    | "CANCELLED";
   notes?: string;
   createdAt: string;
-  updatedAt: string;
-  items: OrderItem[];
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-  salon?: {
-    name: string;
-  };
+  orderItems: OrderItem[];
+  address?: Address;
+  salon?: Salon;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export default function OrdersPage() {
@@ -91,44 +135,67 @@ export default function OrdersPage() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<Order["status"]>("PENDING");
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchOrders();
-  }, [activeTab]);
+  }, [activeTab, currentPage]);
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        console.error("No access token found");
+        toast({
+          title: "Authentication required",
+          description: "Please login to view orders",
+          variant: "destructive",
+        });
         return;
       }
 
-      let url = "/api/orders";
       const params = new URLSearchParams();
-      params.append("page", "1");
-      params.append("limit", "50");
+      params.append("page", currentPage.toString());
+      params.append("limit", "10");
 
       if (activeTab !== "all") {
         params.append("status", activeTab.toUpperCase());
       }
 
       const queryString = params.toString();
-      const response = await fetch(`${url}?${queryString}`, {
+      const response = await fetch(`/api/orders?${queryString}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const data = await response.json();
+      const result = await response.json();
       if (response.ok) {
-        setOrders(data.data || []);
+        setOrders(result.data || []);
+        if (result.pagination) {
+          setPagination(result.pagination);
+        }
       } else {
-        console.error("Failed to fetch orders:", data.message);
+        toast({
+          title: "Error",
+          description: result.message || "Failed to fetch orders",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load orders",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -143,13 +210,24 @@ export default function OrdersPage() {
         },
       });
 
-      const data = await response.json();
+      const result = await response.json();
       if (response.ok) {
-        setSelectedOrder(data.data);
+        setSelectedOrder(result.data);
         setShowDetailsDialog(true);
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to fetch order details",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error fetching order details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load order details",
+        variant: "destructive",
+      });
     }
   };
 
@@ -167,13 +245,29 @@ export default function OrdersPage() {
         body: JSON.stringify({ status: newStatus }),
       });
 
+      const result = await response.json();
       if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Order status updated successfully",
+        });
         setShowStatusDialog(false);
         setShowDetailsDialog(false);
         await fetchOrders();
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to update order status",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error updating status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      });
     }
   };
 
@@ -189,12 +283,28 @@ export default function OrdersPage() {
         },
       });
 
+      const result = await response.json();
       if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Order cancelled successfully",
+        });
         setShowDetailsDialog(false);
         await fetchOrders();
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to cancel order",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error cancelling order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel order",
+        variant: "destructive",
+      });
     }
   };
 
@@ -205,6 +315,20 @@ export default function OrdersPage() {
           <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
             <Clock className="w-3 h-3 mr-1" />
             Pending
+          </Badge>
+        );
+      case "PAYMENT_PENDING":
+        return (
+          <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+            <CreditCard className="w-3 h-3 mr-1" />
+            Payment Pending
+          </Badge>
+        );
+      case "PAYMENT_FAILED":
+        return (
+          <Badge className="bg-red-100 text-red-800 border-red-200">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            Payment Failed
           </Badge>
         );
       case "CONFIRMED":
@@ -242,6 +366,10 @@ export default function OrdersPage() {
     switch (status) {
       case "PENDING":
         return <Clock className="w-5 h-5 text-yellow-600" />;
+      case "PAYMENT_PENDING":
+        return <CreditCard className="w-5 h-5 text-orange-600" />;
+      case "PAYMENT_FAILED":
+        return <AlertCircle className="w-5 h-5 text-red-600" />;
       case "CONFIRMED":
         return <Package className="w-5 h-5 text-blue-600" />;
       case "SHIPPED":
@@ -250,6 +378,28 @@ export default function OrdersPage() {
         return <CheckCircle className="w-5 h-5 text-green-600" />;
       case "CANCELLED":
         return <XCircle className="w-5 h-5 text-red-600" />;
+    }
+  };
+
+  const getValidNextStatuses = (
+    currentStatus: Order["status"]
+  ): Order["status"][] => {
+    switch (currentStatus) {
+      case "PENDING":
+        return ["PAYMENT_PENDING", "CONFIRMED", "CANCELLED"];
+      case "PAYMENT_PENDING":
+        return ["CONFIRMED", "PAYMENT_FAILED", "CANCELLED"];
+      case "PAYMENT_FAILED":
+        return ["PAYMENT_PENDING", "CANCELLED"];
+      case "CONFIRMED":
+        return ["SHIPPED", "CANCELLED"];
+      case "SHIPPED":
+        return ["DELIVERED"];
+      case "DELIVERED":
+      case "CANCELLED":
+        return [];
+      default:
+        return [];
     }
   };
 
@@ -265,6 +415,7 @@ export default function OrdersPage() {
   const orderStats = {
     total: orders.length,
     pending: orders.filter((o) => o.status === "PENDING").length,
+    paymentPending: orders.filter((o) => o.status === "PAYMENT_PENDING").length,
     confirmed: orders.filter((o) => o.status === "CONFIRMED").length,
     shipped: orders.filter((o) => o.status === "SHIPPED").length,
     delivered: orders.filter((o) => o.status === "DELIVERED").length,
@@ -293,13 +444,13 @@ export default function OrdersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total Orders</p>
-                <p className="text-2xl font-bold">{orderStats.total}</p>
+                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{pagination.total}</p>
               </div>
               <ShoppingBag className="w-8 h-8 text-muted-foreground" />
             </div>
@@ -313,6 +464,19 @@ export default function OrdersPage() {
                 <p className="text-2xl font-bold">{orderStats.pending}</p>
               </div>
               <Clock className="w-8 h-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Payment</p>
+                <p className="text-2xl font-bold">
+                  {orderStats.paymentPending}
+                </p>
+              </div>
+              <CreditCard className="w-8 h-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
@@ -375,22 +539,20 @@ export default function OrdersPage() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              Filters
-            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Orders Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="payment_pending">Payment</TabsTrigger>
           <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
           <TabsTrigger value="shipped">Shipped</TabsTrigger>
           <TabsTrigger value="delivered">Delivered</TabsTrigger>
+          <TabsTrigger value="payment_failed">Failed</TabsTrigger>
           <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
         </TabsList>
 
@@ -398,6 +560,7 @@ export default function OrdersPage() {
           {loading ? (
             <Card>
               <CardContent className="p-8 text-center">
+                <RefreshCw className="w-8 h-8 mx-auto animate-spin text-primary mb-3" />
                 <p className="text-muted-foreground">Loading orders...</p>
               </CardContent>
             </Card>
@@ -440,7 +603,7 @@ export default function OrdersPage() {
                               )}
                               <div className="flex items-center gap-1">
                                 <DollarSign className="w-3 h-3" />$
-                                {order.totalAmount.toFixed(2)}
+                                {parseFloat(order.total).toFixed(2)}
                               </div>
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
@@ -477,13 +640,45 @@ export default function OrdersPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Pagination - Add after TabsContent and before closing Dialog */}
+      {!loading && filteredOrders.length > 0 && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6">
+          <p className="text-sm text-muted-foreground">
+            Showing {orders.length} of {pagination.total} orders
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <span className="text-sm">
+              Page {currentPage} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))
+              }
+              disabled={currentPage === pagination.totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Order Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
             <DialogDescription>
-              {selectedOrder && `Order #${selectedOrder.id.substring(0, 8)}`}
+              {selectedOrder && `Order #${selectedOrder.id.substring(0, 12)}`}
             </DialogDescription>
           </DialogHeader>
           {selectedOrder && (
@@ -500,14 +695,16 @@ export default function OrdersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Order ID</p>
-                  <p className="font-medium">{selectedOrder.id}</p>
+                  <p className="font-medium text-xs break-all">
+                    {selectedOrder.id}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">
                     Total Amount
                   </p>
                   <p className="font-medium text-lg">
-                    ${(Number(selectedOrder.totalAmount) || 0).toFixed(2)}
+                    ${parseFloat(selectedOrder.total).toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -537,7 +734,14 @@ export default function OrdersPage() {
                       Delivery Address
                     </p>
                     <div className="text-sm text-muted-foreground space-y-1 pl-6">
-                      <p>{selectedOrder.address.street}</p>
+                      <p className="font-medium text-foreground">
+                        {selectedOrder.address.name}
+                      </p>
+                      <p>{selectedOrder.address.phone}</p>
+                      <p>{selectedOrder.address.addressLine1}</p>
+                      {selectedOrder.address.addressLine2 && (
+                        <p>{selectedOrder.address.addressLine2}</p>
+                      )}
                       <p>
                         {selectedOrder.address.city},{" "}
                         {selectedOrder.address.state}{" "}
@@ -553,24 +757,53 @@ export default function OrdersPage() {
               {/* Order Items */}
               <div>
                 <p className="font-medium mb-3">Order Items</p>
-                <div className="space-y-2">
-                  {selectedOrder.items?.map((item) => (
+                <div className="space-y-3">
+                  {selectedOrder.orderItems?.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                      className="flex items-start gap-4 p-3 bg-muted rounded-lg"
                     >
-                      <div>
-                        <p className="font-medium">{item.productName}</p>
-                        <p className="text-sm text-muted-foreground">
+                      {item.product.images && item.product.images.length > 0 ? (
+                        <Avatar className="w-16 h-16 rounded-md">
+                          <AvatarImage
+                            src={item.product.images[0]}
+                            alt={item.product.title}
+                          />
+                          <AvatarFallback>
+                            {item.product.title.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <div className="w-16 h-16 bg-background rounded-md flex items-center justify-center">
+                          <Package className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium">{item.product.title}</p>
+                        {item.product.sku && (
+                          <p className="text-xs text-muted-foreground">
+                            SKU: {item.product.sku}
+                          </p>
+                        )}
+                        <p className="text-sm text-muted-foreground mt-1">
                           Quantity: {item.quantity} × $
-                          {(Number(item.price) || 0).toFixed(2)}
+                          {parseFloat(item.unitPrice).toFixed(2)}
                         </p>
                       </div>
                       <p className="font-semibold">
-                        ${(Number(item.total) || 0).toFixed(2)}
+                        $
+                        {(parseFloat(item.unitPrice) * item.quantity).toFixed(
+                          2
+                        )}
                       </p>
                     </div>
                   ))}
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center justify-between text-lg font-bold">
+                    <span>Total:</span>
+                    <span>${parseFloat(selectedOrder.total).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -590,27 +823,26 @@ export default function OrdersPage() {
 
               {/* Actions */}
               <div className="flex gap-2 justify-end">
+                {getValidNextStatuses(selectedOrder.status).length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setNewStatus(selectedOrder.status);
+                      setShowStatusDialog(true);
+                    }}
+                  >
+                    Update Status
+                  </Button>
+                )}
                 {selectedOrder.status !== "CANCELLED" &&
-                  selectedOrder.status !== "DELIVERED" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setNewStatus(selectedOrder.status);
-                          setShowStatusDialog(true);
-                        }}
-                      >
-                        Update Status
-                      </Button>
-                      {selectedOrder.status === "PENDING" && (
-                        <Button
-                          variant="destructive"
-                          onClick={() => handleCancelOrder(selectedOrder.id)}
-                        >
-                          Cancel Order
-                        </Button>
-                      )}
-                    </>
+                  selectedOrder.status !== "DELIVERED" &&
+                  selectedOrder.status !== "SHIPPED" && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleCancelOrder(selectedOrder.id)}
+                    >
+                      Cancel Order
+                    </Button>
                   )}
               </div>
             </div>
@@ -624,7 +856,8 @@ export default function OrdersPage() {
           <DialogHeader>
             <DialogTitle>Update Order Status</DialogTitle>
             <DialogDescription>
-              Change the status of this order
+              Change the status of this order. Only valid status transitions are
+              shown.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -640,10 +873,15 @@ export default function OrdersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                  <SelectItem value="SHIPPED">Shipped</SelectItem>
-                  <SelectItem value="DELIVERED">Delivered</SelectItem>
+                  {selectedOrder &&
+                    getValidNextStatuses(selectedOrder.status).map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status
+                          .replace(/_/g, " ")
+                          .toLowerCase()
+                          .replace(/\b\w/g, (c) => c.toUpperCase())}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
