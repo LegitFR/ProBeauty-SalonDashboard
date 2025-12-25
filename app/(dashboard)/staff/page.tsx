@@ -110,6 +110,10 @@ export default function StaffPage() {
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
+  const [loadingReviews, setLoadingReviews] = useState(false);
 
   // Staff form state
   const [staffForm, setStaffForm] = useState({
@@ -433,7 +437,219 @@ export default function StaffPage() {
     fetchStaff();
     fetchSalonOperatingHours();
     fetchServices();
+    fetchBookings();
+    fetchReviews();
   }, []);
+
+  // Fetch bookings from API
+  const fetchBookings = async () => {
+    setLoadingBookings(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
+
+      if (!salon.id || !token) {
+        console.log("No salon ID or token found");
+        return;
+      }
+
+      const response = await fetch(`/api/bookings?salonId=${salon.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Bookings data:", result);
+        setBookings(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
+  // Fetch reviews from API
+  const fetchReviews = async () => {
+    setLoadingReviews(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const salon = JSON.parse(localStorage.getItem("salon") || "{}");
+
+      if (!salon.id || !token) {
+        console.log("No salon ID or token found");
+        return;
+      }
+
+      const response = await fetch(`/api/reviews/salon/${salon.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Reviews data:", result);
+        setReviews(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  // Calculate staff metrics from bookings and reviews
+  const calculateStaffMetrics = (staffId: string) => {
+    console.log("Calculating metrics for staffId:", staffId);
+    console.log("All bookings:", bookings);
+
+    // Filter only completed bookings first (case-insensitive)
+    const completedBookings = bookings.filter(
+      (booking) => booking.status?.toLowerCase() === "completed"
+    );
+
+    console.log("All completed bookings:", completedBookings);
+
+    // Filter completed bookings for this staff member
+    const staffCompletedBookings = completedBookings.filter((booking) => {
+      const matchesStaffId =
+        booking.staffId === staffId || booking.staff?.id === staffId;
+      console.log(
+        `Booking ${booking.id}: staffId=${booking.staffId}, staff?.id=${booking.staff?.id}, matches=${matchesStaffId}`
+      );
+      return matchesStaffId;
+    });
+
+    console.log("Staff completed bookings:", staffCompletedBookings);
+
+    // Calculate total revenue from completed bookings
+    const revenue = staffCompletedBookings.reduce((sum, booking) => {
+      // Get price from various possible sources
+      let price = 0;
+
+      if (booking.totalPrice) {
+        price =
+          typeof booking.totalPrice === "string"
+            ? parseFloat(booking.totalPrice)
+            : booking.totalPrice;
+      } else if (booking.price) {
+        price =
+          typeof booking.price === "string"
+            ? parseFloat(booking.price)
+            : booking.price;
+      } else if (booking.service?.price) {
+        price =
+          typeof booking.service.price === "string"
+            ? parseFloat(booking.service.price)
+            : booking.service.price;
+      }
+
+      // Handle NaN cases
+      if (isNaN(price)) {
+        price = 0;
+      }
+
+      console.log(`Booking ${booking.id} price:`, price);
+      return sum + price;
+    }, 0);
+
+    console.log("Total revenue:", revenue);
+
+    // Filter all bookings for this staff member (for total count)
+    const staffBookings = bookings.filter(
+      (booking) => booking.staffId === staffId || booking.staff?.id === staffId
+    );
+
+    // Get all booking IDs for this staff member
+    const staffBookingIds = staffBookings.map((booking) => booking.id);
+    console.log(`Staff ${staffId} booking IDs:`, staffBookingIds);
+
+    // Filter reviews that are linked to this staff's bookings via bookingId
+    const staffReviews = reviews.filter((review) => {
+      // Reviews can be linked via bookingId
+      const matchesBookingId =
+        review.bookingId && staffBookingIds.includes(review.bookingId);
+      // Or reviews might have staffId directly
+      const matchesStaffId =
+        review.staffId === staffId || review.staff?.id === staffId;
+      return matchesBookingId || matchesStaffId;
+    });
+
+    console.log(`Staff ${staffId} reviews:`, staffReviews);
+    console.log(`Total reviews for staff ${staffId}:`, staffReviews.length);
+    console.log(`All reviews in system:`, reviews);
+
+    // Calculate average rating from reviews
+    const avgRating =
+      staffReviews.length > 0
+        ? staffReviews.reduce((sum, review) => {
+            const rating =
+              typeof review.rating === "string"
+                ? parseFloat(review.rating)
+                : review.rating || 0;
+            return sum + rating;
+          }, 0) / staffReviews.length
+        : 0;
+
+    console.log(`Average rating for staff ${staffId}:`, avgRating);
+
+    // Calculate efficiency (percentage of completed bookings)
+    const efficiency =
+      staffBookings.length > 0
+        ? (staffCompletedBookings.length / staffBookings.length) * 100
+        : 0;
+
+    return {
+      bookings: staffBookings.length,
+      revenue,
+      satisfaction: avgRating,
+      efficiency: Math.round(efficiency),
+      completedBookings: staffCompletedBookings.length,
+    };
+  };
+
+  // Get weekly schedule for a staff member
+  const getWeeklySchedule = (staffId: string) => {
+    const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const today = new Date();
+    const weekSchedule: Record<string, Schedule> = {};
+
+    daysOfWeek.forEach((day, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - today.getDay() + index + 1);
+
+      const dayBookings = bookings.filter((booking) => {
+        if (booking.staffId !== staffId) return false;
+        const bookingDate = new Date(booking.date || booking.startTime);
+        return bookingDate.toDateString() === date.toDateString();
+      });
+
+      if (dayBookings.length > 0) {
+        const times = dayBookings.map((b) =>
+          new Date(b.startTime || b.date).getHours()
+        );
+        const startHour = Math.min(...times);
+        const endHour = Math.max(...times) + 1;
+
+        weekSchedule[day] = {
+          start: `${startHour.toString().padStart(2, "0")}:00`,
+          end: `${endHour.toString().padStart(2, "0")}:00`,
+          booked: dayBookings.length,
+        };
+      } else {
+        weekSchedule[day] = {
+          start: "OFF",
+          end: "OFF",
+          booked: 0,
+        };
+      }
+    });
+
+    return weekSchedule;
+  };
 
   // Update staff form availability when salon hours are loaded or when opening Add dialog
   useEffect(() => {
@@ -758,12 +974,10 @@ export default function StaffPage() {
     {
       label: "Avg Rating",
       value:
-        staffMembers.length > 0
+        staffMembers.length > 0 && reviews.length > 0
           ? (
-              staffMembers.reduce(
-                (sum, staff) => sum + (staff.performance?.satisfaction || 0),
-                0
-              ) / staffMembers.length
+              reviews.reduce((sum, review) => sum + (review.rating || 0), 0) /
+              reviews.length
             ).toFixed(1)
           : "0.0",
       change: "+0",
@@ -771,15 +985,39 @@ export default function StaffPage() {
     },
     {
       label: "Team Revenue",
-      value:
-        staffMembers.length > 0
-          ? `$${(
-              staffMembers.reduce(
-                (sum, staff) => sum + (staff.performance?.revenue || 0),
-                0
-              ) / 1000
-            ).toFixed(1)}K`
-          : "$0",
+      value: (() => {
+        // Calculate total revenue from completed bookings only
+        const completedBookings = bookings.filter(
+          (booking) => booking.status?.toLowerCase() === "completed"
+        );
+
+        const totalRevenue = completedBookings.reduce((sum, booking) => {
+          let price = 0;
+
+          if (booking.totalPrice) {
+            price =
+              typeof booking.totalPrice === "string"
+                ? parseFloat(booking.totalPrice)
+                : booking.totalPrice;
+          } else if (booking.price) {
+            price =
+              typeof booking.price === "string"
+                ? parseFloat(booking.price)
+                : booking.price;
+          } else if (booking.service?.price) {
+            price =
+              typeof booking.service.price === "string"
+                ? parseFloat(booking.service.price)
+                : booking.service.price;
+          }
+
+          return sum + (isNaN(price) ? 0 : price);
+        }, 0);
+
+        return totalRevenue > 0
+          ? `$${(totalRevenue / 1000).toFixed(1)}K`
+          : "$0";
+      })(),
       change: "+0%",
       icon: DollarSign,
     },
@@ -1442,10 +1680,108 @@ export default function StaffPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {staffMembers.map((staff) => (
-                    <div key={staff.id} className="border rounded-lg p-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Avatar className="w-8 h-8">
+                  {loadingBookings ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" />
+                      <p className="text-muted-foreground mt-2">
+                        Loading schedules...
+                      </p>
+                    </div>
+                  ) : staffMembers.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      No staff members found
+                    </p>
+                  ) : (
+                    staffMembers.map((staff) => {
+                      const weekSchedule = getWeeklySchedule(staff.id);
+                      return (
+                        <div key={staff.id} className="border rounded-lg p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="w-8 h-8">
+                              <AvatarImage
+                                src={staff.user?.avatar || staff.avatar}
+                                alt={staff.name || staff.user?.name || "User"}
+                              />
+                              <AvatarFallback>
+                                {(staff.name || staff.user?.name || "U")
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">
+                                {staff.name || staff.user?.name || "Unknown"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {staff.role || "Staff Member"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-7 gap-2 text-sm">
+                            {Object.entries(weekSchedule).map(
+                              ([day, schedule]) => (
+                                <div key={day} className="text-center">
+                                  <p className="font-medium text-xs text-muted-foreground mb-1">
+                                    {day}
+                                  </p>
+                                  {schedule.start === "OFF" ? (
+                                    <div className="p-1 bg-gray-100 rounded text-xs text-gray-700 font-medium">
+                                      OFF
+                                    </div>
+                                  ) : schedule.start === "LEAVE" ? (
+                                    <div className="p-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
+                                      LEAVE
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      <div className="p-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-900 font-medium">
+                                        {schedule.start}-{schedule.end}
+                                      </div>
+                                      <div className="text-xs text-primary font-medium">
+                                        {schedule.booked} booked
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="performance" className="space-y-6">
+          {loadingBookings || loadingReviews ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
+                <p className="text-muted-foreground mt-4">
+                  Loading performance data...
+                </p>
+              </CardContent>
+            </Card>
+          ) : staffMembers.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <p className="text-muted-foreground">No staff members found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {staffMembers.map((staff) => {
+                const metrics = calculateStaffMetrics(staff.id);
+                return (
+                  <Card key={staff.id}>
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
                           <AvatarImage
                             src={staff.user?.avatar || staff.avatar}
                             alt={staff.name || staff.user?.name || "User"}
@@ -1458,134 +1794,75 @@ export default function StaffPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">
+                          <CardTitle>
                             {staff.name || staff.user?.name || "Unknown"}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
+                          </CardTitle>
+                          <CardDescription>
                             {staff.role || "Staff Member"}
-                          </p>
+                          </CardDescription>
                         </div>
                       </div>
-                      <div className="grid grid-cols-7 gap-2 text-sm">
-                        {staff.thisWeek &&
-                          Object.entries(staff.thisWeek).map(
-                            ([day, schedule]) => (
-                              <div key={day} className="text-center">
-                                <p className="font-medium text-xs text-muted-foreground mb-1">
-                                  {day}
-                                </p>
-                                {schedule.start === "OFF" ? (
-                                  <div className="p-1 bg-gray-100 rounded text-xs">
-                                    OFF
-                                  </div>
-                                ) : schedule.start === "LEAVE" ? (
-                                  <div className="p-1 bg-yellow-100 text-yellow-800 rounded text-xs">
-                                    LEAVE
-                                  </div>
-                                ) : (
-                                  <div className="space-y-1">
-                                    <div className="p-1 bg-blue-50 border border-blue-200 rounded text-xs">
-                                      {schedule.start}-{schedule.end}
-                                    </div>
-                                    <div className="text-xs text-primary font-medium">
-                                      {schedule.booked} booked
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {staffMembers.map((staff) => (
-              <Card key={staff.id}>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage
-                        src={staff.user?.avatar || staff.avatar}
-                        alt={staff.name || staff.user?.name || "User"}
-                      />
-                      <AvatarFallback>
-                        {(staff.name || staff.user?.name || "U")
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle>
-                        {staff.name || staff.user?.name || "Unknown"}
-                      </CardTitle>
-                      <CardDescription>
-                        {staff.role || "Staff Member"}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <p className="text-2xl font-bold">
-                          {staff.performance?.bookings || 0}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Total Bookings
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-green-600">
-                          $
-                          {(
-                            Number(staff.performance?.revenue) || 0
-                          ).toLocaleString()}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Revenue Generated
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Customer Satisfaction</span>
-                          <span>
-                            {staff.performance?.satisfaction || 0}/5.0
-                          </span>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-center">
+                          <div>
+                            <p className="text-2xl font-bold">
+                              {metrics.bookings}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Total Bookings
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold text-green-600">
+                              ${metrics.revenue.toLocaleString()}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Revenue Generated
+                            </p>
+                          </div>
                         </div>
-                        <Progress
-                          value={(staff.performance?.satisfaction || 0) * 20}
-                          className="h-2"
-                        />
-                      </div>
 
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Efficiency</span>
-                          <span>{staff.performance?.efficiency || 0}%</span>
+                        <div className="space-y-3">
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>Customer Satisfaction</span>
+                              <span>{metrics.satisfaction.toFixed(1)}/5.0</span>
+                            </div>
+                            <Progress
+                              value={metrics.satisfaction * 20}
+                              className="h-2"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>Efficiency</span>
+                              <span>{metrics.efficiency}%</span>
+                            </div>
+                            <Progress
+                              value={metrics.efficiency}
+                              className="h-2"
+                            />
+                          </div>
                         </div>
-                        <Progress
-                          value={staff.performance?.efficiency || 0}
-                          className="h-2"
-                        />
+
+                        {metrics.bookings > 0 && (
+                          <div className="pt-2 border-t text-sm text-muted-foreground">
+                            <p>
+                              {metrics.completedBookings} completed out of{" "}
+                              {metrics.bookings} total bookings
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="payroll" className="space-y-6">
@@ -1593,67 +1870,84 @@ export default function StaffPage() {
             <CardHeader>
               <CardTitle>Payroll Summary</CardTitle>
               <CardDescription>
-                Current month payroll information
+                Current month payroll information based on bookings
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {staffMembers.map((staff) => (
-                  <div
-                    key={staff.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage
-                          src={staff.user?.avatar || staff.avatar}
-                          alt={staff.name || staff.user?.name || "User"}
-                        />
-                        <AvatarFallback>
-                          {(staff.name || staff.user?.name || "U")
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">
-                          {staff.name || staff.user?.name || "Unknown"}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {staff.role || "Staff Member"}
-                        </p>
+              {loadingBookings ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" />
+                  <p className="text-muted-foreground mt-2">
+                    Loading payroll data...
+                  </p>
+                </div>
+              ) : staffMembers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No staff members found
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {staffMembers.map((staff) => {
+                    const metrics = calculateStaffMetrics(staff.id);
+                    const commission = metrics.revenue * 0.4; // 40% commission
+                    return (
+                      <div
+                        key={staff.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage
+                              src={staff.user?.avatar || staff.avatar}
+                              alt={staff.name || staff.user?.name || "User"}
+                            />
+                            <AvatarFallback>
+                              {(staff.name || staff.user?.name || "U")
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">
+                              {staff.name || staff.user?.name || "Unknown"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {staff.role || "Staff Member"} •{" "}
+                              {metrics.bookings} bookings
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">
+                            ${commission.toFixed(2)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            40% of ${metrics.revenue.toFixed(2)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">
+                    );
+                  })}
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between font-semibold">
+                      <span>Total Payroll</span>
+                      <span className="text-primary">
                         $
-                        {(
-                          (staff.performance?.revenue || 0) * 0.4
-                        ).toLocaleString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        40% commission
-                      </p>
+                        {staffMembers
+                          .reduce((sum, staff) => {
+                            const metrics = calculateStaffMetrics(staff.id);
+                            return sum + metrics.revenue * 0.4;
+                          }, 0)
+                          .toFixed(2)}
+                      </span>
                     </div>
-                  </div>
-                ))}
-                <div className="border-t pt-4">
-                  <div className="flex justify-between font-semibold">
-                    <span>Total Payroll</span>
-                    <span className="text-primary">
-                      $
-                      {staffMembers
-                        .reduce(
-                          (sum, staff) =>
-                            sum + (staff.performance?.revenue || 0) * 0.4,
-                          0
-                        )
-                        .toLocaleString()}
-                    </span>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Based on {bookings.length} total bookings this period
+                    </p>
                   </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

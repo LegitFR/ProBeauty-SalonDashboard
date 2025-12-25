@@ -3,14 +3,15 @@ import { useState, useEffect } from "react";
 import { LoginPage } from "./LoginPage";
 import { SignupPage } from "./SignupPage";
 import { CreateSalonPage } from "./CreateSalonPage";
+import { ForgotPasswordPage } from "./ForgotPasswordPage";
 import { useRouter } from "next/navigation";
 import { Toaster } from "../../components/ui/sonner";
 
 export default function AuthPage() {
   const router = useRouter();
-  const [view, setView] = useState<"login" | "signup" | "create-salon">(
-    "login"
-  );
+  const [view, setView] = useState<
+    "login" | "signup" | "create-salon" | "forgot-password"
+  >("login");
 
   // Initialize theme for users on auth page
   useEffect(() => {
@@ -109,12 +110,15 @@ export default function AuthPage() {
           onBack={() => router.push("/")}
           onLogin={handleLogin}
           onSignup={() => setView("signup")}
+          onForgotPassword={() => setView("forgot-password")}
         />
       ) : view === "signup" ? (
         <SignupPage
           onBack={() => setView("login")}
           onSignupSuccess={handleSignupSuccess}
         />
+      ) : view === "forgot-password" ? (
+        <ForgotPasswordPage onBack={() => setView("login")} />
       ) : (
         <CreateSalonPage onSalonCreated={() => router.push("/home")} />
       )}

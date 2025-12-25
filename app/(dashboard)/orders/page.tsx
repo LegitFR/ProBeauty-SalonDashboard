@@ -177,6 +177,8 @@ export default function OrdersPage() {
       });
 
       const result = await response.json();
+      console.log("Orders API Response:", result);
+      console.log("Orders data:", result.data);
       if (response.ok) {
         setOrders(result.data || []);
         if (result.pagination) {

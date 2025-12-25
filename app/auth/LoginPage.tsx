@@ -19,9 +19,15 @@ interface LoginPageProps {
   onBack: () => void;
   onLogin: (user: any, tokens: any) => void;
   onSignup: () => void;
+  onForgotPassword: () => void;
 }
 
-export function LoginPage({ onBack, onLogin, onSignup }: LoginPageProps) {
+export function LoginPage({
+  onBack,
+  onLogin,
+  onSignup,
+  onForgotPassword,
+}: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -158,7 +164,12 @@ export function LoginPage({ onBack, onLogin, onSignup }: LoginPageProps) {
                   <input type="checkbox" className="rounded border-border" />
                   <span>Remember me</span>
                 </label>
-                <Button variant="link" className="p-0 h-auto text-primary">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="p-0 h-auto text-primary"
+                  onClick={onForgotPassword}
+                >
                   Forgot password?
                 </Button>
               </div>
