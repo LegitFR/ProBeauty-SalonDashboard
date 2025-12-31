@@ -97,7 +97,7 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
 
       const requestBody = {
         ...formData,
-        role: "salon_owner", // Fixed role as salon_owner
+        role: "owner", // Fixed role from salon_owner to owner
       };
 
       console.log("=== SIGNUP REQUEST ===");
