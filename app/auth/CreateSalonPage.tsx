@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { WeeklySchedule } from "../../components/auth/WeeklySchedule";
 
 const API_BASE_URL = "/api/salons";
 
@@ -60,11 +61,6 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
   });
 
   const [hours, setHours] = useState(DEFAULT_HOURS);
-  const [sameTimeForAll, setSameTimeForAll] = useState(false);
-  const [commonTime, setCommonTime] = useState({
-    open: "09:00",
-    close: "18:00",
-  });
 
   // Image uploads
   const [thumbnail, setThumbnail] = useState<File | null>(null);
@@ -86,44 +82,8 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
     });
   };
 
-  const handleHoursChange = (
-    day: string,
-    field: "open" | "close",
-    value: string
-  ) => {
-    setHours({
-      ...hours,
-      [day]: {
-        ...hours[day as keyof typeof hours],
-        [field]: value,
-      },
-    });
-  };
-
-  const handleCommonTimeChange = (field: "open" | "close", value: string) => {
-    const newCommonTime = { ...commonTime, [field]: value };
-    setCommonTime(newCommonTime);
-
-    if (sameTimeForAll) {
-      // Apply to all days
-      const updatedHours = { ...hours };
-      Object.keys(updatedHours).forEach((day) => {
-        updatedHours[day as keyof typeof hours] = newCommonTime;
-      });
-      setHours(updatedHours);
-    }
-  };
-
-  const handleSameTimeToggle = (checked: boolean) => {
-    setSameTimeForAll(checked);
-    if (checked) {
-      // Apply common time to all days
-      const updatedHours = { ...hours };
-      Object.keys(updatedHours).forEach((day) => {
-        updatedHours[day as keyof typeof hours] = commonTime;
-      });
-      setHours(updatedHours);
-    }
+  const handleHoursChange = (newHours: typeof DEFAULT_HOURS) => {
+    setHours(newHours);
   };
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -569,91 +529,15 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
 
                 {/* Operating Hours Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-primary" />
-                      Operating Hours
-                    </h3>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={sameTimeForAll}
-                        onChange={(e) => handleSameTimeToggle(e.target.checked)}
-                        className="rounded border-border w-4 h-4"
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        Same for all days
-                      </span>
-                    </label>
-                  </div>
-
-                  {sameTimeForAll && (
-                    <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                      <Label className="text-sm font-medium mb-3 block">
-                        Set time for all days
-                      </Label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Opens at</Label>
-                          <Input
-                            type="time"
-                            value={commonTime.open}
-                            onChange={(e) =>
-                              handleCommonTimeChange("open", e.target.value)
-                            }
-                            className="h-9 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 dark:[&::-webkit-calendar-picker-indicator]:invert-0 dark:[&::-webkit-calendar-picker-indicator]:brightness-100"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Closes at</Label>
-                          <Input
-                            type="time"
-                            value={commonTime.close}
-                            onChange={(e) =>
-                              handleCommonTimeChange("close", e.target.value)
-                            }
-                            className="h-9 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 dark:[&::-webkit-calendar-picker-indicator]:invert-0 dark:[&::-webkit-calendar-picker-indicator]:brightness-100"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                    {Object.keys(hours).map((day) => (
-                      <div
-                        key={day}
-                        className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center p-3 bg-muted/50 rounded-lg"
-                      >
-                        <Label className="capitalize font-medium">{day}</Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="time"
-                            value={hours[day as keyof typeof hours].open}
-                            onChange={(e) =>
-                              handleHoursChange(day, "open", e.target.value)
-                            }
-                            disabled={sameTimeForAll}
-                            className="h-9 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 dark:[&::-webkit-calendar-picker-indicator]:invert-0 dark:[&::-webkit-calendar-picker-indicator]:brightness-100"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground hidden sm:inline">
-                            to
-                          </span>
-                          <Input
-                            type="time"
-                            value={hours[day as keyof typeof hours].close}
-                            onChange={(e) =>
-                              handleHoursChange(day, "close", e.target.value)
-                            }
-                            disabled={sameTimeForAll}
-                            className="h-9 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 dark:[&::-webkit-calendar-picker-indicator]:invert-0 dark:[&::-webkit-calendar-picker-indicator]:brightness-100"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    Operating Hours
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Set your weekly availability. Toggle days on/off and add
+                    multiple time slots per day.
+                  </p>
+                  <WeeklySchedule value={hours} onChange={handleHoursChange} />
                 </div>
 
                 {/* Image Uploads Section */}
