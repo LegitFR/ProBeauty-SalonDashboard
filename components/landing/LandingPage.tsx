@@ -2,6 +2,7 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { Footer } from "./Footer";
+import { PublicNavbar } from "../layout/PublicNavbar";
 import {
   Play,
   Menu,
@@ -116,7 +117,7 @@ export function LandingPage({
       change: "+23% this month",
     },
     { value: "8.2M", label: "Appointments Booked", change: "+47% growth" },
-    { value: "$2.1B", label: "Revenue Processed", change: "+89% YoY" },
+    { value: "€2.1B", label: "Revenue Processed", change: "+89% YoY" },
     { value: "99.99%", label: "Uptime SLA", change: "Industry leading" },
   ];
 
@@ -156,153 +157,12 @@ export function LandingPage({
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-lg border-b border-border">
-        <div className="safe-container max-w-7xl">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              <span className="font-heading text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
-                ProBeauty
-              </span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-8">
-              <a
-                href="#features"
-                className="text-gray-700 hover:text-primary transition-colors font-medium"
-              >
-                Features
-              </a>
-              <a
-                href="#pricing"
-                className="text-gray-700 hover:text-primary transition-colors font-medium"
-              >
-                Pricing
-              </a>
-              <a
-                href="#testimonials"
-                className="text-gray-700 hover:text-primary transition-colors font-medium"
-              >
-                Success Stories
-              </a>
-              <Button
-                variant="ghost"
-                onClick={onCustomerSite}
-                className="text-gray-700 hover:text-primary"
-              >
-                <Globe className="w-4 h-4 mr-2" />
-                Find Salons
-              </Button>
-            </div>
-
-            {/* Right Side Navigation */}
-            <div className="hidden lg:flex items-center space-x-4">
-              {isAuthenticated ? (
-                <Button
-                  className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg px-6 py-3"
-                  onClick={handleDashboardClick}
-                >
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Go to Dashboard
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={onLogin}
-                    className="text-gray-700 hover:text-primary px-6 py-3"
-                  >
-                    Sign In
-                  </Button>
-                  <Button
-                    className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg btn-trial-padding text-sm sm:text-base whitespace-nowrap"
-                    onClick={onGetStarted}
-                  >
-                    Start Free Trial
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </Button>
-          </div>
-
-          {/* Mobile Navigation */}
-          {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-border py-4 space-y-4 bg-white/95 backdrop-blur-lg">
-              <a
-                href="#features"
-                className="block text-gray-700 hover:text-primary py-2 font-medium"
-              >
-                Features
-              </a>
-              <a
-                href="#pricing"
-                className="block text-gray-700 hover:text-primary py-2 font-medium"
-              >
-                Pricing
-              </a>
-              <a
-                href="#testimonials"
-                className="block text-gray-700 hover:text-primary py-2 font-medium"
-              >
-                Success Stories
-              </a>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={onCustomerSite}
-              >
-                <Globe className="w-4 h-4 mr-2" />
-                Find Salons
-              </Button>
-              {isAuthenticated ? (
-                <Button
-                  className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white"
-                  onClick={handleDashboardClick}
-                >
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Go to Dashboard
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    className="btn-auto-width justify-start"
-                    onClick={onLogin}
-                  >
-                    Sign In
-                  </Button>
-                  <Button
-                    className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white btn-trial-padding"
-                    onClick={onGetStarted}
-                  >
-                    Start Free Trial
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </nav>
+      <PublicNavbar
+        onGetStarted={onGetStarted}
+        onLogin={onLogin}
+        onMarketplace={onCustomerSite}
+        forceLightTheme={true}
+      />
 
       {/* Hero Section */}
       <section className="hero-padding-y relative overflow-hidden">

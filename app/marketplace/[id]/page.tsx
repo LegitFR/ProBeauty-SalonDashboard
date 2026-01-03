@@ -146,9 +146,9 @@ export default function SalonDetailPage({
   }, [salonId, toast]);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("de-DE", {
       style: "currency",
-      currency: "USD",
+      currency: "EUR",
     }).format(price);
   };
 
@@ -239,17 +239,19 @@ export default function SalonDetailPage({
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Services Section */}
-            {salon.services && salon.services.length > 0 && (
-              <section className="bg-card rounded-xl border border-border p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
-                  <Scissors className="w-6 h-6 text-primary" />
-                  <h2 className="font-heading text-2xl font-bold text-foreground">
-                    Services
-                  </h2>
+            <section className="bg-card rounded-xl border border-border p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6">
+                <Scissors className="w-6 h-6 text-primary" />
+                <h2 className="font-heading text-2xl font-bold text-foreground">
+                  Services
+                </h2>
+                {salon.services && salon.services.length > 0 && (
                   <span className="text-sm text-muted-foreground">
                     ({salon.services.length})
                   </span>
-                </div>
+                )}
+              </div>
+              {salon.services && salon.services.length > 0 ? (
                 <div className="space-y-3">
                   {salon.services.map((service, index) => (
                     <div
@@ -287,21 +289,33 @@ export default function SalonDetailPage({
                     </div>
                   ))}
                 </div>
-              </section>
-            )}
+              ) : (
+                <div className="text-center py-12">
+                  <Scissors className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <p className="text-muted-foreground text-lg">
+                    No services available at this time
+                  </p>
+                  <p className="text-sm text-muted-foreground/70 mt-2">
+                    Please check back later or contact the salon directly
+                  </p>
+                </div>
+              )}
+            </section>
 
             {/* Staff Section */}
-            {salon.staff && salon.staff.length > 0 && (
-              <section className="bg-card rounded-xl border border-border p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
-                  <Users className="w-6 h-6 text-primary" />
-                  <h2 className="font-heading text-2xl font-bold text-foreground">
-                    Our Team
-                  </h2>
+            <section className="bg-card rounded-xl border border-border p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6">
+                <Users className="w-6 h-6 text-primary" />
+                <h2 className="font-heading text-2xl font-bold text-foreground">
+                  Our Team
+                </h2>
+                {salon.staff && salon.staff.length > 0 && (
                   <span className="text-sm text-muted-foreground">
                     ({salon.staff.length})
                   </span>
-                </div>
+                )}
+              </div>
+              {salon.staff && salon.staff.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {salon.staff.map((member, index) => (
                     <div
@@ -418,21 +432,33 @@ export default function SalonDetailPage({
                     </div>
                   ))}
                 </div>
-              </section>
-            )}
+              ) : (
+                <div className="text-center py-12">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <p className="text-muted-foreground text-lg">
+                    No team members listed at this time
+                  </p>
+                  <p className="text-sm text-muted-foreground/70 mt-2">
+                    Contact the salon for staff availability
+                  </p>
+                </div>
+              )}
+            </section>
 
             {/* Products Section */}
-            {salon.products && salon.products.length > 0 && (
-              <section className="bg-card rounded-xl border border-border p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
-                  <Package className="w-6 h-6 text-primary" />
-                  <h2 className="font-heading text-2xl font-bold text-foreground">
-                    Products
-                  </h2>
+            <section className="bg-card rounded-xl border border-border p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6">
+                <Package className="w-6 h-6 text-primary" />
+                <h2 className="font-heading text-2xl font-bold text-foreground">
+                  Products
+                </h2>
+                {salon.products && salon.products.length > 0 && (
                   <span className="text-sm text-muted-foreground">
                     ({salon.products.length})
                   </span>
-                </div>
+                )}
+              </div>
+              {salon.products && salon.products.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {salon.products.map((product, index) => {
                     console.log(`Product ${index}:`, product);
@@ -478,8 +504,18 @@ export default function SalonDetailPage({
                     );
                   })}
                 </div>
-              </section>
-            )}
+              ) : (
+                <div className="text-center py-12">
+                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <p className="text-muted-foreground text-lg">
+                    No products available at this time
+                  </p>
+                  <p className="text-sm text-muted-foreground/70 mt-2">
+                    Check back later for product offerings
+                  </p>
+                </div>
+              )}
+            </section>
           </div>
 
           {/* Sidebar */}
@@ -611,13 +647,13 @@ export default function SalonDetailPage({
                 );
               })()}
 
-              <Button
+              {/* <Button
                 className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 size="lg"
               >
                 <Calendar className="w-5 h-5 mr-2" />
                 Book Appointment
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>

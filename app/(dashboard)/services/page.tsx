@@ -249,7 +249,7 @@ export default function ServicesPage() {
         const revenue = servicePrice * bookingCount;
 
         console.log(
-          `📈 Service ${serviceId}: ${bookingCount} completed bookings × $${servicePrice} = $${revenue.toFixed(
+          `📈 Service ${serviceId}: ${bookingCount} completed bookings × €${servicePrice} = €${revenue.toFixed(
             2
           )} revenue`
         );
@@ -1148,7 +1148,7 @@ export default function ServicesPage() {
               <div className="space-y-4 mt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="service-price">Price ($) *</Label>
+                    <Label htmlFor="service-price">Price (€) *</Label>
                     <Input
                       id="service-price"
                       type="number"
@@ -1277,7 +1277,7 @@ export default function ServicesPage() {
                         </Badge>
                       </div>
                       <p className="text-2xl font-bold text-primary">
-                        ${serviceForm.price || "0"}
+                        €{serviceForm.price || "0"}
                       </p>
                     </div>
                     {serviceForm.description && (
@@ -1376,7 +1376,7 @@ export default function ServicesPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Avg. Price</p>
                 <p className="text-2xl font-bold">
-                  $
+                  €
                   {Math.round(
                     services.reduce((sum, s) => sum + s.price, 0) /
                       services.length
@@ -1395,10 +1395,10 @@ export default function ServicesPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
                 <p className="text-2xl font-bold">
-                  $
+                  €
                   {services
                     .reduce((sum, s) => sum + (s.revenue || 0), 0)
-                    .toLocaleString()}
+                    .toLocaleString("de-DE")}
                 </p>
               </div>
               <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
@@ -1523,7 +1523,7 @@ export default function ServicesPage() {
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-primary" />
                     <span className="font-semibold">
-                      ${(Number(service.price) || 0).toFixed(2)}
+                      €{(Number(service.price) || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1544,7 +1544,7 @@ export default function ServicesPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">
-                      ${(service.revenue ?? 0).toFixed(2)}
+                      €{(service.revenue ?? 0).toFixed(2)}
                     </p>
                     <p className="text-xs text-muted-foreground">Revenue</p>
                   </div>

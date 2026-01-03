@@ -1015,8 +1015,8 @@ export default function StaffPage() {
         }, 0);
 
         return totalRevenue > 0
-          ? `$${(totalRevenue / 1000).toFixed(1)}K`
-          : "$0";
+          ? `€${(totalRevenue / 1000).toFixed(1)}K`
+          : "€0";
       })(),
       change: "+0%",
       icon: DollarSign,
@@ -1138,7 +1138,7 @@ export default function StaffPage() {
                       ) : (
                         services.map((service) => (
                           <SelectItem key={service.id} value={service.id}>
-                            {service.title} - ${service.price}
+                            {service.title} - €{service.price}
                           </SelectItem>
                         ))
                       )}
@@ -1337,7 +1337,7 @@ export default function StaffPage() {
                       ) : (
                         services.map((service) => (
                           <SelectItem key={service.id} value={service.id}>
-                            {service.title} - ${service.price}
+                            {service.title} - €{service.price}
                           </SelectItem>
                         ))
                       )}
@@ -1816,7 +1816,7 @@ export default function StaffPage() {
                           </div>
                           <div>
                             <p className="text-2xl font-bold text-green-600">
-                              ${metrics.revenue.toLocaleString()}
+                              €{metrics.revenue.toLocaleString("de-DE")}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               Revenue Generated
@@ -1920,10 +1920,10 @@ export default function StaffPage() {
                         </div>
                         <div className="text-right">
                           <p className="font-medium">
-                            ${commission.toFixed(2)}
+                            €{commission.toFixed(2)}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            40% of ${metrics.revenue.toFixed(2)}
+                            40% of €{metrics.revenue.toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -1933,7 +1933,7 @@ export default function StaffPage() {
                     <div className="flex justify-between font-semibold">
                       <span>Total Payroll</span>
                       <span className="text-primary">
-                        $
+                        €
                         {staffMembers
                           .reduce((sum, staff) => {
                             const metrics = calculateStaffMetrics(staff.id);

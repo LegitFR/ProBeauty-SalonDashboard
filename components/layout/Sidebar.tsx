@@ -108,7 +108,7 @@ export function Sidebar({
                 )}
                 onClick={() => onPageChange(item.id)}
               >
-                <Icon className="w-4 h-4 flex-shrink-0" />
+                <Icon className="w-4 h-4 shrink-0" />
                 {!isCollapsed && <span>{item.label}</span>}
               </Button>
             );

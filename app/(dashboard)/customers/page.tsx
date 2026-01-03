@@ -172,8 +172,10 @@ export default function CustomersPage() {
               status: "regular",
               joinDate: new Date(
                 booking.createdAt || Date.now()
-              ).toLocaleDateString(),
-              lastVisit: new Date(booking.startTime).toLocaleDateString(),
+              ).toLocaleDateString("de-DE"),
+              lastVisit: new Date(booking.startTime).toLocaleDateString(
+                "de-DE"
+              ),
               totalSpent: parseFloat(booking.service?.price || 0),
               visits: 1,
               avgSpend: parseFloat(booking.service?.price || 0),
@@ -183,9 +185,9 @@ export default function CustomersPage() {
                 : [],
               upcomingBooking:
                 booking.status === "CONFIRMED" || booking.status === "PENDING"
-                  ? `${new Date(booking.startTime).toLocaleDateString()} - ${
-                      booking.service?.title
-                    }`
+                  ? `${new Date(booking.startTime).toLocaleDateString(
+                      "de-DE"
+                    )} - ${booking.service?.title}`
                   : undefined,
               notes: "",
               segment: "new",
@@ -204,7 +206,7 @@ export default function CustomersPage() {
             const bookingDate = new Date(booking.startTime);
             const lastVisitDate = new Date(customer.lastVisit || 0);
             if (bookingDate > lastVisitDate) {
-              customer.lastVisit = bookingDate.toLocaleDateString();
+              customer.lastVisit = bookingDate.toLocaleDateString("de-DE");
             }
 
             // Add service to preferences if not already there
@@ -224,9 +226,9 @@ export default function CustomersPage() {
                 booking.status === "PENDING") &&
               bookingDate > new Date()
             ) {
-              customer.upcomingBooking = `${bookingDate.toLocaleDateString()} - ${
-                booking.service?.title
-              }`;
+              customer.upcomingBooking = `${bookingDate.toLocaleDateString(
+                "de-DE"
+              )} - ${booking.service?.title}`;
             }
           }
         }

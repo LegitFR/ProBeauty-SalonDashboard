@@ -604,12 +604,14 @@ export default function OrdersPage() {
                                 </div>
                               )}
                               <div className="flex items-center gap-1">
-                                <DollarSign className="w-3 h-3" />$
+                                <DollarSign className="w-3 h-3" />€
                                 {parseFloat(order.total).toFixed(2)}
                               </div>
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                {new Date(order.createdAt).toLocaleDateString()}
+                                {new Date(order.createdAt).toLocaleDateString(
+                                  "de-DE"
+                                )}
                               </div>
                             </div>
                             {order.address && (
@@ -714,7 +716,10 @@ export default function OrdersPage() {
                     Order Date
                   </p>
                   <p className="font-medium">
-                    {new Date(selectedOrder.createdAt).toLocaleString()}
+                    {new Date(selectedOrder.createdAt).toLocaleString("de-DE", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
                   </p>
                 </div>
                 {selectedOrder.salon && (

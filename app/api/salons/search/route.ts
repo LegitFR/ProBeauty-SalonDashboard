@@ -23,11 +23,27 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": "application/json",
       },
+      cache: "no-store",
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Backend error:", errorText);
+      console.error("Backend error:", response.status, errorText);
+
+      // Return empty data instead of error for better UX
+      if (response.status === 500 || response.status === 404) {
+        return NextResponse.json({
+          message: "No salons found",
+          data: [],
+          pagination: {
+            page: 1,
+            limit: 12,
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
+
       return NextResponse.json(
         { error: "Failed to search salons", details: errorText },
         { status: response.status }
@@ -40,12 +56,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("Search salons error:", error);
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
+
+    // Return empty data instead of error for better UX
+    return NextResponse.json({
+      message: "No salons found",
+      data: [],
+      pagination: {
+        page: 1,
+        limit: 12,
+        total: 0,
+        totalPages: 0,
       },
-      { status: 500 }
-    );
+    });
   }
 }

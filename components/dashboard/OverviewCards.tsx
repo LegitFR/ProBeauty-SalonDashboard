@@ -59,7 +59,7 @@ export function OverviewCards() {
   const stats = [
     {
       title: "Today's Revenue",
-      value: "$1,248",
+      value: "€1.248",
       change: "+12%",
       changeType: "positive" as const,
       icon: DollarSign,

@@ -9,6 +9,7 @@ import {
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Badge } from "../../../components/ui/badge";
+import { Separator } from "../../../components/ui/separator";
 import {
   Avatar,
   AvatarFallback,
@@ -95,7 +96,7 @@ interface Booking {
     id: string;
     title: string;
     durationMinutes: number;
-    price: string;
+    price: string | number;
   };
   staff: {
     id: string;
@@ -106,6 +107,7 @@ interface Booking {
       email: string;
     };
   };
+  notes?: string;
 }
 
 interface TimeSlot {
@@ -118,9 +120,11 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("upcoming");
   const [showNewBookingDialog, setShowNewBookingDialog] = useState(false);
   const [showFiltersDialog, setShowFiltersDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [currentStep, setCurrentStep] = useState(1);
   const { toast } = useToast();
@@ -702,13 +706,13 @@ export default function BookingsPage() {
             Manage all your salon appointments
           </p>
         </div>
-        <Button
+        {/* <Button
           className="bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={() => setShowNewBookingDialog(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           New Booking
-        </Button>
+        </Button> */}
       </div>
 
       {/* New Booking Dialog */}
@@ -799,7 +803,7 @@ export default function BookingsPage() {
                           <div className="flex items-center justify-between w-full">
                             <span className="font-medium">{service.title}</span>
                             <span className="text-sm text-muted-foreground ml-4">
-                              ${(Number(service.price) || 0).toFixed(2)} •{" "}
+                              €{(Number(service.price) || 0).toFixed(2)} •{" "}
                               {service.durationMinutes} min
                             </span>
                           </div>
@@ -1233,13 +1237,12 @@ export default function BookingsPage() {
                     {/* Group bookings by date */}
                     {Object.entries(
                       filteredBookings.reduce((groups, booking) => {
-                        const date = new Date(
-                          booking.startTime
-                        ).toLocaleDateString();
-                        if (!groups[date]) {
-                          groups[date] = [];
+                        const date = new Date(booking.startTime);
+                        const dateKey = date.toISOString().split("T")[0]; // Use ISO date as key (YYYY-MM-DD)
+                        if (!groups[dateKey]) {
+                          groups[dateKey] = [];
                         }
-                        groups[date].push(booking);
+                        groups[dateKey].push(booking);
                         return groups;
                       }, {} as Record<string, Booking[]>)
                     )
@@ -1247,10 +1250,10 @@ export default function BookingsPage() {
                         ([dateA], [dateB]) =>
                           new Date(dateA).getTime() - new Date(dateB).getTime()
                       )
-                      .map(([date, dayBookings]) => (
-                        <div key={date} className="space-y-3">
+                      .map(([dateKey, dayBookings]) => (
+                        <div key={dateKey} className="space-y-3">
                           <h3 className="font-semibold text-lg border-b pb-2">
-                            {format(new Date(date), "EEEE, MMMM d, yyyy")}
+                            {format(new Date(dateKey), "EEEE, d. MMMM yyyy")}
                           </h3>
                           <div className="grid gap-3">
                             {dayBookings
@@ -1443,16 +1446,16 @@ export default function BookingsPage() {
                           <p className="font-medium">{booking.service.title}</p>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                             <Clock className="w-3 h-3" />
-                            {new Date(
-                              booking.startTime
-                            ).toLocaleDateString()}{" "}
+                            {new Date(booking.startTime).toLocaleDateString(
+                              "de-DE"
+                            )}{" "}
                             at{" "}
                             {new Date(booking.startTime).toLocaleTimeString(
-                              "en-US",
+                              "de-DE",
                               {
-                                hour: "numeric",
+                                hour: "2-digit",
                                 minute: "2-digit",
-                                hour12: true,
+                                hour12: false,
                               }
                             )}
                           </div>
@@ -1757,16 +1760,16 @@ export default function BookingsPage() {
                           <p className="font-medium">{booking.service.title}</p>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                             <Clock className="w-3 h-3" />
-                            {new Date(
-                              booking.startTime
-                            ).toLocaleDateString()}{" "}
+                            {new Date(booking.startTime).toLocaleDateString(
+                              "de-DE"
+                            )}{" "}
                             at{" "}
                             {new Date(booking.startTime).toLocaleTimeString(
-                              "en-US",
+                              "de-DE",
                               {
-                                hour: "numeric",
+                                hour: "2-digit",
                                 minute: "2-digit",
-                                hour12: true,
+                                hour12: false,
                               }
                             )}
                           </div>
@@ -1777,7 +1780,14 @@ export default function BookingsPage() {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2 lg:justify-end">
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setShowDetailsDialog(true);
+                            }}
+                          >
                             Details
                           </Button>
                         </div>
@@ -1834,7 +1844,9 @@ export default function BookingsPage() {
                           <p className="font-medium">{booking.service.title}</p>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                             <Clock className="w-3 h-3" />
-                            {new Date(booking.startTime).toLocaleDateString()}
+                            {new Date(booking.startTime).toLocaleDateString(
+                              "de-DE"
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center">
@@ -1843,7 +1855,14 @@ export default function BookingsPage() {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2 lg:justify-end">
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setShowDetailsDialog(true);
+                            }}
+                          >
                             Details
                           </Button>
                         </div>
@@ -1856,6 +1875,140 @@ export default function BookingsPage() {
           </>
         )}
       </Tabs>
+
+      {/* Booking Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Customer</p>
+                  <p className="font-medium">{selectedBooking.user.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBooking.user.email}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBooking.user.phone}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Status</p>
+                  <Badge className={getStatusColor(selectedBooking.status)}>
+                    {selectedBooking.status.toLowerCase().replace("_", " ")}
+                  </Badge>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Service</p>
+                  <p className="font-medium">{selectedBooking.service.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBooking.service.durationMinutes} minutes
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Price</p>
+                  <p className="font-medium text-primary">
+                    €
+                    {typeof selectedBooking.service.price === "string"
+                      ? parseFloat(selectedBooking.service.price).toFixed(2)
+                      : (selectedBooking.service.price as number).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Date & Time
+                  </p>
+                  <p className="font-medium">
+                    {new Date(selectedBooking.startTime).toLocaleDateString(
+                      "de-DE"
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(selectedBooking.startTime).toLocaleTimeString(
+                      "de-DE",
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      }
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Staff Member
+                  </p>
+                  <p className="font-medium">
+                    {selectedBooking.staff?.name ||
+                      selectedBooking.staff?.user?.name ||
+                      "Not assigned"}
+                  </p>
+                </div>
+              </div>
+
+              {selectedBooking.notes && (
+                <>
+                  <Separator />
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Notes</p>
+                    <p className="text-sm">{selectedBooking.notes}</p>
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                {selectedBooking.status === "PENDING" && (
+                  <Button
+                    onClick={() => {
+                      handleUpdateBookingStatus(
+                        selectedBooking.id,
+                        "CONFIRMED"
+                      );
+                      setShowDetailsDialog(false);
+                    }}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Confirm Booking
+                  </Button>
+                )}
+                {selectedBooking.status === "CONFIRMED" && (
+                  <Button
+                    onClick={() => {
+                      handleUpdateBookingStatus(
+                        selectedBooking.id,
+                        "COMPLETED"
+                      );
+                      setShowDetailsDialog(false);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Mark as Completed
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDetailsDialog(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

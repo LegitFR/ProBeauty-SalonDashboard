@@ -2,23 +2,21 @@
 import { useState, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import {
-  Search,
-  MapPin,
-  Star,
-  Calendar,
-  Menu,
-  Sun,
-  Moon,
-  Loader2,
-} from "lucide-react";
+import { Search, MapPin, Star, Calendar, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Toaster } from "../../components/ui/sonner";
 import { useToast } from "../../components/ui/use-toast";
+import { Toaster } from "../../components/ui/sonner";
+import { PublicNavbar } from "../../components/layout/PublicNavbar";
 
 interface Salon {
   _id: string;
   name: string;
+  image?: string;
+  images?: string[];
+  photo?: string;
+  picture?: string;
+  thumbnail?: string;
+  logo?: string;
   address:
     | {
         street?: string;
@@ -66,26 +64,6 @@ export default function MarketplacePage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Initialize theme for marketplace visitors
-  useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem("theme") as
-        | "light"
-        | "dark"
-        | null;
-      const initialTheme = savedTheme || "dark"; // Default to dark
-      setTheme(initialTheme);
-      if (initialTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    } catch (error) {
-      console.error("Failed to initialize theme:", error);
-    }
-  }, []);
-
-  const onBack = () => router.push("/");
   const [searchTerm, setSearchTerm] = useState("");
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
@@ -99,25 +77,12 @@ export default function MarketplacePage() {
   const [sortBy, setSortBy] = useState<
     "" | "top_rated" | "recommended" | "nearest"
   >("recommended");
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
 
   // Fetch salons from API
   useEffect(() => {
@@ -131,6 +96,9 @@ export default function MarketplacePage() {
           limit: "12",
         });
 
+        // Only add sortBy if it has a value
+        if (sortBy && sortBy !== "recommended") params.append("sortBy", sortBy);
+
         // Add search filters if they exist
         if (searchTerm) params.append("service", searchTerm);
         if (location) params.append("location", location);
@@ -138,17 +106,36 @@ export default function MarketplacePage() {
         if (time) params.append("time", time);
         if (venueType) params.append("venueType", venueType);
         if (maxPrice) params.append("maxPrice", maxPrice);
-        if (sortBy) params.append("sortBy", sortBy);
+
+        console.log("Fetching salons with params:", params.toString());
 
         const response = await fetch(`/api/salons/search?${params}`);
 
         if (!response.ok) {
-          throw new Error("Failed to fetch salons");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || errorData.details || "Failed to fetch salons"
+          );
         }
 
         const data: SalonResponse = await response.json();
-        setSalons(data.data);
-        setTotalPages(data.pagination.totalPages);
+        console.log("Salons data received:", data);
+
+        // Log first salon to see available fields
+        if (data.data && data.data.length > 0) {
+          console.log("First salon data:", data.data[0]);
+          console.log("Available image fields:", {
+            image: data.data[0].image,
+            images: (data.data[0] as any).images,
+            photo: (data.data[0] as any).photo,
+            picture: (data.data[0] as any).picture,
+            thumbnail: (data.data[0] as any).thumbnail,
+            logo: (data.data[0] as any).logo,
+          });
+        }
+
+        setSalons(data.data || []);
+        setTotalPages(data.pagination?.totalPages || 1);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to load salons";
@@ -183,120 +170,11 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
-            <div className="flex items-center cursor-pointer" onClick={onBack}>
-              <span className="font-heading text-2xl font-bold bg-linear-to-r from-primary to-orange-600 bg-clip-text text-transparent">
-                ProBeauty
-              </span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="hover:bg-accent"
-              >
-                {theme === "light" ? (
-                  <Moon className="w-5 h-5" />
-                ) : (
-                  <Sun className="w-5 h-5" />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                className="text-foreground hover:text-primary font-medium"
-                onClick={onBack}
-              >
-                Log In
-              </Button>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
-                List your business
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:bg-accent"
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log(
-                    "Desktop menu clicked, current state:",
-                    mobileMenuOpen
-                  );
-                  setMobileMenuOpen(!mobileMenuOpen);
-                }}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="hover:bg-accent"
-              >
-                {theme === "light" ? (
-                  <Moon className="w-5 h-5" />
-                ) : (
-                  <Sun className="w-5 h-5" />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:bg-accent"
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log(
-                    "Mobile menu clicked, current state:",
-                    mobileMenuOpen
-                  );
-                  setMobileMenuOpen(!mobileMenuOpen);
-                }}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="bg-card border-b border-border shadow-lg relative z-40">
-          <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-            <Button
-              variant="ghost"
-              className="w-full text-left justify-start text-foreground hover:text-primary font-medium"
-              onClick={() => {
-                onBack();
-                setMobileMenuOpen(false);
-              }}
-            >
-              Log In
-            </Button>
-            <Button
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              onClick={() => {
-                setMobileMenuOpen(false);
-              }}
-            >
-              List your business
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Navigation */}
+      <PublicNavbar />
 
       {/* Hero Section */}
-      <section className="marketplace-hero">
+      <section className="marketplace-hero pt-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-foreground">
             Book local selfcare services
@@ -329,7 +207,7 @@ export default function MarketplacePage() {
               />
             </div>
             <div className="flex-1 relative">
-              <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
+              <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400 pointer-events-none z-10" />
               <Input
                 type="date"
                 placeholder="Any time"
@@ -411,11 +289,11 @@ export default function MarketplacePage() {
                   {/* Max Price */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Max Price (₹)
+                      Max Price (€)
                     </label>
                     <Input
                       type="number"
-                      placeholder="e.g. 1500"
+                      placeholder="e.g. 150"
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(e.target.value)}
                       className="h-10"
@@ -505,13 +383,51 @@ export default function MarketplacePage() {
           ) : error ? (
             <div className="text-center py-16">
               <p className="text-destructive mb-4">{error}</p>
-              <Button onClick={() => setPage(1)} variant="outline">
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+              >
                 Retry
               </Button>
             </div>
           ) : salons.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-muted-foreground">No salons found</p>
+              <div className="mb-4">
+                <svg
+                  className="mx-auto h-12 w-12 text-muted-foreground"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                No salons found
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Try adjusting your search filters or location
+              </p>
+              <Button
+                onClick={() => {
+                  setSearchTerm("");
+                  setLocation("");
+                  setDate("");
+                  setTime("");
+                  setVenueType("");
+                  setMaxPrice("");
+                  setPage(1);
+                }}
+                variant="outline"
+              >
+                Clear Filters
+              </Button>
             </div>
           ) : (
             <div className="salon-cards-grid">
@@ -531,9 +447,25 @@ export default function MarketplacePage() {
                   >
                     <div className="relative">
                       <img
-                        src={`https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400`}
+                        src={
+                          salon.image ||
+                          (salon as any).photo ||
+                          (salon as any).picture ||
+                          (salon as any).thumbnail ||
+                          (salon as any).logo ||
+                          ((salon as any).images &&
+                            Array.isArray((salon as any).images) &&
+                            (salon as any).images[0]) ||
+                          `https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400`
+                        }
                         alt={salon.name}
                         className="salon-card-image"
+                        onError={(e) => {
+                          console.log(`Image failed to load for ${salon.name}`);
+                          (
+                            e.target as HTMLImageElement
+                          ).src = `https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400`;
+                        }}
                       />
                       {salon.verified && (
                         <div className="absolute top-3 right-3 bg-primary/90 text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
