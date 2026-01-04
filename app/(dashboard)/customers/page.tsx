@@ -351,126 +351,20 @@ export default function CustomersPage() {
     }
   };
 
-  const sampleCustomersData: Customer[] = [
-    {
-      id: "1",
-      name: "Emma Thompson",
-      email: "emma.thompson@email.com",
-      phone: "(555) 123-4567",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-      status: "vip",
-      joinDate: "2023-01-15",
-      lastVisit: "2024-12-10",
-      totalSpent: 2340,
-      visits: 28,
-      avgSpend: 83.5,
-      satisfaction: 4.9,
-      preferences: ["Hair Color", "Styling", "Treatments"],
-      upcomingBooking: "Dec 20, 2024 - Hair Color",
-      notes: "Prefers organic products. Allergic to sulfates.",
-      segment: "high-value",
-      churnRisk: "low",
-    },
-    {
-      id: "2",
-      name: "James Wilson",
-      email: "james.wilson@email.com",
-      phone: "(555) 234-5678",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-      status: "regular",
-      joinDate: "2023-06-20",
-      lastVisit: "2024-12-05",
-      totalSpent: 890,
-      visits: 12,
-      avgSpend: 74.2,
-      satisfaction: 4.7,
-      preferences: ["Haircut", "Beard Trim"],
-      upcomingBooking: "Dec 18, 2024 - Haircut + Beard",
-      notes: "Prefers same stylist (Marcus). Comes every 3 weeks.",
-      segment: "regular",
-      churnRisk: "low",
-    },
-    {
-      id: "3",
-      name: "Sofia Martinez",
-      email: "sofia.martinez@email.com",
-      phone: "(555) 345-6789",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-      status: "regular",
-      joinDate: "2024-03-10",
-      lastVisit: "2024-11-25",
-      totalSpent: 420,
-      visits: 6,
-      avgSpend: 70.0,
-      satisfaction: 4.6,
-      preferences: ["Manicure", "Pedicure", "Nail Art"],
-      upcomingBooking: undefined,
-      notes: "New customer. Show interest in loyalty program.",
-      segment: "new",
-      churnRisk: "medium",
-    },
-    {
-      id: "4",
-      name: "Michael Brown",
-      email: "michael.brown@email.com",
-      phone: "(555) 456-7890",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-      status: "at-risk",
-      joinDate: "2022-08-12",
-      lastVisit: "2024-09-15",
-      totalSpent: 1560,
-      visits: 18,
-      avgSpend: 86.7,
-      satisfaction: 4.2,
-      preferences: ["Massage", "Facial"],
-      upcomingBooking: undefined,
-      notes: "Has not visited in 3 months. Send retention offer.",
-      segment: "at-risk",
-      churnRisk: "high",
-    },
-    {
-      id: "5",
-      name: "Isabella Garcia",
-      email: "isabella.garcia@email.com",
-      phone: "(555) 567-8901",
-      avatar:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face",
-      status: "vip",
-      joinDate: "2022-11-30",
-      lastVisit: "2024-12-08",
-      totalSpent: 3240,
-      visits: 35,
-      avgSpend: 92.6,
-      satisfaction: 4.8,
-      preferences: ["Full Service", "Premium Treatments"],
-      upcomingBooking: "Dec 22, 2024 - Full Day Package",
-      notes: "VIP customer. Always books premium services.",
-      segment: "high-value",
-      churnRisk: "low",
-    },
-  ];
-
-  const actualCustomers =
-    customers.length > 0 ? customers : sampleCustomersData;
-
-  // Calculate real statistics from actual customer data
-  const totalCustomers = actualCustomers.length;
+  // Calculate real statistics from customer data
+  const totalCustomers = customers.length;
 
   // Active this month - customers with visits in the last 30 days
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const activeThisMonth = actualCustomers.filter((c) => {
+  const activeThisMonth = customers.filter((c) => {
     if (!c.lastVisit) return false;
     const lastVisitDate = new Date(c.lastVisit);
     return lastVisitDate >= thirtyDaysAgo;
   }).length;
 
   // Average customer value
-  const totalRevenue = actualCustomers.reduce(
+  const totalRevenue = customers.reduce(
     (sum, c) => sum + (c.totalSpent || 0),
     0
   );
@@ -478,7 +372,7 @@ export default function CustomersPage() {
     totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
 
   // Retention rate - customers with churn risk "low" divided by total
-  const lowChurnCustomers = actualCustomers.filter(
+  const lowChurnCustomers = customers.filter(
     (c) => c.churnRisk === "low"
   ).length;
   const retentionRate =
@@ -512,26 +406,26 @@ export default function CustomersPage() {
   ];
 
   const segments = [
-    { id: "all", name: "All Customers", count: actualCustomers.length },
+    { id: "all", name: "All Customers", count: customers.length },
     {
       id: "vip",
       name: "VIP",
-      count: actualCustomers.filter((c) => c.status === "vip").length,
+      count: customers.filter((c) => c.status === "vip").length,
     },
     {
       id: "regular",
       name: "Regular",
-      count: actualCustomers.filter((c) => c.status === "regular").length,
+      count: customers.filter((c) => c.status === "regular").length,
     },
     {
       id: "new",
       name: "New",
-      count: actualCustomers.filter((c) => c.segment === "new").length,
+      count: customers.filter((c) => c.segment === "new").length,
     },
     {
       id: "at-risk",
       name: "At Risk",
-      count: actualCustomers.filter((c) => c.status === "at-risk").length,
+      count: customers.filter((c) => c.status === "at-risk").length,
     },
   ];
 
@@ -573,7 +467,7 @@ export default function CustomersPage() {
     }
   };
 
-  const filteredCustomers = actualCustomers.filter((customer) => {
+  const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =
       customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -735,11 +629,39 @@ export default function CustomersPage() {
                 </p>
               </CardContent>
             </Card>
+          ) : customers.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No customers yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Customers will appear here once they book appointments at your
+                  salon.
+                </p>
+                <Button
+                  onClick={() => (window.location.href = "/dashboard/bookings")}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  View Bookings
+                </Button>
+              </CardContent>
+            </Card>
           ) : filteredCustomers.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
-                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">No customers found</p>
+                <Search className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground mb-2">
+                  No customers match your search
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedSegment("all");
+                  }}
+                >
+                  Clear filters
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -920,24 +842,19 @@ export default function CustomersPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold">
-                        {
-                          actualCustomers.filter((c) => c.status === "vip")
-                            .length
-                        }
+                        {customers.filter((c) => c.status === "vip").length}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         $
-                        {actualCustomers.filter((c) => c.status === "vip")
-                          .length > 0
+                        {customers.filter((c) => c.status === "vip").length > 0
                           ? (
-                              actualCustomers
+                              customers
                                 .filter((c) => c.status === "vip")
                                 .reduce(
                                   (sum, c) => sum + (c.totalSpent || 0),
                                   0
                                 ) /
-                              actualCustomers.filter((c) => c.status === "vip")
-                                .length
+                              customers.filter((c) => c.status === "vip").length
                             ).toFixed(0)
                           : 0}{" "}
                         avg value
@@ -952,25 +869,21 @@ export default function CustomersPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold">
-                        {
-                          actualCustomers.filter((c) => c.status === "regular")
-                            .length
-                        }
+                        {customers.filter((c) => c.status === "regular").length}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         $
-                        {actualCustomers.filter((c) => c.status === "regular")
+                        {customers.filter((c) => c.status === "regular")
                           .length > 0
                           ? (
-                              actualCustomers
+                              customers
                                 .filter((c) => c.status === "regular")
                                 .reduce(
                                   (sum, c) => sum + (c.totalSpent || 0),
                                   0
                                 ) /
-                              actualCustomers.filter(
-                                (c) => c.status === "regular"
-                              ).length
+                              customers.filter((c) => c.status === "regular")
+                                .length
                             ).toFixed(0)
                           : 0}{" "}
                         avg value
@@ -985,23 +898,19 @@ export default function CustomersPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold">
-                        {
-                          actualCustomers.filter((c) => c.segment === "new")
-                            .length
-                        }
+                        {customers.filter((c) => c.segment === "new").length}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         $
-                        {actualCustomers.filter((c) => c.segment === "new")
-                          .length > 0
+                        {customers.filter((c) => c.segment === "new").length > 0
                           ? (
-                              actualCustomers
+                              customers
                                 .filter((c) => c.segment === "new")
                                 .reduce(
                                   (sum, c) => sum + (c.totalSpent || 0),
                                   0
                                 ) /
-                              actualCustomers.filter((c) => c.segment === "new")
+                              customers.filter((c) => c.segment === "new")
                                 .length
                             ).toFixed(0)
                           : 0}{" "}
@@ -1017,13 +926,10 @@ export default function CustomersPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold">
-                        {
-                          actualCustomers.filter((c) => c.status === "at-risk")
-                            .length
-                        }
+                        {customers.filter((c) => c.status === "at-risk").length}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {actualCustomers.filter((c) => c.status === "at-risk")
+                        {customers.filter((c) => c.status === "at-risk")
                           .length > 0
                           ? "Needs attention"
                           : "No at-risk customers"}
@@ -1043,25 +949,23 @@ export default function CustomersPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {actualCustomers.filter((c) => c.status === "vip").length >
-                    0 && (
+                  {customers.filter((c) => c.status === "vip").length > 0 && (
                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                       <p className="text-sm font-medium text-green-800">
                         High Retention
                       </p>
                       <p className="text-xs text-green-700">
                         VIP customers show{" "}
-                        {actualCustomers.filter(
+                        {customers.filter(
                           (c) => c.status === "vip" && c.churnRisk === "low"
                         ).length > 0
                           ? Math.round(
-                              (actualCustomers.filter(
+                              (customers.filter(
                                 (c) =>
                                   c.status === "vip" && c.churnRisk === "low"
                               ).length /
-                                actualCustomers.filter(
-                                  (c) => c.status === "vip"
-                                ).length) *
+                                customers.filter((c) => c.status === "vip")
+                                  .length) *
                                 100
                             )
                           : 0}
@@ -1070,39 +974,33 @@ export default function CustomersPage() {
                     </div>
                   )}
 
-                  {actualCustomers.filter((c) => c.status === "regular")
-                    .length > 0 && (
+                  {customers.filter((c) => c.status === "regular").length >
+                    0 && (
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <p className="text-sm font-medium text-blue-800">
                         Growth Opportunity
                       </p>
                       <p className="text-xs text-blue-700">
-                        {
-                          actualCustomers.filter((c) => c.status === "regular")
-                            .length
-                        }{" "}
+                        {customers.filter((c) => c.status === "regular").length}{" "}
                         regular customers can be upgraded to VIP
                       </p>
                     </div>
                   )}
 
-                  {actualCustomers.filter((c) => c.churnRisk === "high")
-                    .length > 0 && (
+                  {customers.filter((c) => c.churnRisk === "high").length >
+                    0 && (
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-sm font-medium text-yellow-800">
                         Attention Needed
                       </p>
                       <p className="text-xs text-yellow-700">
-                        {
-                          actualCustomers.filter((c) => c.churnRisk === "high")
-                            .length
-                        }{" "}
+                        {customers.filter((c) => c.churnRisk === "high").length}{" "}
                         customer(s) haven't visited in 3+ months
                       </p>
                     </div>
                   )}
 
-                  {actualCustomers.length === 0 && (
+                  {customers.length === 0 && (
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                       <p className="text-sm text-gray-600">
                         No customer data available
@@ -1136,10 +1034,7 @@ export default function CustomersPage() {
                         Active
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        {
-                          actualCustomers.filter((c) => c.status === "at-risk")
-                            .length
-                        }{" "}
+                        {customers.filter((c) => c.status === "at-risk").length}{" "}
                         customer(s) targeted
                       </span>
                     </div>
@@ -1161,10 +1056,7 @@ export default function CustomersPage() {
                         Scheduled
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        {
-                          actualCustomers.filter((c) => c.status === "vip")
-                            .length
-                        }{" "}
+                        {customers.filter((c) => c.status === "vip").length}{" "}
                         customer(s) targeted
                       </span>
                     </div>
@@ -1199,9 +1091,9 @@ export default function CustomersPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span>30-Day Retention</span>
                       <span>
-                        {actualCustomers.length > 0
+                        {customers.length > 0
                           ? Math.round(
-                              (actualCustomers.filter((c) => {
+                              (customers.filter((c) => {
                                 if (!c.lastVisit) return false;
                                 const daysSince = Math.floor(
                                   (Date.now() -
@@ -1210,7 +1102,7 @@ export default function CustomersPage() {
                                 );
                                 return daysSince <= 30;
                               }).length /
-                                actualCustomers.length) *
+                                customers.length) *
                                 100
                             )
                           : 0}
@@ -1219,8 +1111,8 @@ export default function CustomersPage() {
                     </div>
                     <Progress
                       value={
-                        actualCustomers.length > 0
-                          ? (actualCustomers.filter((c) => {
+                        customers.length > 0
+                          ? (customers.filter((c) => {
                               if (!c.lastVisit) return false;
                               const daysSince = Math.floor(
                                 (Date.now() - new Date(c.lastVisit).getTime()) /
@@ -1228,7 +1120,7 @@ export default function CustomersPage() {
                               );
                               return daysSince <= 30;
                             }).length /
-                              actualCustomers.length) *
+                              customers.length) *
                             100
                           : 0
                       }
@@ -1240,9 +1132,9 @@ export default function CustomersPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span>90-Day Retention</span>
                       <span>
-                        {actualCustomers.length > 0
+                        {customers.length > 0
                           ? Math.round(
-                              (actualCustomers.filter((c) => {
+                              (customers.filter((c) => {
                                 if (!c.lastVisit) return false;
                                 const daysSince = Math.floor(
                                   (Date.now() -
@@ -1251,7 +1143,7 @@ export default function CustomersPage() {
                                 );
                                 return daysSince <= 90;
                               }).length /
-                                actualCustomers.length) *
+                                customers.length) *
                                 100
                             )
                           : 0}
@@ -1260,8 +1152,8 @@ export default function CustomersPage() {
                     </div>
                     <Progress
                       value={
-                        actualCustomers.length > 0
-                          ? (actualCustomers.filter((c) => {
+                        customers.length > 0
+                          ? (customers.filter((c) => {
                               if (!c.lastVisit) return false;
                               const daysSince = Math.floor(
                                 (Date.now() - new Date(c.lastVisit).getTime()) /
@@ -1269,7 +1161,7 @@ export default function CustomersPage() {
                               );
                               return daysSince <= 90;
                             }).length /
-                              actualCustomers.length) *
+                              customers.length) *
                             100
                           : 0
                       }
@@ -1281,9 +1173,9 @@ export default function CustomersPage() {
                     <div className="flex justify-between text-sm mb-1">
                       <span>1-Year Retention</span>
                       <span>
-                        {actualCustomers.length > 0
+                        {customers.length > 0
                           ? Math.round(
-                              (actualCustomers.filter((c) => {
+                              (customers.filter((c) => {
                                 if (!c.lastVisit) return false;
                                 const daysSince = Math.floor(
                                   (Date.now() -
@@ -1292,7 +1184,7 @@ export default function CustomersPage() {
                                 );
                                 return daysSince <= 365;
                               }).length /
-                                actualCustomers.length) *
+                                customers.length) *
                                 100
                             )
                           : 0}
@@ -1301,8 +1193,8 @@ export default function CustomersPage() {
                     </div>
                     <Progress
                       value={
-                        actualCustomers.length > 0
-                          ? (actualCustomers.filter((c) => {
+                        customers.length > 0
+                          ? (customers.filter((c) => {
                               if (!c.lastVisit) return false;
                               const daysSince = Math.floor(
                                 (Date.now() - new Date(c.lastVisit).getTime()) /
@@ -1310,7 +1202,7 @@ export default function CustomersPage() {
                               );
                               return daysSince <= 365;
                             }).length /
-                              actualCustomers.length) *
+                              customers.length) *
                             100
                           : 0
                       }
@@ -1328,8 +1220,8 @@ export default function CustomersPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {actualCustomers.filter((c) => c.churnRisk === "high")
-                    .length > 0 ? (
+                  {customers.filter((c) => c.churnRisk === "high").length >
+                  0 ? (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -1338,10 +1230,7 @@ export default function CustomersPage() {
                         </span>
                       </div>
                       <p className="text-xs text-red-700">
-                        {
-                          actualCustomers.filter((c) => c.churnRisk === "high")
-                            .length
-                        }{" "}
+                        {customers.filter((c) => c.churnRisk === "high").length}{" "}
                         customer(s)
                       </p>
                       <p className="text-xs text-red-700">
@@ -1356,8 +1245,8 @@ export default function CustomersPage() {
                     </div>
                   )}
 
-                  {actualCustomers.filter((c) => c.churnRisk === "medium")
-                    .length > 0 ? (
+                  {customers.filter((c) => c.churnRisk === "medium").length >
+                  0 ? (
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <AlertTriangle className="w-4 h-4 text-yellow-600" />
@@ -1367,9 +1256,8 @@ export default function CustomersPage() {
                       </div>
                       <p className="text-xs text-yellow-700">
                         {
-                          actualCustomers.filter(
-                            (c) => c.churnRisk === "medium"
-                          ).length
+                          customers.filter((c) => c.churnRisk === "medium")
+                            .length
                         }{" "}
                         customer(s)
                       </p>

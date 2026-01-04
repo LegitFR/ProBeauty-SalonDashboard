@@ -805,11 +805,10 @@ export default function SettingsPage() {
   const handlePasswordChange = async () => {
     setChangingPassword(true);
     try {
-      const token = localStorage.getItem("accessToken");
       const userEmail = userProfile?.email;
 
-      if (!token || !userEmail) {
-        alert("Please login to change password");
+      if (!userEmail) {
+        toast.error("Please login to change password");
         return;
       }
 
@@ -819,80 +818,71 @@ export default function SettingsPage() {
         !passwordForm.newPassword ||
         !passwordForm.confirmPassword
       ) {
-        alert("Please fill in all password fields");
+        toast.error("Please fill in all password fields");
         return;
       }
 
       if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-        alert("New passwords do not match");
+        toast.error("New passwords do not match");
         return;
       }
 
       if (passwordForm.newPassword.length < 6) {
-        alert("New password must be at least 6 characters");
+        toast.error("New password must be at least 6 characters");
         return;
       }
 
-      // Step 1: Verify current password by attempting login
-      const loginResponse = await fetch("/api/auth/login", {
+      // Step 1: Request OTP
+      toast.info("Sending OTP to your email...");
+      const otpResponse = await fetch("/api/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: userEmail,
-          password: passwordForm.currentPassword,
+          step: "request-otp",
         }),
       });
 
-      if (!loginResponse.ok) {
-        alert("Current password is incorrect");
-        return;
-      }
-
-      // Step 2: Request OTP for password reset
-      const otpResponse = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: userEmail,
-        }),
-      });
+      const otpData = await otpResponse.json();
 
       if (!otpResponse.ok) {
-        alert("Failed to send OTP. Please try again.");
+        toast.error(
+          `Failed to send OTP: ${
+            otpData.message || "Email service error. Please try again later."
+          }`
+        );
         return;
       }
 
-      // Step 3: Prompt user for OTP
-      const otp = prompt(
-        "An OTP has been sent to your email. Please enter it:"
-      );
+      // Step 2: Prompt for OTP
+      toast.success("OTP sent to your email!");
+      const otp = prompt("Please enter the 6-digit OTP sent to your email:");
 
       if (!otp) {
-        alert("Password change cancelled");
+        toast.info("Password change cancelled");
         return;
       }
 
-      // Step 4: Reset password with OTP
-      const resetResponse = await fetch("/api/auth/reset-password", {
+      // Step 3: Reset password with OTP
+      const resetResponse = await fetch("/api/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: userEmail,
-          otp: otp,
+          step: "reset-password",
+          otp: otp.trim(),
           newPassword: passwordForm.newPassword,
         }),
       });
 
-      const data = await resetResponse.json();
+      const resetData = await resetResponse.json();
 
       if (resetResponse.ok) {
-        alert(
+        toast.success(
           "Password changed successfully! Please login again with your new password."
         );
         setPasswordForm({
@@ -900,18 +890,24 @@ export default function SettingsPage() {
           newPassword: "",
           confirmPassword: "",
         });
-        // Optionally redirect to login
-        // window.location.href = "/auth/login";
+
+        // Logout user and redirect to login
+        setTimeout(() => {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+          window.location.href = "/auth";
+        }, 2000);
       } else {
-        alert(
+        toast.error(
           `Failed to change password: ${
-            data.message || "Invalid or expired OTP"
+            resetData.message || "Invalid or expired OTP. Please try again."
           }`
         );
       }
     } catch (error: any) {
       console.error("Error changing password:", error);
-      alert(`Error changing password: ${error.message}`);
+      toast.error(`Error changing password: ${error.message}`);
     } finally {
       setChangingPassword(false);
     }

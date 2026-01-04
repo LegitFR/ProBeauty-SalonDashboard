@@ -22,6 +22,12 @@ import { Toaster } from "@/components/ui/sonner";
 interface Salon {
   _id: string;
   name: string;
+  image?: string;
+  images?: string[];
+  photo?: string;
+  picture?: string;
+  thumbnail?: string;
+  logo?: string;
   address:
     | {
         street?: string;
@@ -210,7 +216,17 @@ export default function SalonDetailPage({
       <div className="relative h-80 overflow-hidden">
         <div className="absolute inset-0 bg-linear-to-r from-primary/20 to-orange-600/20">
           <img
-            src="https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1200"
+            src={
+              salon.image ||
+              salon.photo ||
+              salon.picture ||
+              salon.thumbnail ||
+              salon.logo ||
+              (salon.images &&
+                Array.isArray(salon.images) &&
+                salon.images[0]) ||
+              "https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1200"
+            }
             alt={salon.name}
             className="w-full h-full object-cover opacity-60"
           />
