@@ -78,6 +78,7 @@ interface StaffMember {
   name: string;
   userId: string | null;
   salonId: string;
+  image?: string | null;
   user?: {
     name: string;
     email?: string;
@@ -86,6 +87,14 @@ interface StaffMember {
   };
   role?: string;
   availability?: any;
+  services?: Array<{
+    id: string;
+    service?: {
+      id: string;
+      title?: string;
+      price?: number;
+    };
+  }>;
   salon?: {
     name: string;
   };
@@ -114,6 +123,8 @@ export default function StaffPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Staff form state
   const [staffForm, setStaffForm] = useState({
@@ -223,6 +234,47 @@ export default function StaffPage() {
     }));
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+      ];
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select a JPEG, PNG, WebP, or GIF image",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Image must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSelectedImage(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddStaff = async () => {
     try {
       const token = localStorage.getItem("accessToken");
@@ -262,25 +314,95 @@ export default function StaffPage() {
         };
       });
 
-      const requestBody = {
-        name: staffForm.name,
-        salonId: salon.id,
-        serviceId: staffForm.serviceId,
-        availability: transformedAvailability,
-      };
+      // Check if we have an image to upload
+      if (selectedImage) {
+        // Step 1: Create staff member without image first (using JSON)
+        const requestBody = {
+          name: staffForm.name,
+          salonId: salon.id,
+          serviceId: staffForm.serviceId,
+          availability: transformedAvailability,
+        };
 
-      const response = await fetch("/api/staff", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+        const createResponse = await fetch("/api/staff", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to add staff member");
+        if (!createResponse.ok) {
+          const responseText = await createResponse.text();
+          let error;
+          try {
+            error = JSON.parse(responseText);
+          } catch (e) {
+            throw new Error(
+              `Server error (${createResponse.status}): ${responseText}`
+            );
+          }
+
+          let errorMessage = error.message || "Failed to add staff member";
+          if (error.errors && Array.isArray(error.errors)) {
+            errorMessage +=
+              ": " +
+              error.errors
+                .map((e: any) =>
+                  typeof e === "string" ? e : JSON.stringify(e)
+                )
+                .join(", ");
+          }
+          throw new Error(errorMessage);
+        }
+
+        const createdStaff = await createResponse.json();
+        const staffId = createdStaff.data?.id;
+
+        if (!staffId) {
+          throw new Error("Staff created but no ID returned");
+        }
+
+        // Step 2: Update staff with image
+        const formData = new FormData();
+        formData.append("image", selectedImage);
+
+        const updateResponse = await fetch(`/api/staff/${staffId}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!updateResponse.ok) {
+          const error = await updateResponse.json();
+          // Image upload failed, but staff was created
+          console.warn("Staff created but image upload failed:", error);
+        }
+      } else {
+        // Use JSON for regular request without image
+        const requestBody = {
+          name: staffForm.name,
+          salonId: salon.id,
+          serviceId: staffForm.serviceId,
+          availability: transformedAvailability,
+        };
+
+        const response = await fetch("/api/staff", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to add staff member");
+        }
       }
 
       toast({
@@ -309,6 +431,10 @@ export default function StaffPage() {
         },
       });
 
+      // Reset image state
+      setSelectedImage(null);
+      setImagePreview(null);
+
       // Refresh staff list
       fetchStaff();
     } catch (error: any) {
@@ -323,6 +449,15 @@ export default function StaffPage() {
 
   const handleEditStaff = (staff: StaffMember) => {
     setEditingStaff(staff);
+
+    // Set image preview if staff has an image
+    if (staff.image) {
+      setImagePreview(staff.image);
+      setSelectedImage(null); // Reset selected file
+    } else {
+      setImagePreview(null);
+      setSelectedImage(null);
+    }
 
     // Transform availability data to form format
     const transformedAvailability: any = {};
@@ -353,12 +488,16 @@ export default function StaffPage() {
       }
     });
 
+    // Get the first service ID if available
+    const firstServiceId =
+      staff.services?.[0]?.service?.id || staff.services?.[0]?.id || "";
+
     setStaffForm({
       name: staff.name || staff.user?.name || "",
       role: staff.role || "",
       email: staff.email || staff.user?.email || "",
       phone: staff.phone || staff.user?.phone || "",
-      serviceId: "", // Would need to get from staff.services if available
+      serviceId: firstServiceId,
       availability: transformedAvailability,
     });
 
@@ -390,29 +529,69 @@ export default function StaffPage() {
         };
       });
 
-      const requestBody: any = {
-        availability: transformedAvailability,
-      };
+      let response;
 
-      if (staffForm.serviceId) {
-        requestBody.serviceId = staffForm.serviceId;
+      // Check if we have a new image to upload
+      if (selectedImage) {
+        // Use FormData for multipart/form-data
+        const formData = new FormData();
+
+        // Add image
+        formData.append("image", selectedImage);
+
+        // Only include serviceId if it has a valid value
+        if (staffForm.serviceId && staffForm.serviceId.trim() !== "") {
+          formData.append("serviceId", staffForm.serviceId);
+        }
+
+        // Only add availability if provided
+        formData.append(
+          "availability",
+          JSON.stringify(transformedAvailability)
+        );
+
+        response = await fetch(`/api/staff/${editingStaff.id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+      } else {
+        // Use JSON for regular request without new image
+        const requestBody: any = {
+          availability: transformedAvailability,
+        };
+
+        // Only include serviceId if it has a valid value
+        if (staffForm.serviceId && staffForm.serviceId.trim() !== "") {
+          requestBody.serviceId = staffForm.serviceId;
+        }
+
+        response = await fetch(`/api/staff/${editingStaff.id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
       }
 
-      const response = await fetch(`/api/staff/${editingStaff.id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log("Update response status:", response.status);
       const result = await response.json();
-      console.log("Update response data:", result);
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to update staff member");
+        // Create a detailed error message
+        let errorMessage = result.message || "Failed to update staff member";
+        if (result.errors && Array.isArray(result.errors)) {
+          errorMessage +=
+            ": " +
+            result.errors
+              .map((e: any) => (typeof e === "string" ? e : JSON.stringify(e)))
+              .join(", ");
+        }
+
+        throw new Error(errorMessage);
       }
 
       toast({
@@ -422,6 +601,8 @@ export default function StaffPage() {
 
       setIsEditDialogOpen(false);
       setEditingStaff(null);
+      setSelectedImage(null);
+      setImagePreview(null);
       fetchStaff();
     } catch (error: any) {
       console.error("Error updating staff:", error);
@@ -449,7 +630,6 @@ export default function StaffPage() {
       const salon = JSON.parse(localStorage.getItem("salon") || "{}");
 
       if (!salon.id || !token) {
-        console.log("No salon ID or token found");
         return;
       }
 
@@ -461,7 +641,6 @@ export default function StaffPage() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Bookings data:", result);
         setBookings(result.data || []);
       }
     } catch (error) {
@@ -479,7 +658,6 @@ export default function StaffPage() {
       const salon = JSON.parse(localStorage.getItem("salon") || "{}");
 
       if (!salon.id || !token) {
-        console.log("No salon ID or token found");
         return;
       }
 
@@ -491,7 +669,6 @@ export default function StaffPage() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Reviews data:", result);
         setReviews(result.data || []);
       }
     } catch (error) {
@@ -503,27 +680,17 @@ export default function StaffPage() {
 
   // Calculate staff metrics from bookings and reviews
   const calculateStaffMetrics = (staffId: string) => {
-    console.log("Calculating metrics for staffId:", staffId);
-    console.log("All bookings:", bookings);
-
     // Filter only completed bookings first (case-insensitive)
     const completedBookings = bookings.filter(
       (booking) => booking.status?.toLowerCase() === "completed"
     );
 
-    console.log("All completed bookings:", completedBookings);
-
     // Filter completed bookings for this staff member
     const staffCompletedBookings = completedBookings.filter((booking) => {
       const matchesStaffId =
         booking.staffId === staffId || booking.staff?.id === staffId;
-      console.log(
-        `Booking ${booking.id}: staffId=${booking.staffId}, staff?.id=${booking.staff?.id}, matches=${matchesStaffId}`
-      );
       return matchesStaffId;
     });
-
-    console.log("Staff completed bookings:", staffCompletedBookings);
 
     // Calculate total revenue from completed bookings
     const revenue = staffCompletedBookings.reduce((sum, booking) => {
@@ -552,11 +719,8 @@ export default function StaffPage() {
         price = 0;
       }
 
-      console.log(`Booking ${booking.id} price:`, price);
       return sum + price;
     }, 0);
-
-    console.log("Total revenue:", revenue);
 
     // Filter all bookings for this staff member (for total count)
     const staffBookings = bookings.filter(
@@ -565,7 +729,6 @@ export default function StaffPage() {
 
     // Get all booking IDs for this staff member
     const staffBookingIds = staffBookings.map((booking) => booking.id);
-    console.log(`Staff ${staffId} booking IDs:`, staffBookingIds);
 
     // Filter reviews that are linked to this staff's bookings via bookingId
     const staffReviews = reviews.filter((review) => {
@@ -578,10 +741,6 @@ export default function StaffPage() {
       return matchesBookingId || matchesStaffId;
     });
 
-    console.log(`Staff ${staffId} reviews:`, staffReviews);
-    console.log(`Total reviews for staff ${staffId}:`, staffReviews.length);
-    console.log(`All reviews in system:`, reviews);
-
     // Calculate average rating from reviews
     const avgRating =
       staffReviews.length > 0
@@ -593,8 +752,6 @@ export default function StaffPage() {
             return sum + rating;
           }, 0) / staffReviews.length
         : 0;
-
-    console.log(`Average rating for staff ${staffId}:`, avgRating);
 
     // Calculate efficiency (percentage of completed bookings)
     const efficiency =
@@ -727,7 +884,6 @@ export default function StaffPage() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Salon hours response:", result);
 
         const salonData = result.data;
         if (salonData && salonData.hours) {
@@ -761,7 +917,6 @@ export default function StaffPage() {
             }
           });
 
-          console.log("Formatted salon hours:", formattedHours);
           setSalonOperatingHours(formattedHours);
         }
       }
@@ -780,7 +935,6 @@ export default function StaffPage() {
       });
 
       const result = await response.json();
-      console.log("Salon API Response:", result);
 
       if (!response.ok) {
         console.error("API Error Details:", result);
@@ -1147,6 +1301,28 @@ export default function StaffPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="image">Staff Photo (Optional)</Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                    onChange={handleImageChange}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Max file size: 5MB. Accepted formats: JPEG, PNG, WebP, GIF
+                  </p>
+                  {imagePreview && (
+                    <div className="mt-2">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded-lg border"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -1343,6 +1519,33 @@ export default function StaffPage() {
                       )}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-image">Staff Photo</Label>
+                  <Input
+                    id="edit-image"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                    onChange={handleImageChange}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Max file size: 5MB. Accepted formats: JPEG, PNG, WebP, GIF
+                  </p>
+                  {imagePreview && (
+                    <div className="mt-2">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded-lg border"
+                      />
+                      {selectedImage && (
+                        <p className="text-xs text-green-600 mt-1">
+                          New image selected
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Working Hours Section */}
@@ -1557,6 +1760,7 @@ export default function StaffPage() {
                         <Avatar className="w-12 h-12">
                           <AvatarImage
                             src={
+                              staff.image ||
                               staff.user?.avatar ||
                               staff.avatar ||
                               `https://api.dicebear.com/7.x/initials/svg?seed=${
@@ -1699,7 +1903,14 @@ export default function StaffPage() {
                           <div className="flex items-center gap-3 mb-3">
                             <Avatar className="w-8 h-8">
                               <AvatarImage
-                                src={staff.user?.avatar || staff.avatar}
+                                src={
+                                  staff.image ||
+                                  staff.user?.avatar ||
+                                  staff.avatar ||
+                                  `https://api.dicebear.com/7.x/initials/svg?seed=${
+                                    staff.name || staff.user?.name || "User"
+                                  }`
+                                }
                                 alt={staff.name || staff.user?.name || "User"}
                               />
                               <AvatarFallback>

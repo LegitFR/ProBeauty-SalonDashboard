@@ -10,12 +10,6 @@ import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Progress } from "../../../components/ui/progress";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../../components/ui/tabs";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,191 +19,234 @@ import {
 import {
   DollarSign,
   TrendingUp,
-  TrendingDown,
-  Calendar,
-  Download,
-  Eye,
-  CreditCard,
-  Wallet,
-  Receipt,
-  PieChart,
-  BarChart3,
-  Target,
-  AlertTriangle,
-  CheckCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  Clock,
   Users,
-  Scissors,
+  Receipt,
+  Download,
   Package,
-  Gift,
+  Scissors,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  getMonthAnalytics,
+  getLastNDaysAnalytics,
+  getAllTimeAnalytics,
+  getWeekAnalytics,
+  getYearAnalytics,
+  formatCurrency,
+} from "../../../lib/analytics";
+import { AnalyticsData } from "../../../lib/types/analytics";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+
+type DateRange = "today" | "week" | "month" | "year" | "all-time";
 
 export default function FinancePage() {
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange>("month");
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [dateRange]);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("accessToken");
+
+      if (!token) return;
+
+      // Fetch salon data from API
+      const salonResponse = await fetch("/api/salons/my-salons", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const salonData = await salonResponse.json();
+      if (!salonResponse.ok || !salonData.data || salonData.data.length === 0) {
+        console.error("No salon found for user");
+        return;
+      }
+
+      const salonId = salonData.data[0].id;
+
+      let response;
+      switch (dateRange) {
+        case "today":
+          response = await getLastNDaysAnalytics(salonId, 1, token);
+          break;
+        case "week":
+          response = await getWeekAnalytics(salonId, token);
+          break;
+        case "month":
+          response = await getMonthAnalytics(salonId, token);
+          break;
+        case "year":
+          response = await getYearAnalytics(salonId, token);
+          break;
+        case "all-time":
+          response = await getAllTimeAnalytics(salonId, token);
+          break;
+        default:
+          response = await getMonthAnalytics(salonId, token);
+      }
+
+      if (response.data) {
+        setAnalytics(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  function getDateRangeLabel(range: DateRange): string {
+    switch (range) {
+      case "today":
+        return "Today";
+      case "week":
+        return "This week";
+      case "month":
+        return "This month";
+      case "year":
+        return "This year";
+      case "all-time":
+        return "All time";
+      default:
+        return "This month";
+    }
+  }
+
   const financialMetrics = [
     {
       title: "Total Revenue",
-      value: "$42,350",
-      change: "+18.5%",
-      trend: "up",
+      value: loading
+        ? "..."
+        : formatCurrency(analytics?.summary.totalRevenue || "0"),
+      change: `${analytics?.summary.totalTransactions || 0} transactions`,
       icon: DollarSign,
-      description: "This month",
+      description: getDateRangeLabel(dateRange),
+      bgColor: "bg-green-50",
+      iconColor: "text-green-600",
     },
     {
       title: "Net Profit",
-      value: "$23,890",
-      change: "+22.1%",
-      trend: "up",
+      value: loading
+        ? "..."
+        : formatCurrency(analytics?.summary.netProfit || "0"),
+      change: analytics
+        ? `Commission: ${formatCurrency(analytics.summary.adminCommission)}`
+        : "...",
       icon: TrendingUp,
-      description: "After expenses",
+      description: "After 2% platform fee",
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-600",
     },
     {
-      title: "Outstanding Payments",
-      value: "$1,240",
-      change: "-8.3%",
-      trend: "down",
-      icon: Clock,
-      description: "Pending collection",
+      title: "Unique Customers",
+      value: loading
+        ? "..."
+        : (analytics?.summary.uniqueCustomers || 0).toString(),
+      change: loading
+        ? "..."
+        : formatCurrency(analytics?.summary.averageTransactionValue || "0"),
+      icon: Users,
+      description: "Average per customer",
+      bgColor: "bg-purple-50",
+      iconColor: "text-purple-600",
     },
     {
-      title: "Avg Transaction",
-      value: "$87.50",
-      change: "+5.2%",
-      trend: "up",
+      title: "Admin Commission",
+      value: loading
+        ? "..."
+        : formatCurrency(analytics?.summary.adminCommission || "0"),
+      change: "2% of revenue",
       icon: Receipt,
-      description: "Per customer",
+      description: "Platform fee",
+      bgColor: "bg-orange-50",
+      iconColor: "text-orange-600",
     },
   ];
 
-  const revenueBreakdown = [
-    {
-      category: "Hair Services",
-      amount: 18400,
-      percentage: 43.4,
-      color: "bg-blue-500",
-    },
-    {
-      category: "Nail Services",
-      amount: 8900,
-      percentage: 21.0,
-      color: "bg-purple-500",
-    },
-    {
-      category: "Products",
-      amount: 7200,
-      percentage: 17.0,
-      color: "bg-green-500",
-    },
-    {
-      category: "Treatments",
-      amount: 5100,
-      percentage: 12.0,
-      color: "bg-yellow-500",
-    },
-    {
-      category: "Packages",
-      amount: 2750,
-      percentage: 6.6,
-      color: "bg-pink-500",
-    },
+  const COLORS = [
+    "#FF6A00",
+    "#00C49F",
+    "#FFBB28",
+    "#0088FE",
+    "#FF8042",
+    "#8884d8",
   ];
 
-  const expenses = [
-    {
-      category: "Staff Salaries",
-      amount: 12800,
-      budget: 13000,
-      color: "bg-red-500",
-    },
-    {
-      category: "Rent & Utilities",
-      amount: 3200,
-      budget: 3200,
-      color: "bg-orange-500",
-    },
-    {
-      category: "Product Inventory",
-      amount: 2400,
-      budget: 2800,
-      color: "bg-blue-500",
-    },
-    {
-      category: "Marketing",
-      amount: 800,
-      budget: 1000,
-      color: "bg-purple-500",
-    },
-    { category: "Equipment", amount: 450, budget: 500, color: "bg-green-500" },
-    { category: "Insurance", amount: 350, budget: 350, color: "bg-gray-500" },
-  ];
-
-  const dailyRevenue = [
-    { day: "Mon", amount: 1240, transactions: 14 },
-    { day: "Tue", amount: 1890, transactions: 21 },
-    { day: "Wed", amount: 1650, transactions: 19 },
-    { day: "Thu", amount: 2100, transactions: 24 },
-    { day: "Fri", amount: 2340, transactions: 27 },
-    { day: "Sat", amount: 2890, transactions: 33 },
-    { day: "Sun", amount: 1680, transactions: 19 },
-  ];
-
-  const paymentMethods = [
-    {
-      method: "Credit Card",
-      amount: 28400,
-      percentage: 67.1,
-      icon: CreditCard,
-    },
-    { method: "Cash", amount: 8900, percentage: 21.0, icon: Wallet },
-    { method: "Gift Cards", amount: 3200, percentage: 7.6, icon: Gift },
-    { method: "Mobile Pay", amount: 1850, percentage: 4.3, icon: DollarSign },
-  ];
-
-  const profitAnalysis = {
-    grossProfit: 31250,
-    grossProfitMargin: 73.8,
-    netProfit: 23890,
-    netProfitMargin: 56.4,
-    totalExpenses: 18500,
-    monthlyGrowth: 18.5,
-  };
+  // Prepare data for charts
+  const revenueByCategory = analytics
+    ? [
+        ...analytics.serviceRevenue.byCategory.map((cat) => ({
+          name: cat.category || "Uncategorized",
+          value: parseFloat(cat.revenue),
+          count: cat.count,
+          type: "Service",
+        })),
+        ...analytics.productRevenue.byCategory.map((cat) => ({
+          name: cat.category || "Products",
+          value: parseFloat(cat.revenue),
+          count: cat.count,
+          type: "Product",
+        })),
+      ]
+    : [];
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between space-y-4 flex-col md:flex-row">
+      <div className="flex items-center justify-between flex-col md:flex-row gap-4">
         <div>
           <h1 className="text-3xl font-bold font-heading flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-white" />
             </div>
-            Financial Dashboard
+            Financial Analytics
           </h1>
           <p className="text-muted-foreground mt-2">
-            Track revenue, expenses, and profitability
+            Comprehensive financial insights and metrics
           </p>
         </div>
         <div className="flex gap-2">
-          <Select defaultValue="current-month">
+          <Select
+            value={dateRange}
+            onValueChange={(value) => setDateRange(value as DateRange)}
+          >
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="current-month">Current Month</SelectItem>
-              <SelectItem value="last-month">Last Month</SelectItem>
-              <SelectItem value="quarter">This Quarter</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
               <SelectItem value="year">This Year</SelectItem>
+              <SelectItem value="all-time">All Time</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline">
             <Download className="w-4 h-4 mr-2" />
-            Export Report
+            Export
           </Button>
         </div>
       </div>
 
-      {/* Key Metrics */}
+      {/* Financial Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {financialMetrics.map((metric, index) => {
           const Icon = metric.icon;
@@ -217,33 +254,22 @@ export default function FinancePage() {
             <Card key={index} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium text-muted-foreground">
                       {metric.title}
                     </p>
-                    <p className="text-3xl font-bold">{metric.value}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      {metric.trend === "up" ? (
-                        <ArrowUpRight className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-red-600" />
-                      )}
-                      <span
-                        className={`text-sm font-medium ${
-                          metric.trend === "up"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {metric.change}
-                      </span>
-                    </div>
+                    <p className="text-2xl font-bold mt-2">{metric.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {metric.change}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {metric.description}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-primary" />
+                  <div
+                    className={`w-12 h-12 ${metric.bgColor} rounded-full flex items-center justify-center`}
+                  >
+                    <Icon className={`w-6 h-6 ${metric.iconColor}`} />
                   </div>
                 </div>
               </CardContent>
@@ -252,538 +278,250 @@ export default function FinancePage() {
         })}
       </div>
 
-      <Tabs defaultValue="overview" className="w-full space-y-6">
-        <div className="w-full overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <TabsList className="inline-flex min-w-full lg:w-full h-auto p-1 bg-muted rounded-lg gap-1">
-            <TabsTrigger
-              value="overview"
-              className="shrink-0 w-[60px] sm:w-auto sm:flex-1 lg:flex-auto text-[10px] sm:text-sm lg:text-base py-2 sm:py-2.5 px-2 sm:px-4 lg:px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap transition-all"
-            >
-              All
-            </TabsTrigger>
-            <TabsTrigger
-              value="revenue"
-              className="shrink-0 w-[64px] sm:w-auto sm:flex-1 lg:flex-auto text-[10px] sm:text-sm lg:text-base py-2 sm:py-2.5 px-2 sm:px-4 lg:px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap transition-all"
-            >
-              Revenue
-            </TabsTrigger>
-            <TabsTrigger
-              value="expenses"
-              className="shrink-0 w-[68px] sm:w-auto sm:flex-1 lg:flex-auto text-[10px] sm:text-sm lg:text-base py-2 sm:py-2.5 px-2 sm:px-4 lg:px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap transition-all"
-            >
-              Expenses
-            </TabsTrigger>
-            <TabsTrigger
-              value="profit"
-              className="shrink-0 w-[52px] sm:w-auto sm:flex-1 lg:flex-auto text-[10px] sm:text-sm lg:text-base py-2 sm:py-2.5 px-2 sm:px-4 lg:px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap transition-all"
-            >
-              Profit
-            </TabsTrigger>
-            <TabsTrigger
-              value="payments"
-              className="shrink-0 w-[68px] sm:w-auto sm:flex-1 lg:flex-auto text-[10px] sm:text-sm lg:text-base py-2 sm:py-2.5 px-2 sm:px-4 lg:px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap transition-all"
-            >
-              Payments
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue Breakdown Pie Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue Breakdown</CardTitle>
+            <CardDescription>
+              Revenue distribution by category and type
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="h-80 flex items-center justify-center">
+                <p className="text-muted-foreground">Loading...</p>
+              </div>
+            ) : revenueByCategory.length > 0 ? (
+              <ResponsiveContainer width="100%" height={320}>
+                <RechartsPieChart>
+                  <Pie
+                    data={revenueByCategory}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {revenueByCategory.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) =>
+                      formatCurrency(value.toString())
+                    }
+                  />
+                  <Legend />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-80 flex items-center justify-center">
+                <p className="text-muted-foreground">No data available</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Daily Revenue Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-primary" />
-                  Daily Revenue (This Week)
-                </CardTitle>
-                <CardDescription>
-                  Revenue and transaction count by day
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {dailyRevenue.map((day, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="w-12 text-sm font-medium">
-                          {day.day}
+        {/* Category Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Category Performance</CardTitle>
+            <CardDescription>
+              Detailed breakdown of revenue sources
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-muted-foreground">Loading...</p>
+            ) : (
+              <div className="space-y-4">
+                {/* Service Revenue */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Scissors className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold">Services</h3>
+                    <Badge variant="secondary">
+                      {formatCurrency(analytics?.serviceRevenue.total || "0")}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 ml-6">
+                    {analytics?.serviceRevenue.byCategory.map((cat, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>{cat.category || "Uncategorized"}</span>
+                          <span className="font-medium">
+                            {formatCurrency(cat.revenue)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{cat.count} bookings</span>
+                          <span>{cat.percentage.toFixed(1)}%</span>
+                        </div>
+                        <Progress value={cat.percentage} className="h-1" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Product Revenue */}
+                <div className="pt-4 border-t">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Package className="w-4 h-4 text-green-600" />
+                    <h3 className="font-semibold">Products</h3>
+                    <Badge variant="secondary">
+                      {formatCurrency(analytics?.productRevenue.total || "0")}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 ml-6">
+                    {analytics?.productRevenue.byCategory.map((cat, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>{cat.category || "Products"}</span>
+                          <span className="font-medium">
+                            {formatCurrency(cat.revenue)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{cat.count} orders</span>
+                          <span>{cat.percentage.toFixed(1)}%</span>
+                        </div>
+                        <Progress value={cat.percentage} className="h-1" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Service Revenue Summary</CardTitle>
+            <CardDescription>
+              Total revenue from service bookings
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-3xl font-bold text-primary">
+                  {loading
+                    ? "..."
+                    : formatCurrency(analytics?.serviceRevenue.total || "0")}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {analytics?.serviceRevenue.byCategory.reduce(
+                    (sum, cat) => sum + cat.count,
+                    0
+                  ) || 0}{" "}
+                  total bookings
+                </p>
+              </div>
+              <div className="pt-4 border-t">
+                <p className="text-sm font-medium mb-2">
+                  Top Service Categories
+                </p>
+                <div className="space-y-2">
+                  {analytics?.serviceRevenue.byCategory
+                    .slice(0, 3)
+                    .map((cat, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span className="text-muted-foreground">
+                          {cat.category || "Uncategorized"}
                         </span>
-                        <div className="flex-1">
-                          <div className="h-8 bg-gray-100 rounded-md overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-primary to-orange-500 rounded-md transition-all duration-500"
-                              style={{
-                                width: `${Math.min(
-                                  ((day.amount || 0) / 3000) * 100,
-                                  100
-                                )}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
+                        <span className="font-medium">
+                          {formatCurrency(cat.revenue)}
+                        </span>
                       </div>
-                      <div className="text-right min-w-20">
-                        <p className="font-medium">
-                          ${(Number(day.amount) || 0).toFixed(2)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {day.transactions} txns
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Revenue Breakdown */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-primary" />
-                  Revenue by Category
-                </CardTitle>
-                <CardDescription>
-                  Service and product revenue breakdown
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {revenueBreakdown.map((item, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-3 h-3 ${item.color} rounded-full`}
-                          />
-                          <span className="text-sm font-medium">
-                            {item.category}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            ${item.amount.toLocaleString()}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.percentage}%
-                          </p>
-                        </div>
-                      </div>
-                      <Progress value={item.percentage} className="h-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="revenue" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Revenue Trends</CardTitle>
-                <CardDescription>
-                  Monthly revenue performance over time
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-end justify-between gap-2">
-                  {[32000, 35000, 38000, 41000, 39000, 42350].map(
-                    (value, index) => (
-                      <div
-                        key={index}
-                        className="flex-1 flex flex-col items-center gap-2"
-                      >
-                        <div className="w-full bg-gray-100 rounded-t-md relative overflow-hidden">
-                          <div
-                            className="w-full bg-gradient-to-t from-primary to-orange-500 rounded-t-md transition-all duration-700"
-                            style={{ height: `${(value / 45000) * 200}px` }}
-                          />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xs font-medium">
-                            ${(value / 1000).toFixed(0)}K
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][index]}
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Performers</CardTitle>
-                <CardDescription>Highest revenue generators</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Scissors className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-600">
-                        Hair Color
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold text-blue-600">
-                      $8,900
+        <Card>
+          <CardHeader>
+            <CardTitle>Product Revenue Summary</CardTitle>
+            <CardDescription>Total revenue from product sales</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-3xl font-bold text-green-600">
+                  {loading
+                    ? "..."
+                    : formatCurrency(analytics?.productRevenue.total || "0")}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {analytics?.productRevenue.byCategory.reduce(
+                    (sum, cat) => sum + cat.count,
+                    0
+                  ) || 0}{" "}
+                  total orders
+                </p>
+              </div>
+              <div className="pt-4 border-t">
+                <p className="text-sm font-medium mb-2">Revenue Metrics</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Avg Order Value
+                    </span>
+                    <span className="font-medium">
+                      {analytics?.productRevenue.byCategory.reduce(
+                        (sum, cat) => sum + cat.count,
+                        0
+                      )
+                        ? formatCurrency(
+                            (
+                              parseFloat(analytics.productRevenue.total) /
+                              analytics.productRevenue.byCategory.reduce(
+                                (sum, cat) => sum + cat.count,
+                                0
+                              )
+                            ).toString()
+                          )
+                        : "$0.00"}
                     </span>
                   </div>
-
-                  <div className="flex items-center justify-between p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Scissors className="w-4 h-4 text-purple-600" />
-                      <span className="text-sm font-medium text-purple-600">
-                        Hair Cut & Style
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold text-purple-600">
-                      $7,200
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      % of Total Revenue
                     </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Package className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-600">
-                        Hair Care Products
-                      </span>
-                    </div>
-                    <span className="text-sm font-bold text-green-600">
-                      $4,100
+                    <span className="font-medium">
+                      {analytics
+                        ? (
+                            (parseFloat(analytics.productRevenue.total) /
+                              parseFloat(analytics.summary.totalRevenue)) *
+                            100
+                          ).toFixed(1)
+                        : "0"}
+                      %
                     </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="expenses" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Expense Breakdown</CardTitle>
-                <CardDescription>
-                  Current month expenses vs budget
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {expenses.map((expense, index) => {
-                    const utilization =
-                      expense.budget > 0
-                        ? ((expense.amount || 0) / expense.budget) * 100
-                        : 0;
-                    const isOverBudget = utilization > 100;
-
-                    return (
-                      <div key={index} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            {expense.category}
-                          </span>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">
-                              ${expense.amount.toLocaleString()} / $
-                              {expense.budget.toLocaleString()}
-                            </p>
-                            <p
-                              className={`text-xs ${
-                                isOverBudget ? "text-red-600" : "text-green-600"
-                              }`}
-                            >
-                              {utilization.toFixed(1)}% of budget
-                            </p>
-                          </div>
-                        </div>
-                        <Progress
-                          value={Math.min(utilization, 100)}
-                          className={`h-2 ${
-                            isOverBudget
-                              ? "[&>div]:bg-red-500"
-                              : "[&>div]:bg-green-500"
-                          }`}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Expense Insights</CardTitle>
-                <CardDescription>
-                  Key observations and recommendations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-800">
-                        Under Budget
-                      </span>
-                    </div>
-                    <p className="text-xs text-green-700">
-                      Marketing and equipment expenses are 20% and 10% under
-                      budget respectively
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Target className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-800">
-                        On Track
-                      </span>
-                    </div>
-                    <p className="text-xs text-blue-700">
-                      Most expense categories are within 5% of budget targets
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                      <span className="text-sm font-medium text-yellow-800">
-                        Monitor
-                      </span>
-                    </div>
-                    <p className="text-xs text-yellow-700">
-                      Staff salaries at 98.5% of budget - monitor for end of
-                      month
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="profit" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Profit & Loss Summary</CardTitle>
-                <CardDescription>
-                  Current month financial performance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Total Revenue
-                        </p>
-                        <p className="text-2xl font-bold text-green-600">
-                          $42,350
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Total Expenses
-                        </p>
-                        <p className="text-2xl font-bold text-red-600">
-                          $18,500
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Gross Profit
-                        </p>
-                        <p className="text-2xl font-bold text-blue-600">
-                          $31,250
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          73.8% margin
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Net Profit
-                        </p>
-                        <p className="text-2xl font-bold text-primary">
-                          $23,890
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          56.4% margin
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">
-                        Profit Margin Trend
-                      </span>
-                      <span className="text-sm text-green-600 font-medium">
-                        +18.5% vs last month
-                      </span>
-                    </div>
-                    <Progress
-                      value={profitAnalysis.netProfitMargin}
-                      className="h-3"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Metrics</CardTitle>
-                <CardDescription>Key financial indicators</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <TrendingUp className="w-6 h-6 text-white" />
-                    </div>
-                    <p className="text-2xl font-bold text-green-600">
-                      {profitAnalysis.monthlyGrowth}%
-                    </p>
-                    <p className="text-sm text-green-700">Monthly Growth</p>
-                  </div>
-
-                  <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Target className="w-6 h-6 text-white" />
-                    </div>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {profitAnalysis.grossProfitMargin}%
-                    </p>
-                    <p className="text-sm text-blue-700">Gross Margin</p>
-                  </div>
-
-                  <div className="text-center p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                    <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <DollarSign className="w-6 h-6 text-white" />
-                    </div>
-                    <p className="text-2xl font-bold text-purple-600">$87.50</p>
-                    <p className="text-sm text-purple-700">Avg Transaction</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="payments" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Methods</CardTitle>
-                <CardDescription>
-                  Revenue breakdown by payment type
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {paymentMethods.map((method, index) => {
-                    const Icon = method.icon;
-                    return (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                            <Icon className="w-4 h-4 text-primary" />
-                          </div>
-                          <span className="font-medium">{method.method}</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">
-                            ${method.amount.toLocaleString()}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {method.percentage}%
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Outstanding Payments</CardTitle>
-                <CardDescription>Payments pending collection</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div>
-                      <p className="font-medium text-yellow-600">
-                        Invoice #1234
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Emma Thompson - Premium Package
-                      </p>
-                      <p className="text-xs text-yellow-600">Due 3 days ago</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-yellow-700">$320</p>
-                      <Button size="sm" variant="outline" className="mt-1">
-                        <Eye className="w-3 h-3 mr-1" />
-                        View
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div>
-                      <p className="font-medium text-red-600">Invoice #1189</p>
-                      <p className="text-sm text-muted-foreground">
-                        Corporate Package - StyleCorp
-                      </p>
-                      <p className="text-xs text-red-600">Due 1 week ago</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-red-700">$920</p>
-                      <Button size="sm" variant="outline" className="mt-1">
-                        <Eye className="w-3 h-3 mr-1" />
-                        View
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="text-center pt-4">
-                    <p className="text-sm text-muted-foreground">
-                      Total Outstanding:{" "}
-                      <span className="font-bold text-red-600">$1,240</span>
-                    </p>
-                    <Button className="mt-2" size="sm">
-                      Send Reminders
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

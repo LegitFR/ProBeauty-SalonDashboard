@@ -11,86 +11,121 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getTodayAnalytics, formatCurrency } from "../../lib/analytics";
+import { AnalyticsData } from "../../lib/types/analytics";
 
 export function OverviewCards() {
-  const [orderStats, setOrderStats] = useState({
-    total: 0,
-    pending: 0,
-    revenue: 0,
-  });
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchOrderStats();
+    fetchAnalytics();
   }, []);
 
-  const fetchOrderStats = async () => {
+  const fetchAnalytics = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("accessToken");
+
       if (!token) return;
 
-      const response = await fetch("/api/orders?page=1&limit=100", {
+      // Fetch salon data from API
+      const salonResponse = await fetch("/api/salons/my-salons", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const data = await response.json();
-      if (response.ok && data.data) {
-        const orders = data.data;
-        const pending = orders.filter(
-          (o: any) => o.status === "PENDING"
-        ).length;
-        const revenue = orders.reduce(
-          (sum: number, o: any) => sum + (o.totalAmount || 0),
-          0
-        );
+      const salonData = await salonResponse.json();
+      if (!salonResponse.ok || !salonData.data || salonData.data.length === 0) {
+        console.error("No salon found for user");
+        return;
+      }
 
-        setOrderStats({
-          total: orders.length,
-          pending,
-          revenue,
-        });
+      const salonId = salonData.data[0].id;
+      console.log("OverviewCards: Fetching analytics for salon:", salonId);
+
+      const response = await getTodayAnalytics(salonId, token);
+      if (response.data) {
+        setAnalytics(response.data);
       }
     } catch (error) {
-      console.error("Error fetching order stats:", error);
+      console.error("Error fetching analytics:", error);
+      // Set default analytics data on error
+      setAnalytics({
+        summary: {
+          totalRevenue: "0",
+          totalTransactions: 0,
+          netProfit: "0",
+          adminCommission: "0",
+          averageTransactionValue: "0",
+          uniqueCustomers: 0,
+        },
+        productRevenue: { total: "0", byCategory: [] },
+        serviceRevenue: { total: "0", byCategory: [] },
+        timeRange: { startDate: null, endDate: null },
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const stats = [
     {
       title: "Today's Revenue",
-      value: "€1.248",
-      change: "+12%",
+      value: loading
+        ? "..."
+        : formatCurrency(analytics?.summary.totalRevenue || "0"),
+      change: analytics
+        ? `${analytics.summary.totalTransactions} transactions`
+        : "...",
       changeType: "positive" as const,
       icon: DollarSign,
-      description: "vs yesterday",
+      description: loading
+        ? "Loading..."
+        : `Net: ${formatCurrency(analytics?.summary.netProfit || "0")}`,
     },
     {
-      title: "Today's Bookings",
-      value: "24",
-      change: "+8%",
+      title: "Unique Customers",
+      value: loading
+        ? "..."
+        : analytics?.summary.uniqueCustomers.toString() || "0",
+      change: analytics
+        ? `Avg: ${formatCurrency(analytics.summary.averageTransactionValue)}`
+        : "...",
       changeType: "positive" as const,
-      icon: Calendar,
-      description: "12 completed, 8 upcoming",
+      icon: Users,
+      description: "Average transaction value",
     },
     {
-      title: "Total Orders",
-      value: orderStats.total.toString(),
-      change:
-        orderStats.pending > 0
-          ? `${orderStats.pending} pending`
-          : "All processed",
+      title: "Product Sales",
+      value: loading
+        ? "..."
+        : formatCurrency(analytics?.productRevenue.total || "0"),
+      change: analytics?.productRevenue.byCategory.length
+        ? `${analytics.productRevenue.byCategory[0].count} orders`
+        : "No sales",
       changeType: "positive" as const,
       icon: ShoppingBag,
-      description: `$${(Number(orderStats.revenue) || 0).toFixed(0)} revenue`,
+      description: "Today's product revenue",
     },
     {
-      title: "Staff Utilization",
-      value: "87%",
-      change: "+5%",
+      title: "Service Revenue",
+      value: loading
+        ? "..."
+        : formatCurrency(analytics?.serviceRevenue.total || "0"),
+      change: analytics?.serviceRevenue.byCategory.reduce(
+        (sum, cat) => sum + cat.count,
+        0
+      )
+        ? `${analytics.serviceRevenue.byCategory.reduce(
+            (sum, cat) => sum + cat.count,
+            0
+          )} bookings`
+        : "No bookings",
       changeType: "positive" as const,
-      icon: TrendingUp,
-      description: "average this week",
+      icon: Calendar,
+      description: "Today's service revenue",
     },
   ];
 

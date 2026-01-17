@@ -41,15 +41,26 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const contentType = request.headers.get("content-type");
+    let body;
+    let headers: Record<string, string> = {
+      Authorization: authHeader,
+    };
+
+    // Check if request contains form data (for image uploads)
+    if (contentType?.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      body = formData;
+      // Don't set Content-Type for FormData - browser will set it with boundary
+    } else {
+      body = JSON.stringify(await request.json());
+      headers["Content-Type"] = "application/json";
+    }
 
     const response = await fetch(`${API_BASE_URL}/staff/${id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
-      },
-      body: JSON.stringify(body),
+      headers,
+      body,
     });
 
     const data = await response.json();
