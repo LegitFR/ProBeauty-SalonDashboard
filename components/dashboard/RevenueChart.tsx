@@ -155,7 +155,7 @@ export function RevenueChart() {
                   borderRadius: "8px",
                 }}
                 formatter={(value: number) => [
-                  `$${value.toFixed(2)}`,
+                  `€${value.toFixed(2)}`,
                   "Revenue",
                 ]}
               />

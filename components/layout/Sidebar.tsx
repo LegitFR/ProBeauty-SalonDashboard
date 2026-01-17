@@ -17,6 +17,7 @@ import {
   Sun,
   Moon,
   ShoppingBag,
+  Tag,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
@@ -36,6 +37,7 @@ const navigation = [
   { id: "services", label: "Services", icon: Scissors },
   { id: "products", label: "Products", icon: Package },
   { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "offers", label: "Offers", icon: Tag },
   { id: "ai-insights", label: "AI Insights", icon: Brain },
   { id: "staff", label: "Staff", icon: Users },
   { id: "customers", label: "Customers", icon: UserSquare },
@@ -67,7 +69,7 @@ export function Sidebar({
           "fixed lg:relative top-0 left-0 h-full bg-card border-r border-border z-50 transition-all duration-300",
           isCollapsed ? "w-16 lg:w-16" : "w-64 lg:w-64",
           "lg:translate-x-0",
-          isCollapsed ? "-translate-x-full lg:translate-x-0" : "translate-x-0"
+          isCollapsed ? "-translate-x-full lg:translate-x-0" : "translate-x-0",
         )}
       >
         {/* Header */}
@@ -104,7 +106,7 @@ export function Sidebar({
                   "w-full justify-start gap-3",
                   isCollapsed && "justify-center px-2",
                   currentPage === item.id &&
-                    "bg-primary text-primary-foreground hover:bg-primary/90"
+                    "bg-primary text-primary-foreground hover:bg-primary/90",
                 )}
                 onClick={() => onPageChange(item.id)}
               >

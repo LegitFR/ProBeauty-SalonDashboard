@@ -26,6 +26,7 @@ import {
   ShoppingCart,
   Star,
   Loader2,
+  Tag,
 } from "lucide-react";
 import { useToast } from "../../../components/ui/use-toast";
 import {
@@ -78,6 +79,8 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [offersFilter, setOffersFilter] = useState("all");
+  const [offers, setOffers] = useState<any[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -108,6 +111,12 @@ export default function ProductsPage() {
     { id: "out-of-stock", label: "Out of Stock" },
   ];
 
+  const offersOptions = [
+    { id: "all", label: "All Products" },
+    { id: "with-offers", label: "With Active Offers" },
+    { id: "without-offers", label: "Without Offers" },
+  ];
+
   useEffect(() => {
     fetchSalon();
   }, []);
@@ -136,8 +145,9 @@ export default function ProductsPage() {
       const data = await response.json();
       if (data.data && data.data.length > 0) {
         setSalon(data.data[0]); // Use first salon
-        // Fetch products after salon is loaded
+        // Fetch products and offers after salon is loaded
         fetchProductsForSalon(data.data[0].id);
+        fetchOffers(data.data[0].id);
       } else {
         toast({
           title: "No salon found",
@@ -160,6 +170,25 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     if (!salon?.id) return;
     await fetchProductsForSalon(salon.id);
+  };
+
+  const fetchOffers = async (salonId: string) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        `/api/offers?salonId=${salonId}&offerType=product&isActive=true`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setOffers(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+    }
   };
 
   const fetchProductsForSalon = async (salonId: string) => {
@@ -371,7 +400,7 @@ export default function ProductsPage() {
       selectedProduct.id,
       "with",
       editProductImages.length,
-      "new images"
+      "new images",
     );
 
     setSubmitting(true);
@@ -589,6 +618,15 @@ export default function ProductsPage() {
     }
   };
 
+  const getActiveOffersForProduct = (productId: string) => {
+    return offers.filter((offer) => {
+      if (offer.offerType === "salon") return true;
+      if (offer.offerType === "product" && offer.productId === productId)
+        return true;
+      return false;
+    });
+  };
+
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -598,7 +636,14 @@ export default function ProductsPage() {
       selectedCategory === "all" || product.category === selectedCategory;
     const matchesStatus =
       selectedStatus === "all" || getStockStatus(product) === selectedStatus;
-    return matchesSearch && matchesCategory && matchesStatus;
+
+    const productOffers = getActiveOffersForProduct(product.id);
+    const matchesOffers =
+      offersFilter === "all" ||
+      (offersFilter === "with-offers" && productOffers.length > 0) ||
+      (offersFilter === "without-offers" && productOffers.length === 0);
+
+    return matchesSearch && matchesCategory && matchesStatus && matchesOffers;
   });
 
   const toggleProductStatus = async (productId: string) => {
@@ -694,7 +739,7 @@ export default function ProductsPage() {
             };
           }
           return p;
-        })
+        }),
       );
 
       toast({
@@ -723,13 +768,13 @@ export default function ProductsPage() {
 
   const totalValue = products.reduce(
     (sum, p) => sum + p.stock * (p.cost || 0),
-    0
+    0,
   );
   const lowStockCount = products.filter(
-    (p) => getStockStatus(p) === "low-stock"
+    (p) => getStockStatus(p) === "low-stock",
   ).length;
   const outOfStockCount = products.filter(
-    (p) => getStockStatus(p) === "out-of-stock"
+    (p) => getStockStatus(p) === "out-of-stock",
   ).length;
 
   return (
@@ -1325,6 +1370,7 @@ export default function ProductsPage() {
           {filteredProducts.map((product) => {
             const stockStatus = getStockStatus(product);
             const StockIcon = getStockIcon(stockStatus);
+            const productOffers = getActiveOffersForProduct(product.id);
 
             return (
               <Card
@@ -1340,11 +1386,18 @@ export default function ProductsPage() {
                     alt={product.title}
                     className="w-full h-48 object-cover rounded-t-lg"
                   />
-                  <div className="absolute top-2 left-2">
+                  <div className="absolute top-2 left-2 flex flex-col gap-1">
                     <Badge className={getStockColor(stockStatus)}>
                       <StockIcon className="w-3 h-3 mr-1" />
                       {stockStatus.replace("-", " ")}
                     </Badge>
+                    {productOffers.length > 0 && (
+                      <Badge className="bg-gradient-to-r from-primary via-pink-500 to-rose-500 text-white shadow-md hover:shadow-lg transition-shadow">
+                        <Tag className="w-3 h-3 mr-1" />
+                        {productOffers.length}{" "}
+                        {productOffers.length === 1 ? "Offer" : "Offers"}
+                      </Badge>
+                    )}
                   </div>
                   <div className="absolute top-2 right-2 z-20 pointer-events-auto">
                     <Switch
@@ -1416,6 +1469,46 @@ export default function ProductsPage() {
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {product.description || "No description available"}
                   </p>
+
+                  {productOffers.length > 0 && (
+                    <div className="mb-3 p-3 bg-gradient-to-br from-primary/5 via-pink-50/50 to-rose-50/50 rounded-lg border border-primary/20 shadow-sm">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <div className="p-1 bg-primary/10 rounded">
+                          <Tag className="w-3 h-3 text-primary" />
+                        </div>
+                        <span className="text-xs font-semibold text-primary">
+                          Special Offers
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {productOffers.slice(0, 2).map((offer: any) => (
+                          <div
+                            key={offer.id}
+                            className="flex items-start gap-2 text-xs"
+                          >
+                            <span className="text-primary mt-0.5">•</span>
+                            <div className="flex-1">
+                              <span className="font-medium text-foreground">
+                                {offer.title}
+                              </span>
+                              <span className="ml-1.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-semibold">
+                                {offer.discountType === "percentage"
+                                  ? `${offer.discountValue}% OFF`
+                                  : `€${offer.discountValue} OFF`}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {productOffers.length > 2 && (
+                        <div className="text-xs text-muted-foreground mt-2 pt-2 border-t border-primary/10">
+                          +{productOffers.length - 2} more{" "}
+                          {productOffers.length - 2 === 1 ? "offer" : "offers"}{" "}
+                          available
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>

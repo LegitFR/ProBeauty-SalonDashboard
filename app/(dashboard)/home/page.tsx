@@ -72,7 +72,7 @@ export default function HomePage() {
               <p className="text-sm text-muted-foreground">Total Bookings</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-primary">$28.5K</p>
+              <p className="text-2xl font-bold text-primary">€28.5K</p>
               <p className="text-sm text-muted-foreground">Revenue</p>
             </div>
             <div className="text-center">

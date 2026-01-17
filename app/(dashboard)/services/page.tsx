@@ -25,6 +25,7 @@ import {
   Camera,
   Loader2,
   Star,
+  Tag,
 } from "lucide-react";
 import { useToast } from "../../../components/ui/use-toast";
 
@@ -88,6 +89,8 @@ import Image from "next/image";
 export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [offersFilter, setOffersFilter] = useState("all");
+  const [offers, setOffers] = useState<any[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
   const [salon, setSalon] = useState<any>(null);
@@ -172,8 +175,9 @@ export default function ServicesPage() {
       const data = await response.json();
       if (data.data && data.data.length > 0) {
         setSalon(data.data[0]); // Use first salon
-        // Fetch services after salon is loaded
+        // Fetch services and offers after salon is loaded
         fetchServicesForSalon(data.data[0].id);
+        fetchOffers(data.data[0].id);
       } else {
         toast({
           title: "No salon found",
@@ -201,7 +205,7 @@ export default function ServicesPage() {
   const fetchBookingsForServices = async (
     serviceIds: string[],
     salonId: string,
-    currentServices: Service[]
+    currentServices: Service[],
   ) => {
     if (serviceIds.length === 0) return;
 
@@ -228,35 +232,38 @@ export default function ServicesPage() {
       console.log("📊 Bookings data sample:", bookings.slice(0, 2));
 
       // Calculate booking count and revenue per service
-      const serviceStats = serviceIds.reduce((acc, serviceId) => {
-        const serviceBookings = bookings.filter(
-          (b: any) => b.serviceId === serviceId
-        );
+      const serviceStats = serviceIds.reduce(
+        (acc, serviceId) => {
+          const serviceBookings = bookings.filter(
+            (b: any) => b.serviceId === serviceId,
+          );
 
-        // Count only completed or confirmed bookings
-        const completedBookings = serviceBookings.filter((b: any) => {
-          const status = b.status?.toLowerCase();
-          return status === "completed" || status === "confirmed";
-        });
+          // Count only completed or confirmed bookings
+          const completedBookings = serviceBookings.filter((b: any) => {
+            const status = b.status?.toLowerCase();
+            return status === "completed" || status === "confirmed";
+          });
 
-        const bookingCount = completedBookings.length;
+          const bookingCount = completedBookings.length;
 
-        // Find the service to get its price from the passed currentServices
-        const service = currentServices.find((s) => s.id === serviceId);
-        const servicePrice = service?.price || 0;
+          // Find the service to get its price from the passed currentServices
+          const service = currentServices.find((s) => s.id === serviceId);
+          const servicePrice = service?.price || 0;
 
-        // Calculate revenue: service price × number of bookings
-        const revenue = servicePrice * bookingCount;
+          // Calculate revenue: service price × number of bookings
+          const revenue = servicePrice * bookingCount;
 
-        console.log(
-          `📈 Service ${serviceId}: ${bookingCount} completed bookings × €${servicePrice} = €${revenue.toFixed(
-            2
-          )} revenue`
-        );
+          console.log(
+            `📈 Service ${serviceId}: ${bookingCount} completed bookings × €${servicePrice} = €${revenue.toFixed(
+              2,
+            )} revenue`,
+          );
 
-        acc[serviceId] = { bookings: bookingCount, revenue };
-        return acc;
-      }, {} as Record<string, { bookings: number; revenue: number }>);
+          acc[serviceId] = { bookings: bookingCount, revenue };
+          return acc;
+        },
+        {} as Record<string, { bookings: number; revenue: number }>,
+      );
 
       console.log("📊 Final service stats:", serviceStats);
 
@@ -266,7 +273,7 @@ export default function ServicesPage() {
           ...service,
           bookings: serviceStats[service.id]?.bookings || 0,
           revenue: serviceStats[service.id]?.revenue || 0,
-        }))
+        })),
       );
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -291,7 +298,7 @@ export default function ServicesPage() {
         "📊 Reviews fetched:",
         reviews.length,
         "Average:",
-        averageRating
+        averageRating,
       );
 
       setSalonReviews(reviews);
@@ -323,7 +330,7 @@ export default function ServicesPage() {
             };
           }
           return service;
-        })
+        }),
       );
     } catch (error) {
       console.error("Error fetching reviews:", error);
@@ -353,7 +360,7 @@ export default function ServicesPage() {
       const rawServices = data.data || [];
       console.log(
         "Raw services from backend:",
-        JSON.stringify(rawServices, null, 2)
+        JSON.stringify(rawServices, null, 2),
       );
 
       const transformedServices = rawServices
@@ -393,7 +400,7 @@ export default function ServicesPage() {
       await fetchBookingsForServices(
         transformedServices.map((s: Service) => s.id),
         salonId,
-        transformedServices
+        transformedServices,
       );
 
       // Fetch reviews for services
@@ -734,7 +741,7 @@ export default function ServicesPage() {
         if (data.errors && Array.isArray(data.errors)) {
           console.error(
             "❌ Validation Errors:",
-            JSON.stringify(data.errors, null, 2)
+            JSON.stringify(data.errors, null, 2),
           );
           data.errors.forEach((err: any, index: number) => {
             console.error(`❌ Error ${index + 1}:`, err);
@@ -826,6 +833,12 @@ export default function ServicesPage() {
     { id: "facial", label: "Facial Treatments" },
     { id: "massage", label: "Massage Therapy" },
     { id: "waxing", label: "Waxing Services" },
+  ];
+
+  const offersOptions = [
+    { id: "all", label: "All Services" },
+    { id: "with-offers", label: "With Active Offers" },
+    { id: "without-offers", label: "Without Offers" },
   ];
 
   const oldServices = [
@@ -920,13 +933,48 @@ export default function ServicesPage() {
     },
   ];
 
+  const fetchOffers = async (salonId: string) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(
+        `/api/offers?salonId=${salonId}&offerType=service&isActive=true`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setOffers(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+    }
+  };
+
+  const getActiveOffersForService = (serviceId: string) => {
+    return offers.filter((offer) => {
+      if (offer.offerType === "salon") return true;
+      if (offer.offerType === "service" && offer.serviceId === serviceId)
+        return true;
+      return false;
+    });
+  };
+
   const filteredServices = services.filter((service) => {
     const matchesSearch =
       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
       selectedCategory === "all" || service.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+
+    const serviceOffers = getActiveOffersForService(service.id);
+    const matchesOffers =
+      offersFilter === "all" ||
+      (offersFilter === "with-offers" && serviceOffers.length > 0) ||
+      (offersFilter === "without-offers" && serviceOffers.length === 0);
+
+    return matchesSearch && matchesCategory && matchesOffers;
   });
 
   const toggleServiceStatus = async (serviceId: string) => {
@@ -1065,8 +1113,8 @@ export default function ServicesPage() {
                         step === currentStep
                           ? "bg-primary text-primary-foreground"
                           : step < currentStep
-                          ? "bg-primary/80 text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
+                            ? "bg-primary/80 text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {step < currentStep ? "✓" : step}
@@ -1379,7 +1427,7 @@ export default function ServicesPage() {
                   €
                   {Math.round(
                     services.reduce((sum, s) => sum + s.price, 0) /
-                      services.length
+                      services.length,
                   )}
                 </p>
               </div>
@@ -1437,6 +1485,18 @@ export default function ServicesPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={offersFilter} onValueChange={setOffersFilter}>
+              <SelectTrigger className="w-full lg:w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {offersOptions.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button variant="outline">
               <Filter className="w-4 h-4 mr-2" />
               More Filters
@@ -1455,120 +1515,176 @@ export default function ServicesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((service) => (
-            <Card
-              key={service.id}
-              className="hover:shadow-lg transition-shadow"
-            >
-              <div className="relative">
-                <img
-                  src={
-                    service.image ||
-                    "https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?w=400"
-                  }
-                  alt={service.name}
-                  className="w-full h-48 object-cover rounded-t-lg"
-                />
-                {/*<div className="absolute top-2 right-2">
+          {filteredServices.map((service) => {
+            const serviceOffers = getActiveOffersForService(service.id);
+
+            return (
+              <Card
+                key={service.id}
+                className="hover:shadow-lg transition-shadow"
+              >
+                <div className="relative">
+                  <img
+                    src={
+                      service.image ||
+                      "https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?w=400"
+                    }
+                    alt={service.name}
+                    className="w-full h-48 object-cover rounded-t-lg"
+                  />
+                  {serviceOffers.length > 0 && (
+                    <div className="absolute top-2 left-2">
+                      <Badge className="bg-gradient-to-r from-primary via-pink-500 to-rose-500 text-white shadow-md hover:shadow-lg transition-shadow">
+                        <Tag className="w-3 h-3 mr-1" />
+                        {serviceOffers.length}{" "}
+                        {serviceOffers.length === 1 ? "Offer" : "Offers"}
+                      </Badge>
+                    </div>
+                  )}
+                  {/*<div className="absolute top-2 right-2">
                   <Switch
                     checked={service.isActive ?? true}
                     onCheckedChange={() => toggleServiceStatus(service.id)}
                   />
                 </div>*/}
-                {!service.isActive && (
-                  <div className="absolute inset-0 bg-black/50 rounded-t-lg flex items-center justify-center">
-                    <Badge variant="secondary" className="bg-white text-black">
-                      <EyeOff className="w-3 h-3 mr-1" />
-                      Hidden
-                    </Badge>
-                  </div>
-                )}
-              </div>
-
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-heading text-lg font-semibold">
-                      {service.name}
-                    </h3>
-                    <Badge variant="outline" className="text-xs mt-1">
-                      {getCategoryLabel(service.category || "")}
-                    </Badge>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleEditService(service)}
-                    >
-                      <Edit3 className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-600"
-                      onClick={() => handleDeleteService(service.id)}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
+                  {!service.isActive && (
+                    <div className="absolute inset-0 bg-black/50 rounded-t-lg flex items-center justify-center">
+                      <Badge
+                        variant="secondary"
+                        className="bg-white text-black"
+                      >
+                        <EyeOff className="w-3 h-3 mr-1" />
+                        Hidden
+                      </Badge>
+                    </div>
+                  )}
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {service.description || "No description available"}
-                </p>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="font-heading text-lg font-semibold">
+                        {service.name}
+                      </h3>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        {getCategoryLabel(service.category || "")}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEditService(service)}
+                      >
+                        <Edit3 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        onClick={() => handleDeleteService(service.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-primary" />
-                    <span className="font-semibold">
-                      €{(Number(service.price) || 0).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {formatDuration(service.duration)}
-                    </span>
-                  </div>
-                </div>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    {service.description || "No description available"}
+                  </p>
 
-                {/* Always show stats section */}
-                <div className="grid grid-cols-3 gap-2 text-center border-t border-border pt-3">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {service.bookings ?? 0}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Bookings</p>
+                  {serviceOffers.length > 0 && (
+                    <div className="mb-3 p-3 bg-gradient-to-br from-primary/5 via-pink-50/50 to-rose-50/50 rounded-lg border border-primary/20 shadow-sm">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <div className="p-1 bg-primary/10 rounded">
+                          <Tag className="w-3 h-3 text-primary" />
+                        </div>
+                        <span className="text-xs font-semibold text-primary">
+                          Special Offers
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {serviceOffers.slice(0, 2).map((offer: any) => (
+                          <div
+                            key={offer.id}
+                            className="flex items-start gap-2 text-xs"
+                          >
+                            <span className="text-primary mt-0.5">•</span>
+                            <div className="flex-1">
+                              <span className="font-medium text-foreground">
+                                {offer.title}
+                              </span>
+                              <span className="ml-1.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-semibold">
+                                {offer.discountType === "percentage"
+                                  ? `${offer.discountValue}% OFF`
+                                  : `€${offer.discountValue} OFF`}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {serviceOffers.length > 2 && (
+                        <div className="text-xs text-muted-foreground mt-2 pt-2 border-t border-primary/10">
+                          +{serviceOffers.length - 2} more{" "}
+                          {serviceOffers.length - 2 === 1 ? "offer" : "offers"}{" "}
+                          available
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-primary" />
+                      <span className="font-semibold">
+                        €{(Number(service.price) || 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {formatDuration(service.duration)}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      €{(service.revenue ?? 0).toFixed(2)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1 justify-center">
-                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+
+                  {/* Always show stats section */}
+                  <div className="grid grid-cols-3 gap-2 text-center border-t border-border pt-3">
+                    <div>
                       <p className="text-sm font-medium">
-                        {service.averageRating
-                          ? service.averageRating.toFixed(1)
-                          : service.rating
-                          ? service.rating.toFixed(1)
-                          : "0.0"}
+                        {service.bookings ?? 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Bookings</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        €{(service.revenue ?? 0).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Revenue</p>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1 justify-center">
+                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                        <p className="text-sm font-medium">
+                          {service.averageRating
+                            ? service.averageRating.toFixed(1)
+                            : service.rating
+                              ? service.rating.toFixed(1)
+                              : "0.0"}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {service.reviewCount
+                          ? `${service.reviewCount} reviews`
+                          : "No reviews"}
                       </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {service.reviewCount
-                        ? `${service.reviewCount} reviews`
-                        : "No reviews"}
-                    </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
