@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
+import Image from "next/image";
 
 interface SidebarProps {
   currentPage: string;
@@ -76,12 +77,13 @@ export function Sidebar({
         <div className="flex items-center justify-between p-4 border-b border-border">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Scissors className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="font-heading text-lg font-semibold">
-                ProBeauty
-              </span>
+              <Image
+                src="/probeauty-footer.png"
+                alt="ProBeauty"
+                width={120}
+                height={32}
+                className="h-8 w-auto"
+              />
             </div>
           )}
           <Button

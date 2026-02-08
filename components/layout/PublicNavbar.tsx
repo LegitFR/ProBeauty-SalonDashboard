@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 interface PublicNavbarProps {
   onGetStarted?: () => void;
@@ -98,12 +99,14 @@ export function PublicNavbar({
             className="flex items-center space-x-2 sm:space-x-3 cursor-pointer"
             onClick={handleHome}
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            <span className="font-heading text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
-              ProBeauty
-            </span>
+            <Image
+              src="/probeauty-footer.png"
+              alt="ProBeauty"
+              width={150}
+              height={40}
+              className="h-8 sm:h-10 w-auto"
+              priority
+            />
           </div>
 
           {/* Desktop Navigation */}

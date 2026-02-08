@@ -16,6 +16,7 @@ import {
   Award,
   ExternalLink,
 } from "lucide-react";
+import Image from "next/image";
 
 interface FooterProps {
   onGetStarted: () => void;
@@ -84,7 +85,13 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
           {/* Company Info */}
           <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center mb-6">
-              <span className="text-2xl font-bold">Probeauty</span>
+              <Image
+                src="/probeauty-footer.png"
+                alt="Probeauty"
+                width={150}
+                height={40}
+                className="h-10 w-auto"
+              />
             </div>
             <p className="text-gray-400 mb-6 leading-relaxed">
               The world's leading booking software for beauty and wellness
