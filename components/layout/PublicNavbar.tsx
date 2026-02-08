@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface PublicNavbarProps {
   onGetStarted?: () => void;
@@ -41,7 +42,7 @@ export function PublicNavbar({
     if (!forceLightTheme) {
       const savedTheme = localStorage.getItem("theme");
       const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
+        "(prefers-color-scheme: dark)",
       ).matches;
       const darkMode = savedTheme === "dark" || (!savedTheme && prefersDark);
       setIsDarkMode(darkMode);
@@ -137,17 +138,19 @@ export function PublicNavbar({
             >
               Success Stories
             </a>
-            <button
-              onClick={handleMarketplace}
-              className={`flex items-center transition-colors font-medium ${
-                isDarkMode
-                  ? "text-gray-300 hover:text-primary"
-                  : "text-gray-700 hover:text-primary"
-              }`}
-            >
-              <Globe className="w-4 h-4 mr-2" />
-              Find Salons
-            </button>
+            <Link href="https://pro-beauty-web.vercel.app/">
+              <button
+                // onClick={handleMarketplace}
+                className={`flex items-center transition-colors font-medium ${
+                  isDarkMode
+                    ? "text-gray-300 hover:text-primary"
+                    : "text-gray-700 hover:text-primary"
+                }`}
+              >
+                <Globe className="w-4 h-4 mr-2" />
+                Find Salons
+              </button>
+            </Link>
           </div>
 
           {/* Right Side Navigation */}
