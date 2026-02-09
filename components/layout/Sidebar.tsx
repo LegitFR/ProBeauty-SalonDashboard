@@ -78,7 +78,7 @@ export function Sidebar({
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
               <Image
-                src="/probeauty-footer.png"
+                src="/probeauty-header.svg"
                 alt="ProBeauty"
                 width={120}
                 height={32}

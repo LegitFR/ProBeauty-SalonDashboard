@@ -86,7 +86,7 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
           <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center mb-6">
               <Image
-                src="/probeauty-footer.png"
+                src="/probeauty-footer.svg"
                 alt="Probeauty"
                 width={150}
                 height={40}

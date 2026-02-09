@@ -100,7 +100,7 @@ export function PublicNavbar({
             onClick={handleHome}
           >
             <Image
-              src="/probeauty-footer.png"
+              src="/probeauty-header-black.svg"
               alt="ProBeauty"
               width={150}
               height={40}
