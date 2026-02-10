@@ -114,7 +114,7 @@ export default function MarketplacePage() {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(
-            errorData.error || errorData.details || "Failed to fetch salons"
+            errorData.error || errorData.details || "Failed to fetch salons",
           );
         }
 
@@ -171,7 +171,7 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Navigation */}
-      <PublicNavbar />
+      <PublicNavbar logo="/probeauty-header.svg" />
 
       {/* Hero Section */}
       <section className="marketplace-hero pt-16">
@@ -247,7 +247,7 @@ export default function MarketplacePage() {
                       value={venueType}
                       onChange={(e) =>
                         setVenueType(
-                          e.target.value as "" | "male" | "female" | "everyone"
+                          e.target.value as "" | "male" | "female" | "everyone",
                         )
                       }
                       className="w-full h-10 px-3 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -273,7 +273,7 @@ export default function MarketplacePage() {
                             | "morning"
                             | "afternoon"
                             | "evening"
-                            | "night"
+                            | "night",
                         )
                       }
                       className="w-full h-10 px-3 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -313,7 +313,7 @@ export default function MarketplacePage() {
                             | ""
                             | "top_rated"
                             | "recommended"
-                            | "nearest"
+                            | "nearest",
                         )
                       }
                       className="w-full h-10 px-3 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -462,9 +462,8 @@ export default function MarketplacePage() {
                         className="salon-card-image"
                         onError={(e) => {
                           console.log(`Image failed to load for ${salon.name}`);
-                          (
-                            e.target as HTMLImageElement
-                          ).src = `https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400`;
+                          (e.target as HTMLImageElement).src =
+                            `https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400`;
                         }}
                       />
                       {salon.verified && (

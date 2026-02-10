@@ -19,6 +19,7 @@ interface PublicNavbarProps {
   onLogin?: () => void;
   onMarketplace?: () => void;
   forceLightTheme?: boolean;
+  logo?: string;
 }
 
 export function PublicNavbar({
@@ -26,6 +27,7 @@ export function PublicNavbar({
   onLogin,
   onMarketplace,
   forceLightTheme = false,
+  logo,
 }: PublicNavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -100,7 +102,7 @@ export function PublicNavbar({
             onClick={handleHome}
           >
             <Image
-              src="/probeauty-header-black.svg"
+              src={logo || "/probeauty-header-black.svg"}
               alt="ProBeauty"
               width={150}
               height={40}
@@ -245,20 +247,19 @@ export function PublicNavbar({
             >
               Success Stories
             </a>
-            <button
-              onClick={() => {
-                handleMarketplace();
-                setMobileMenuOpen(false);
-              }}
-              className={`flex items-center w-full py-2 font-medium ${
-                isDarkMode
-                  ? "text-gray-300 hover:text-primary"
-                  : "text-gray-700 hover:text-primary"
-              }`}
-            >
-              <Globe className="w-4 h-4 mr-2" />
-              Find Salons
-            </button>
+            <Link href="https://pro-beauty-web.vercel.app/">
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center w-full py-2 font-medium ${
+                  isDarkMode
+                    ? "text-gray-300 hover:text-primary"
+                    : "text-gray-700 hover:text-primary"
+                }`}
+              >
+                <Globe className="w-4 h-4 mr-2" />
+                Find Salons
+              </button>
+            </Link>
             {isAuthenticated ? (
               <Button
                 className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white"
