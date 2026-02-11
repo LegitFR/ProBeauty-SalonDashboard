@@ -78,7 +78,11 @@ export function Sidebar({
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
               <Image
-                src="/probeauty-header.svg"
+                src={
+                  isDarkMode
+                    ? "/probeauty-header.svg"
+                    : "/probeauty-header-black.svg"
+                }
                 alt="ProBeauty"
                 width={120}
                 height={32}
