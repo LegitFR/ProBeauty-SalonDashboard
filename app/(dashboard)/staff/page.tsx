@@ -42,6 +42,7 @@ import {
 } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
 import { Switch } from "../../../components/ui/switch";
+import { Checkbox } from "../../../components/ui/checkbox";
 import {
   Users,
   Plus,
@@ -106,7 +107,7 @@ interface StaffMember {
 
 export default function StaffPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date()
+    new Date(),
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
@@ -132,7 +133,7 @@ export default function StaffPage() {
     role: "",
     email: "",
     phone: "",
-    serviceId: "",
+    serviceIds: [] as string[],
     availability: {
       monday: { enabled: true, start: "09:00", end: "17:00" },
       tuesday: { enabled: true, start: "09:00", end: "17:00" },
@@ -275,6 +276,25 @@ export default function StaffPage() {
     }
   };
 
+  const handleServiceToggle = (serviceId: string) => {
+    setStaffForm((prev) => {
+      const isSelected = prev.serviceIds.includes(serviceId);
+      if (isSelected) {
+        // Remove service
+        return {
+          ...prev,
+          serviceIds: prev.serviceIds.filter((id) => id !== serviceId),
+        };
+      } else {
+        // Add service
+        return {
+          ...prev,
+          serviceIds: [...prev.serviceIds, serviceId],
+        };
+      }
+    });
+  };
+
   const handleAddStaff = async () => {
     try {
       const token = localStorage.getItem("accessToken");
@@ -293,11 +313,12 @@ export default function StaffPage() {
         !staffForm.name ||
         !staffForm.role ||
         !staffForm.email ||
-        !staffForm.serviceId
+        staffForm.serviceIds.length === 0
       ) {
         toast({
           title: "Missing information",
-          description: "Please fill in all required fields including service",
+          description:
+            "Please fill in all required fields and select at least one service",
           variant: "destructive",
         });
         return;
@@ -320,7 +341,7 @@ export default function StaffPage() {
         const requestBody = {
           name: staffForm.name,
           salonId: salon.id,
-          serviceId: staffForm.serviceId,
+          serviceIds: staffForm.serviceIds,
           availability: transformedAvailability,
         };
 
@@ -340,7 +361,7 @@ export default function StaffPage() {
             error = JSON.parse(responseText);
           } catch (e) {
             throw new Error(
-              `Server error (${createResponse.status}): ${responseText}`
+              `Server error (${createResponse.status}): ${responseText}`,
             );
           }
 
@@ -350,7 +371,7 @@ export default function StaffPage() {
               ": " +
               error.errors
                 .map((e: any) =>
-                  typeof e === "string" ? e : JSON.stringify(e)
+                  typeof e === "string" ? e : JSON.stringify(e),
                 )
                 .join(", ");
           }
@@ -386,7 +407,7 @@ export default function StaffPage() {
         const requestBody = {
           name: staffForm.name,
           salonId: salon.id,
-          serviceId: staffForm.serviceId,
+          serviceIds: staffForm.serviceIds,
           availability: transformedAvailability,
         };
 
@@ -419,7 +440,7 @@ export default function StaffPage() {
         role: "",
         email: "",
         phone: "",
-        serviceId: "",
+        serviceIds: [],
         availability: {
           monday: { enabled: true, start: "09:00", end: "17:00" },
           tuesday: { enabled: true, start: "09:00", end: "17:00" },
@@ -448,6 +469,9 @@ export default function StaffPage() {
   };
 
   const handleEditStaff = (staff: StaffMember) => {
+    console.log("Editing staff:", staff);
+    console.log("Staff services:", staff.services);
+    
     setEditingStaff(staff);
 
     // Set image preview if staff has an image
@@ -488,16 +512,30 @@ export default function StaffPage() {
       }
     });
 
-    // Get the first service ID if available
-    const firstServiceId =
-      staff.services?.[0]?.service?.id || staff.services?.[0]?.id || "";
+    // Get all service IDs - handle multiple possible data structures
+    let existingServiceIds: string[] = [];
+    
+    if (staff.services && Array.isArray(staff.services)) {
+      existingServiceIds = staff.services
+        .map((s: any) => {
+          // Try multiple possible structures
+          if (typeof s === 'string') return s;
+          if (s.serviceId) return s.serviceId;
+          if (s.service?.id) return s.service.id;
+          if (s.id) return s.id;
+          return null;
+        })
+        .filter((id): id is string => Boolean(id));
+    }
+    
+    console.log("Extracted service IDs:", existingServiceIds);
 
     setStaffForm({
       name: staff.name || staff.user?.name || "",
       role: staff.role || "",
       email: staff.email || staff.user?.email || "",
       phone: staff.phone || staff.user?.phone || "",
-      serviceId: firstServiceId,
+      serviceIds: existingServiceIds,
       availability: transformedAvailability,
     });
 
@@ -539,15 +577,15 @@ export default function StaffPage() {
         // Add image
         formData.append("image", selectedImage);
 
-        // Only include serviceId if it has a valid value
-        if (staffForm.serviceId && staffForm.serviceId.trim() !== "") {
-          formData.append("serviceId", staffForm.serviceId);
+        // Add serviceIds if they exist
+        if (staffForm.serviceIds.length > 0) {
+          formData.append("serviceIds", JSON.stringify(staffForm.serviceIds));
         }
 
         // Only add availability if provided
         formData.append(
           "availability",
-          JSON.stringify(transformedAvailability)
+          JSON.stringify(transformedAvailability),
         );
 
         response = await fetch(`/api/staff/${editingStaff.id}`, {
@@ -563,9 +601,9 @@ export default function StaffPage() {
           availability: transformedAvailability,
         };
 
-        // Only include serviceId if it has a valid value
-        if (staffForm.serviceId && staffForm.serviceId.trim() !== "") {
-          requestBody.serviceId = staffForm.serviceId;
+        // Add serviceIds if they exist
+        if (staffForm.serviceIds.length > 0) {
+          requestBody.serviceIds = staffForm.serviceIds;
         }
 
         response = await fetch(`/api/staff/${editingStaff.id}`, {
@@ -599,11 +637,14 @@ export default function StaffPage() {
         description: "Staff member updated successfully",
       });
 
+      // Refresh staff list to get updated data
+      await fetchStaff();
+      console.log("Staff list refreshed after update");
+      
       setIsEditDialogOpen(false);
       setEditingStaff(null);
       setSelectedImage(null);
       setImagePreview(null);
-      fetchStaff();
     } catch (error: any) {
       console.error("Error updating staff:", error);
       toast({
@@ -682,7 +723,7 @@ export default function StaffPage() {
   const calculateStaffMetrics = (staffId: string) => {
     // Filter only completed bookings first (case-insensitive)
     const completedBookings = bookings.filter(
-      (booking) => booking.status?.toLowerCase() === "completed"
+      (booking) => booking.status?.toLowerCase() === "completed",
     );
 
     // Filter completed bookings for this staff member
@@ -724,7 +765,7 @@ export default function StaffPage() {
 
     // Filter all bookings for this staff member (for total count)
     const staffBookings = bookings.filter(
-      (booking) => booking.staffId === staffId || booking.staff?.id === staffId
+      (booking) => booking.staffId === staffId || booking.staff?.id === staffId,
     );
 
     // Get all booking IDs for this staff member
@@ -786,7 +827,7 @@ export default function StaffPage() {
 
       if (dayBookings.length > 0) {
         const times = dayBookings.map((b) =>
-          new Date(b.startTime || b.date).getHours()
+          new Date(b.startTime || b.date).getHours(),
         );
         const startHour = Math.min(...times);
         const endHour = Math.max(...times) + 1;
@@ -943,6 +984,8 @@ export default function StaffPage() {
 
       // Extract staff from salon data
       const staffData = result.data?.staff || [];
+      console.log("Fetched staff data:", staffData);
+      console.log("First staff member services:", staffData[0]?.services);
       setStaffMembers(Array.isArray(staffData) ? staffData : []);
     } catch (error) {
       console.error("Error fetching staff:", error);
@@ -1142,7 +1185,7 @@ export default function StaffPage() {
       value: (() => {
         // Calculate total revenue from completed bookings only
         const completedBookings = bookings.filter(
-          (booking) => booking.status?.toLowerCase() === "completed"
+          (booking) => booking.status?.toLowerCase() === "completed",
         );
 
         const totalRevenue = completedBookings.reduce((sum, booking) => {
@@ -1207,7 +1250,7 @@ export default function StaffPage() {
       (staff?.name || staff?.user?.name)
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      staff?.role?.toLowerCase().includes(searchQuery.toLowerCase())
+      staff?.role?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -1274,30 +1317,42 @@ export default function StaffPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="service">Service *</Label>
-                  <Select
-                    value={staffForm.serviceId}
-                    onValueChange={(value) =>
-                      setStaffForm({ ...staffForm, serviceId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {services.length === 0 ? (
-                        <SelectItem value="no-services" disabled>
-                          No services available
-                        </SelectItem>
-                      ) : (
-                        services.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
+                  <Label htmlFor="service">
+                    Services * (Select at least one)
+                  </Label>
+                  <div className="border rounded-md p-3 space-y-2 max-h-[200px] overflow-y-auto">
+                    {services.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No services available
+                      </p>
+                    ) : (
+                      services.map((service) => (
+                        <div
+                          key={service.id}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={`service-${service.id}`}
+                            checked={staffForm.serviceIds.includes(service.id)}
+                            onCheckedChange={() =>
+                              handleServiceToggle(service.id)
+                            }
+                          />
+                          <label
+                            htmlFor={`service-${service.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
                             {service.title} - €{service.price}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {staffForm.serviceIds.length > 0 && (
+                    <p className="text-xs text-green-600">
+                      {staffForm.serviceIds.length} service(s) selected
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -1375,7 +1430,7 @@ export default function StaffPage() {
                                   handleAvailabilityChange(
                                     day,
                                     "enabled",
-                                    checked
+                                    checked,
                                   )
                                 }
                               />
@@ -1397,7 +1452,7 @@ export default function StaffPage() {
                                     handleAvailabilityChange(
                                       day,
                                       "start",
-                                      value
+                                      value,
                                     )
                                   }
                                 >
@@ -1413,7 +1468,7 @@ export default function StaffPage() {
                                         >
                                           {timeSlot}
                                         </SelectItem>
-                                      )
+                                      ),
                                     )}
                                   </SelectContent>
                                 </Select>
@@ -1438,7 +1493,7 @@ export default function StaffPage() {
                                         >
                                           {timeSlot}
                                         </SelectItem>
-                                      )
+                                      ),
                                     )}
                                   </SelectContent>
                                 </Select>
@@ -1452,7 +1507,7 @@ export default function StaffPage() {
                             )}
                           </div>
                         );
-                      }
+                      },
                     )}
                   </div>
                 </div>
@@ -1495,30 +1550,42 @@ export default function StaffPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-service">Service</Label>
-                  <Select
-                    value={staffForm.serviceId}
-                    onValueChange={(value) =>
-                      setStaffForm({ ...staffForm, serviceId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {services.length === 0 ? (
-                        <SelectItem value="no-services" disabled>
-                          No services available
-                        </SelectItem>
-                      ) : (
-                        services.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
+                  <Label htmlFor="edit-service">
+                    Services (Select at least one)
+                  </Label>
+                  <div className="border rounded-md p-3 space-y-2 max-h-[200px] overflow-y-auto">
+                    {services.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No services available
+                      </p>
+                    ) : (
+                      services.map((service) => (
+                        <div
+                          key={service.id}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={`edit-service-${service.id}`}
+                            checked={staffForm.serviceIds.includes(service.id)}
+                            onCheckedChange={() =>
+                              handleServiceToggle(service.id)
+                            }
+                          />
+                          <label
+                            htmlFor={`edit-service-${service.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
                             {service.title} - €{service.price}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {staffForm.serviceIds.length > 0 && (
+                    <p className="text-xs text-green-600">
+                      {staffForm.serviceIds.length} service(s) selected
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -1577,7 +1644,7 @@ export default function StaffPage() {
                                   handleAvailabilityChange(
                                     day,
                                     "enabled",
-                                    checked
+                                    checked,
                                   )
                                 }
                               />
@@ -1599,7 +1666,7 @@ export default function StaffPage() {
                                     handleAvailabilityChange(
                                       day,
                                       "start",
-                                      value
+                                      value,
                                     )
                                   }
                                 >
@@ -1615,7 +1682,7 @@ export default function StaffPage() {
                                         >
                                           {timeSlot}
                                         </SelectItem>
-                                      )
+                                      ),
                                     )}
                                   </SelectContent>
                                 </Select>
@@ -1640,7 +1707,7 @@ export default function StaffPage() {
                                         >
                                           {timeSlot}
                                         </SelectItem>
-                                      )
+                                      ),
                                     )}
                                   </SelectContent>
                                 </Select>
@@ -1654,7 +1721,7 @@ export default function StaffPage() {
                             )}
                           </div>
                         );
-                      }
+                      },
                     )}
                   </div>
                 </div>
@@ -1955,7 +2022,7 @@ export default function StaffPage() {
                                     </div>
                                   )}
                                 </div>
-                              )
+                              ),
                             )}
                           </div>
                         </div>
