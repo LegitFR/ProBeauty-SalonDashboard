@@ -143,7 +143,7 @@ export function PublicNavbar({
             >
               Success Stories
             </a>
-            <Link href="https://pro-beauty-web.vercel.app/">
+            <Link href="https://probeautyapp.com">
               <button
                 // onClick={handleMarketplace}
                 className={`flex items-center transition-colors font-medium ${
@@ -247,7 +247,7 @@ export function PublicNavbar({
             >
               Success Stories
             </a>
-            <Link href="https://pro-beauty-web.vercel.app/">
+            <Link href="https://probeautyapp.com">
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center w-full py-2 font-medium ${
