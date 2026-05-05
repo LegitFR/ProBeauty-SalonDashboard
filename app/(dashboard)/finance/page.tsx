@@ -182,7 +182,7 @@ export default function FinancePage() {
   ];
 
   const COLORS = [
-    "#FF6A00",
+    "#F7931D",
     "#00C49F",
     "#FFBB28",
     "#0088FE",
@@ -425,7 +425,7 @@ export default function FinancePage() {
                 <p className="text-sm text-muted-foreground mt-1">
                   {analytics?.serviceRevenue.byCategory.reduce(
                     (sum, cat) => sum + cat.count,
-                    0
+                    0,
                   ) || 0}{" "}
                   total bookings
                 </p>
@@ -472,7 +472,7 @@ export default function FinancePage() {
                 <p className="text-sm text-muted-foreground mt-1">
                   {analytics?.productRevenue.byCategory.reduce(
                     (sum, cat) => sum + cat.count,
-                    0
+                    0,
                   ) || 0}{" "}
                   total orders
                 </p>
@@ -487,16 +487,16 @@ export default function FinancePage() {
                     <span className="font-medium">
                       {analytics?.productRevenue.byCategory.reduce(
                         (sum, cat) => sum + cat.count,
-                        0
+                        0,
                       )
                         ? formatCurrency(
                             (
                               parseFloat(analytics.productRevenue.total) /
                               analytics.productRevenue.byCategory.reduce(
                                 (sum, cat) => sum + cat.count,
-                                0
+                                0,
                               )
-                            ).toString()
+                            ).toString(),
                           )
                         : "$0.00"}
                     </span>

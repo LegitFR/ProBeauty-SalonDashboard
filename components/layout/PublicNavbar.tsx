@@ -89,10 +89,9 @@ export function PublicNavbar({
   return (
     <nav
       className={`fixed top-0 w-full z-50 backdrop-blur-lg border-b ${
-        isDarkMode
-          ? "bg-gray-900/80 border-gray-700"
-          : "bg-white/80 border-border"
+        isDarkMode ? "bg-gray-900/80 border-gray-700" : "border-border"
       }`}
+      style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
     >
       <div className="safe-container max-w-7xl">
         <div className="flex items-center justify-between h-16">
@@ -104,9 +103,9 @@ export function PublicNavbar({
             <Image
               src={logo || "/probeauty-header-black.svg"}
               alt="ProBeauty"
-              width={150}
-              height={40}
-              className="h-8 sm:h-10 w-auto"
+              width={170}
+              height={44}
+              className="h-9 sm:h-11 w-auto"
               priority
             />
           </div>
@@ -212,10 +211,9 @@ export function PublicNavbar({
         {mobileMenuOpen && (
           <div
             className={`lg:hidden border-t py-4 space-y-4 backdrop-blur-lg ${
-              isDarkMode
-                ? "bg-gray-900/95 border-gray-700"
-                : "bg-white/95 border-border"
+              isDarkMode ? "bg-gray-900/95 border-gray-700" : "border-border"
             }`}
+            style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
           >
             <a
               href="/#features"

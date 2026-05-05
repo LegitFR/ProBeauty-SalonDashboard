@@ -489,7 +489,7 @@ export default function SettingsPage() {
 
       console.log(
         "🔵 Fetching addresses with token:",
-        token.substring(0, 20) + "..."
+        token.substring(0, 20) + "...",
       );
 
       const response = await fetch("/api/addresses", {
@@ -599,7 +599,7 @@ export default function SettingsPage() {
         toast.success(
           editingAddress
             ? "Address updated successfully"
-            : "Address added successfully"
+            : "Address added successfully",
         );
       } else {
         console.error("❌ Save failed:", data);
@@ -851,7 +851,7 @@ export default function SettingsPage() {
         toast.error(
           `Failed to send OTP: ${
             otpData.message || "Email service error. Please try again later."
-          }`
+          }`,
         );
         return;
       }
@@ -883,7 +883,7 @@ export default function SettingsPage() {
 
       if (resetResponse.ok) {
         toast.success(
-          "Password changed successfully! Please login again with your new password."
+          "Password changed successfully! Please login again with your new password.",
         );
         setPasswordForm({
           currentPassword: "",
@@ -902,7 +902,7 @@ export default function SettingsPage() {
         toast.error(
           `Failed to change password: ${
             resetData.message || "Invalid or expired OTP. Please try again."
-          }`
+          }`,
         );
       }
     } catch (error: any) {
@@ -999,7 +999,7 @@ export default function SettingsPage() {
                 {
                   method: "DELETE",
                   headers: { Authorization: `Bearer ${token}` },
-                }
+                },
               );
               if (deleteResponse.ok) deletedCount++;
             } catch (error) {
@@ -1029,7 +1029,7 @@ export default function SettingsPage() {
                 {
                   method: "DELETE",
                   headers: { Authorization: `Bearer ${token}` },
-                }
+                },
               );
               if (deleteResponse.ok) deletedCount++;
             } catch (error) {
@@ -1049,7 +1049,7 @@ export default function SettingsPage() {
           `/api/services/salon/${salon.id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         if (servicesResponse.ok) {
           const servicesData = await servicesResponse.json();
@@ -1062,7 +1062,7 @@ export default function SettingsPage() {
                 {
                   method: "DELETE",
                   headers: { Authorization: `Bearer ${token}` },
-                }
+                },
               );
               if (deleteResponse.ok) deletedCount++;
             } catch (error) {
@@ -1109,7 +1109,7 @@ export default function SettingsPage() {
           `/api/products/salon/${salon.id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         if (productsResponse.ok) {
           const productsData = await productsResponse.json();
@@ -1122,7 +1122,7 @@ export default function SettingsPage() {
                 {
                   method: "DELETE",
                   headers: { Authorization: `Bearer ${token}` },
-                }
+                },
               );
               if (deleteResponse.ok) deletedCount++;
             } catch (error) {
@@ -1139,12 +1139,12 @@ export default function SettingsPage() {
       if (errors.length > 0) {
         toast.warning(
           `Data reset completed with warnings. ${deletedCount} items deleted. ${errors.join(
-            ", "
-          )}`
+            ", ",
+          )}`,
         );
       } else {
         toast.success(
-          `All data reset successfully! ${deletedCount} items deleted.`
+          `All data reset successfully! ${deletedCount} items deleted.`,
         );
       }
 
@@ -1498,7 +1498,7 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </div>
-                  )
+                  ),
                 )}
               </CardContent>
             </Card>
@@ -1593,7 +1593,7 @@ export default function SettingsPage() {
                   <Label>Primary Color</Label>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-primary rounded border"></div>
-                    <Input defaultValue="#FF6A00" className="flex-1" />
+                    <Input defaultValue="#F7931D" className="flex-1" />
                   </div>
                 </div>
 

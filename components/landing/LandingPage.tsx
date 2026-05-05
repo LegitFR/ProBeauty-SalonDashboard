@@ -155,7 +155,10 @@ export function LandingPage({
   ];
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div
+      className="min-h-screen overflow-x-hidden"
+      style={{ backgroundColor: "#ECE3DC" }}
+    >
       {/* Navigation */}
       <PublicNavbar
         onGetStarted={onGetStarted}
@@ -226,7 +229,8 @@ export function LandingPage({
               <Button
                 variant="outline"
                 size="lg"
-                className="btn-auto-width text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto border-2 border-gray-200 hover:border-primary text-gray-700 hover:text-primary bg-white/80 backdrop-blur-sm"
+                className="btn-auto-width text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto border-2 border-[#1e1e1e] hover:border-primary text-gray-700 hover:text-primary backdrop-blur-sm"
+                style={{ backgroundColor: "#ECE3DC" }}
               >
                 <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" />
                 <span className="truncate">Watch Demo (2 min)</span>
@@ -277,7 +281,10 @@ export function LandingPage({
       </section>
 
       {/* Stats Section */}
-      <section className="section-padding-y bg-white relative">
+      <section
+        className="section-padding-y relative"
+        style={{ backgroundColor: "#ECE3DC" }}
+      >
         <div className="safe-container container-padding-mobile max-w-7xl">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -358,11 +365,12 @@ export function LandingPage({
 
       <section
         id="features"
-        className="py-16 lg:py-24 bg-gradient-to-b from-gray-50 to-white"
+        className="py-16 lg:py-24"
+        style={{ backgroundColor: "#ECE3DC" }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-primary border-primary/20">
+            <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
               <Zap className="w-4 h-4 mr-2" />
               Revolutionary Features
             </Badge>
@@ -382,7 +390,8 @@ export function LandingPage({
               return (
                 <Card
                   key={index}
-                  className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 bg-white/80 backdrop-blur-sm overflow-hidden relative"
+                  className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 backdrop-blur-sm overflow-hidden relative"
+                  style={{ backgroundColor: "#ECE3DC" }}
                 >
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
@@ -414,10 +423,14 @@ export function LandingPage({
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="section-padding-y bg-white">
+      <section
+        id="testimonials"
+        className="section-padding-y"
+        style={{ backgroundColor: "#ECE3DC" }}
+      >
         <div className="safe-container container-padding-mobile max-w-7xl">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-primary border-primary/20">
+            <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
               <Heart className="w-4 h-4 mr-2" />
               Success Stories
             </Badge>
@@ -434,7 +447,8 @@ export function LandingPage({
             {testimonials.map((testimonial, index) => (
               <Card
                 key={index}
-                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 border-0 bg-gradient-to-br from-white to-gray-50/50"
+                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 border-0"
+                style={{ backgroundColor: "#ECE3DC" }}
               >
                 <CardContent className="p-8">
                   <div className="flex items-center gap-4 mb-6">
@@ -513,7 +527,8 @@ export function LandingPage({
             <Button
               variant="outline"
               size="lg"
-              className="btn-auto-width text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 h-auto border-2 border-white/20 text-[#1e1e1e] hover:bg-white/10 backdrop-blur-sm"
+              className="btn-auto-width text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 h-auto border-2 border-white/20 text-[#1e1e1e] backdrop-blur-sm"
+              style={{ backgroundColor: "#ECE3DC" }}
             >
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Schedule a Demo

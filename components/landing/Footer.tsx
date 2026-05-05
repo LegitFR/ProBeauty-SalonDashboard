@@ -88,9 +88,9 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
               <Image
                 src="/probeauty-footer.svg"
                 alt="Probeauty"
-                width={150}
-                height={40}
-                className="h-10 w-auto"
+                width={190}
+                height={50}
+                className="h-12 w-auto"
               />
             </div>
             <p className="text-gray-400 mb-6 leading-relaxed">
