@@ -92,13 +92,13 @@ interface Booking {
     name: string;
     address?: string;
   };
-  service: {
+  service?: {
     id: string;
     title: string;
     durationMinutes: number;
     price: string | number;
   };
-  staff: {
+  staff?: {
     id: string;
     name?: string;
     role: string;
@@ -161,7 +161,7 @@ export default function BookingsPage() {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
       booking.user.name.toLowerCase().includes(searchLower) ||
-      booking.service.title.toLowerCase().includes(searchLower) ||
+      (booking.service?.title || "").toLowerCase().includes(searchLower) ||
       (booking.staff?.name || "").toLowerCase().includes(searchLower) ||
       (booking.staff?.user?.name || "").toLowerCase().includes(searchLower);
 
@@ -294,7 +294,7 @@ export default function BookingsPage() {
         const errorText = await response.text();
         console.error("Bookings API error:", response.status, errorText);
         throw new Error(
-          `Failed to fetch bookings: ${response.status} - ${errorText}`
+          `Failed to fetch bookings: ${response.status} - ${errorText}`,
         );
       }
 
@@ -324,16 +324,16 @@ export default function BookingsPage() {
             bookingsData = bookingsData.map((booking: any) => {
               console.log(
                 `Looking for staffId: ${booking.staffId}, Staff IDs in list:`,
-                staffList.map((s: any) => s.id)
+                staffList.map((s: any) => s.id),
               );
 
               const fullStaffInfo = staffList.find(
-                (s: any) => s.id === booking.staffId
+                (s: any) => s.id === booking.staffId,
               );
 
               console.log(
                 `Booking ${booking.id} - staffId: ${booking.staffId}, found staff:`,
-                fullStaffInfo
+                fullStaffInfo,
               );
 
               if (fullStaffInfo) {
@@ -375,7 +375,7 @@ export default function BookingsPage() {
 
   const handleUpdateBookingStatus = async (
     bookingId: string,
-    newStatus: string
+    newStatus: string,
   ) => {
     try {
       const token = localStorage.getItem("accessToken");
@@ -531,7 +531,7 @@ export default function BookingsPage() {
 
       // Parse the selected time slot to get startTime
       const selectedSlot = availableTimeSlots.find(
-        (slot) => slot.startTime === bookingForm.time
+        (slot) => slot.startTime === bookingForm.time,
       );
 
       if (!selectedSlot) {
@@ -744,8 +744,8 @@ export default function BookingsPage() {
                       step < currentStep
                         ? "bg-primary text-white"
                         : step === currentStep
-                        ? "bg-primary text-white ring-4 ring-primary/20"
-                        : "bg-gray-200 text-gray-500"
+                          ? "bg-primary text-white ring-4 ring-primary/20"
+                          : "bg-gray-200 text-gray-500",
                     )}
                   >
                     {step < currentStep ? "✓" : step}
@@ -761,7 +761,7 @@ export default function BookingsPage() {
                   <div
                     className={cn(
                       "h-1 flex-1 transition-all",
-                      step < currentStep ? "bg-primary" : "bg-gray-200"
+                      step < currentStep ? "bg-primary" : "bg-gray-200",
                     )}
                   />
                 )}
@@ -912,7 +912,7 @@ export default function BookingsPage() {
                             className={cn(
                               "h-12",
                               bookingForm.time === slot.startTime &&
-                                "ring-2 ring-primary ring-offset-2"
+                                "ring-2 ring-primary ring-offset-2",
                             )}
                             onClick={() =>
                               setBookingForm({
@@ -928,7 +928,7 @@ export default function BookingsPage() {
                                 hour: "numeric",
                                 minute: "2-digit",
                                 hour12: true,
-                              }
+                              },
                             )}
                           </Button>
                         ))}
@@ -1083,7 +1083,7 @@ export default function BookingsPage() {
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !filters.dateFrom && "text-muted-foreground"
+                      !filters.dateFrom && "text-muted-foreground",
                     )}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
@@ -1113,7 +1113,7 @@ export default function BookingsPage() {
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !filters.dateTo && "text-muted-foreground"
+                      !filters.dateTo && "text-muted-foreground",
                     )}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
@@ -1236,19 +1236,22 @@ export default function BookingsPage() {
                   <div className="space-y-4">
                     {/* Group bookings by date */}
                     {Object.entries(
-                      filteredBookings.reduce((groups, booking) => {
-                        const date = new Date(booking.startTime);
-                        const dateKey = date.toISOString().split("T")[0]; // Use ISO date as key (YYYY-MM-DD)
-                        if (!groups[dateKey]) {
-                          groups[dateKey] = [];
-                        }
-                        groups[dateKey].push(booking);
-                        return groups;
-                      }, {} as Record<string, Booking[]>)
+                      filteredBookings.reduce(
+                        (groups, booking) => {
+                          const date = new Date(booking.startTime);
+                          const dateKey = date.toISOString().split("T")[0]; // Use ISO date as key (YYYY-MM-DD)
+                          if (!groups[dateKey]) {
+                            groups[dateKey] = [];
+                          }
+                          groups[dateKey].push(booking);
+                          return groups;
+                        },
+                        {} as Record<string, Booking[]>,
+                      ),
                     )
                       .sort(
                         ([dateA], [dateB]) =>
-                          new Date(dateA).getTime() - new Date(dateB).getTime()
+                          new Date(dateA).getTime() - new Date(dateB).getTime(),
                       )
                       .map(([dateKey, dayBookings]) => (
                         <div key={dateKey} className="space-y-3">
@@ -1260,7 +1263,7 @@ export default function BookingsPage() {
                               .sort(
                                 (a, b) =>
                                   new Date(a.startTime).getTime() -
-                                  new Date(b.startTime).getTime()
+                                  new Date(b.startTime).getTime(),
                               )
                               .map((booking) => (
                                 <Card
@@ -1277,7 +1280,7 @@ export default function BookingsPage() {
                                           <div className="flex items-center gap-2 flex-wrap">
                                             <p className="font-medium">
                                               {new Date(
-                                                booking.startTime
+                                                booking.startTime,
                                               ).toLocaleTimeString("en-US", {
                                                 hour: "numeric",
                                                 minute: "2-digit",
@@ -1286,7 +1289,7 @@ export default function BookingsPage() {
                                             </p>
                                             <Badge
                                               className={getStatusColor(
-                                                booking.status
+                                                booking.status,
                                               )}
                                             >
                                               {booking.status.toLowerCase()}
@@ -1294,7 +1297,8 @@ export default function BookingsPage() {
                                           </div>
                                           <p className="text-sm text-muted-foreground mt-1">
                                             {booking.user.name} •{" "}
-                                            {booking.service.title}
+                                            {booking.service?.title ||
+                                              "Unknown service"}
                                           </p>
                                           <p className="text-xs text-muted-foreground mt-1">
                                             Staff:{" "}
@@ -1313,7 +1317,7 @@ export default function BookingsPage() {
                                               onClick={() =>
                                                 handleUpdateBookingStatus(
                                                   booking.id,
-                                                  "CONFIRMED"
+                                                  "CONFIRMED",
                                                 )
                                               }
                                             >
@@ -1325,7 +1329,7 @@ export default function BookingsPage() {
                                               onClick={() =>
                                                 handleUpdateBookingStatus(
                                                   booking.id,
-                                                  "CANCELLED"
+                                                  "CANCELLED",
                                                 )
                                               }
                                               className="text-red-600 hover:text-red-700"
@@ -1342,7 +1346,7 @@ export default function BookingsPage() {
                                               onClick={() =>
                                                 handleUpdateBookingStatus(
                                                   booking.id,
-                                                  "COMPLETED"
+                                                  "COMPLETED",
                                                 )
                                               }
                                             >
@@ -1354,7 +1358,7 @@ export default function BookingsPage() {
                                               onClick={() =>
                                                 handleUpdateBookingStatus(
                                                   booking.id,
-                                                  "CANCELLED"
+                                                  "CANCELLED",
                                                 )
                                               }
                                               className="text-red-600"
@@ -1443,11 +1447,13 @@ export default function BookingsPage() {
 
                         {/* Service & Time */}
                         <div>
-                          <p className="font-medium">{booking.service.title}</p>
+                          <p className="font-medium">
+                            {booking.service?.title || "Unknown service"}
+                          </p>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                             <Clock className="w-3 h-3" />
                             {new Date(booking.startTime).toLocaleDateString(
-                              "de-DE"
+                              "de-DE",
                             )}{" "}
                             at{" "}
                             {new Date(booking.startTime).toLocaleTimeString(
@@ -1456,7 +1462,7 @@ export default function BookingsPage() {
                                 hour: "2-digit",
                                 minute: "2-digit",
                                 hour12: false,
-                              }
+                              },
                             )}
                           </div>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -1491,7 +1497,7 @@ export default function BookingsPage() {
                                 onClick={() =>
                                   handleUpdateBookingStatus(
                                     booking.id,
-                                    "CONFIRMED"
+                                    "CONFIRMED",
                                   )
                                 }
                                 className="bg-green-600 hover:bg-green-700"
@@ -1504,7 +1510,7 @@ export default function BookingsPage() {
                                 onClick={() =>
                                   handleUpdateBookingStatus(
                                     booking.id,
-                                    "CANCELLED"
+                                    "CANCELLED",
                                   )
                                 }
                                 className="text-red-600 hover:text-red-700"
@@ -1521,7 +1527,7 @@ export default function BookingsPage() {
                                 onClick={() =>
                                   handleUpdateBookingStatus(
                                     booking.id,
-                                    "COMPLETED"
+                                    "COMPLETED",
                                   )
                                 }
                               >
@@ -1533,7 +1539,7 @@ export default function BookingsPage() {
                                 onClick={() =>
                                   handleUpdateBookingStatus(
                                     booking.id,
-                                    "CANCELLED"
+                                    "CANCELLED",
                                   )
                                 }
                                 className="text-red-600"
@@ -1607,7 +1613,9 @@ export default function BookingsPage() {
                           </div>
                         </div>
                         <div>
-                          <p className="font-medium">{booking.service.title}</p>
+                          <p className="font-medium">
+                            {booking.service?.title || "Unknown service"}
+                          </p>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                             <Clock className="w-3 h-3" />
                             {new Date(booking.startTime).toLocaleTimeString(
@@ -1616,7 +1624,7 @@ export default function BookingsPage() {
                                 hour: "numeric",
                                 minute: "2-digit",
                                 hour12: true,
-                              }
+                              },
                             )}
                           </div>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -1647,7 +1655,7 @@ export default function BookingsPage() {
                                 onClick={() =>
                                   handleUpdateBookingStatus(
                                     booking.id,
-                                    "CONFIRMED"
+                                    "CONFIRMED",
                                   )
                                 }
                                 className="bg-green-600 hover:bg-green-700"
@@ -1660,7 +1668,7 @@ export default function BookingsPage() {
                                 onClick={() =>
                                   handleUpdateBookingStatus(
                                     booking.id,
-                                    "CANCELLED"
+                                    "CANCELLED",
                                   )
                                 }
                                 className="text-red-600 hover:text-red-700"
@@ -1677,7 +1685,7 @@ export default function BookingsPage() {
                                 onClick={() =>
                                   handleUpdateBookingStatus(
                                     booking.id,
-                                    "COMPLETED"
+                                    "COMPLETED",
                                   )
                                 }
                               >
@@ -1689,7 +1697,7 @@ export default function BookingsPage() {
                                 onClick={() =>
                                   handleUpdateBookingStatus(
                                     booking.id,
-                                    "CANCELLED"
+                                    "CANCELLED",
                                   )
                                 }
                                 className="text-red-600"
@@ -1757,11 +1765,13 @@ export default function BookingsPage() {
                           </div>
                         </div>
                         <div>
-                          <p className="font-medium">{booking.service.title}</p>
+                          <p className="font-medium">
+                            {booking.service?.title || "Unknown service"}
+                          </p>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                             <Clock className="w-3 h-3" />
                             {new Date(booking.startTime).toLocaleDateString(
-                              "de-DE"
+                              "de-DE",
                             )}{" "}
                             at{" "}
                             {new Date(booking.startTime).toLocaleTimeString(
@@ -1770,7 +1780,7 @@ export default function BookingsPage() {
                                 hour: "2-digit",
                                 minute: "2-digit",
                                 hour12: false,
-                              }
+                              },
                             )}
                           </div>
                         </div>
@@ -1841,11 +1851,13 @@ export default function BookingsPage() {
                           </div>
                         </div>
                         <div>
-                          <p className="font-medium">{booking.service.title}</p>
+                          <p className="font-medium">
+                            {booking.service?.title || "Unknown service"}
+                          </p>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                             <Clock className="w-3 h-3" />
                             {new Date(booking.startTime).toLocaleDateString(
-                              "de-DE"
+                              "de-DE",
                             )}
                           </div>
                         </div>
@@ -1908,18 +1920,29 @@ export default function BookingsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Service</p>
-                  <p className="font-medium">{selectedBooking.service.title}</p>
+                  <p className="font-medium">
+                    {selectedBooking.service?.title || "Unknown service"}
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    {selectedBooking.service.durationMinutes} minutes
+                    {selectedBooking.service?.durationMinutes
+                      ? `${selectedBooking.service.durationMinutes} minutes`
+                      : "Duration unavailable"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Price</p>
                   <p className="font-medium text-primary">
-                    €
-                    {typeof selectedBooking.service.price === "string"
-                      ? parseFloat(selectedBooking.service.price).toFixed(2)
-                      : (selectedBooking.service.price as number).toFixed(2)}
+                    {selectedBooking.service?.price !== undefined
+                      ? `€${
+                          typeof selectedBooking.service.price === "string"
+                            ? parseFloat(selectedBooking.service.price).toFixed(
+                                2,
+                              )
+                            : (selectedBooking.service.price as number).toFixed(
+                                2,
+                              )
+                        }`
+                      : "Price unavailable"}
                   </p>
                 </div>
               </div>
@@ -1933,7 +1956,7 @@ export default function BookingsPage() {
                   </p>
                   <p className="font-medium">
                     {new Date(selectedBooking.startTime).toLocaleDateString(
-                      "de-DE"
+                      "de-DE",
                     )}
                   </p>
                   <p className="text-sm text-muted-foreground">
@@ -1943,7 +1966,7 @@ export default function BookingsPage() {
                         hour: "2-digit",
                         minute: "2-digit",
                         hour12: false,
-                      }
+                      },
                     )}
                   </p>
                 </div>
@@ -1975,7 +1998,7 @@ export default function BookingsPage() {
                     onClick={() => {
                       handleUpdateBookingStatus(
                         selectedBooking.id,
-                        "CONFIRMED"
+                        "CONFIRMED",
                       );
                       setShowDetailsDialog(false);
                     }}
@@ -1989,7 +2012,7 @@ export default function BookingsPage() {
                     onClick={() => {
                       handleUpdateBookingStatus(
                         selectedBooking.id,
-                        "COMPLETED"
+                        "COMPLETED",
                       );
                       setShowDetailsDialog(false);
                     }}
