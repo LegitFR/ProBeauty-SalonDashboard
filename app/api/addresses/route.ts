@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 // GET /api/addresses - Get all addresses for authenticated user
 export async function GET(request: NextRequest) {
@@ -12,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
     console.error("❌ Addresses GET error:", error);
     return NextResponse.json(
       { message: "Failed to fetch addresses", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
     console.error("❌ Addresses POST error:", error);
     return NextResponse.json(
       { message: "Failed to create address", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

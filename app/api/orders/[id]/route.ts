@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 // GET /api/orders/:id - Get single order
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -15,7 +17,7 @@ export async function GET(
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -34,7 +36,7 @@ export async function GET(
     console.error("❌ Order GET error:", error);
     return NextResponse.json(
       { message: "Failed to fetch order", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

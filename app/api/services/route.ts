@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     return NextResponse.json(
       { message: "Failed to fetch services", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
       console.error("❌ Authorization header missing");
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
       const responseText = await response.text();
       console.log(
         "Backend response (first 500 chars):",
-        responseText.substring(0, 500)
+        responseText.substring(0, 500),
       );
 
       // Check if response is JSON
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
       ) {
         console.error(
           "Backend returned non-JSON response:",
-          responseText.substring(0, 500)
+          responseText.substring(0, 500),
         );
         return NextResponse.json(
           {
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
             details: responseText.substring(0, 500),
             backendStatus: response.status,
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
             error: String(e),
             details: responseText.substring(0, 500),
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -150,7 +152,7 @@ export async function POST(request: NextRequest) {
             message:
               "Missing required fields: salonId, title, category, durationMinutes, and price are required",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -185,7 +187,7 @@ export async function POST(request: NextRequest) {
       const responseText = await response.text();
       console.log(
         "Backend response (first 500 chars):",
-        responseText.substring(0, 500)
+        responseText.substring(0, 500),
       );
 
       // Check if response is JSON
@@ -196,7 +198,7 @@ export async function POST(request: NextRequest) {
       ) {
         console.error(
           "Backend returned non-JSON response:",
-          responseText.substring(0, 500)
+          responseText.substring(0, 500),
         );
         return NextResponse.json(
           {
@@ -206,7 +208,7 @@ export async function POST(request: NextRequest) {
             details: responseText.substring(0, 500),
             backendStatus: response.status,
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -222,7 +224,7 @@ export async function POST(request: NextRequest) {
             error: String(e),
             response: responseText.substring(0, 500),
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -234,7 +236,7 @@ export async function POST(request: NextRequest) {
     console.error("Error in POST /api/services:", error);
     return NextResponse.json(
       { message: "Failed to create service", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

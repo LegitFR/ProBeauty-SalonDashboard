@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ salonId: string }> }
+  { params }: { params: Promise<{ salonId: string }> },
 ) {
   try {
     const { salonId } = await params;
@@ -19,21 +21,21 @@ export async function GET(
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     console.log("Backend response status:", response.status);
     const data = await response.json();
     console.log(
       "Backend response data (services):",
-      JSON.stringify(data, null, 2)
+      JSON.stringify(data, null, 2),
     );
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
     return NextResponse.json(
       { message: "Failed to fetch salon services", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

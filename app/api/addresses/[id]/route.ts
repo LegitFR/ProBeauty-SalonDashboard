@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 // GET /api/addresses/:id - Get single address
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -15,7 +17,7 @@ export async function GET(
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -34,7 +36,7 @@ export async function GET(
     console.error("❌ Address GET error:", error);
     return NextResponse.json(
       { message: "Failed to fetch address", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -42,7 +44,7 @@ export async function GET(
 // PATCH /api/addresses/:id - Update address
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -52,7 +54,7 @@ export async function PATCH(
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -74,7 +76,7 @@ export async function PATCH(
     console.error("❌ Address PATCH error:", error);
     return NextResponse.json(
       { message: "Failed to update address", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -82,7 +84,7 @@ export async function PATCH(
 // DELETE /api/addresses/:id - Delete address
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -92,7 +94,7 @@ export async function DELETE(
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -111,7 +113,7 @@ export async function DELETE(
     console.error("❌ Address DELETE error:", error);
     return NextResponse.json(
       { message: "Failed to delete address", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

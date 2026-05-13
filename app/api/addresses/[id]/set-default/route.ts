@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 // PATCH /api/addresses/:id/set-default - Set address as default
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     const authHeader = request.headers.get("authorization");
     console.log(
       "🔵 API ROUTE /api/addresses/:id/set-default PATCH CALLED!",
-      id
+      id,
     );
 
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -30,7 +32,7 @@ export async function PATCH(
           "Content-Type": "application/json",
           Authorization: authHeader,
         },
-      }
+      },
     );
 
     const data = await response.json();
@@ -40,7 +42,7 @@ export async function PATCH(
     console.error("❌ Set default address error:", error);
     return NextResponse.json(
       { message: "Failed to set default address", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

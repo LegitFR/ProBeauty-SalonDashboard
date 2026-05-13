@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = "https://probeauty-backend.onrender.com/api/v1/reviews";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const BACKEND_URL = `${getApiBaseUrl()}/reviews`;
 
 // GET my reviews
 export async function GET(request: NextRequest) {
@@ -10,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization required" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
           "Content-Type": "application/json",
           Authorization: authHeader,
         },
-      }
+      },
     );
 
     const data = await response.json();
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
     console.error("[REVIEWS PROXY] Error:", error);
     return NextResponse.json(
       { message: error.message || "Failed to fetch reviews" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

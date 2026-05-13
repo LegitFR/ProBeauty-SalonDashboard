@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = "https://probeauty-backend.onrender.com/api/v1/auth";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const BACKEND_URL = `${getApiBaseUrl()}/auth`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest) {
     console.error("[AUTH PROXY] Proxy error:", error);
     return NextResponse.json(
       { message: error.message || "Proxy request failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

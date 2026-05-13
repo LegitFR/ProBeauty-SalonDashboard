@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = "https://probeauty-backend.onrender.com/api/v1/reviews";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const BACKEND_URL = `${getApiBaseUrl()}/reviews`;
 
 // POST create review
 export async function POST(request: NextRequest) {
@@ -11,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization required" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
     console.error("[REVIEWS PROXY] Error:", error);
     return NextResponse.json(
       { message: error.message || "Failed to create review" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

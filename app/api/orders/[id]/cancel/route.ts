@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 // POST /api/orders/:id/cancel - Cancel an order
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -15,7 +17,7 @@ export async function POST(
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -34,7 +36,7 @@ export async function POST(
     console.error("❌ Cancel order error:", error);
     return NextResponse.json(
       { message: "Failed to cancel order", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

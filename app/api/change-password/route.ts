@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Step 1: Request OTP
 export async function POST(request: NextRequest) {
@@ -11,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (!email) {
       return NextResponse.json(
         { message: "Email is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
       if (!otp || !newPassword) {
         return NextResponse.json(
           { message: "OTP and new password are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -52,13 +54,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { message: "Invalid step. Use 'request-otp' or 'reset-password'" },
-      { status: 400 }
+      { status: 400 },
     );
   } catch (error: any) {
     console.error("[PASSWORD CHANGE] Error:", error);
     return NextResponse.json(
       { message: "Failed to change password", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

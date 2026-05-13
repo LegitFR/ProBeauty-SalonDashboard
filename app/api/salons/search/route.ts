@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "https://probeauty-backend.onrender.com/api/v1";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+
+const API_BASE_URL = getApiBaseUrl();
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
     // Build the backend URL with all query parameters
-    const backendUrl = new URL(`${BACKEND_URL}/salons/search`);
+    const backendUrl = new URL(`${API_BASE_URL}/salons/search`);
 
     // Forward all query parameters
     searchParams.forEach((value, key) => {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(
         { error: "Failed to search salons", details: errorText },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
