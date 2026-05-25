@@ -247,6 +247,24 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  #google_translate_element {
+    position: fixed;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .goog-te-banner-frame,
+  .goog-te-gadget,
+  .goog-logo-link,
+  .goog-te-gadget-icon,
+  .VIpgJd-ZVi9od-ORHb-OEVmcd {
+    display: none !important;
+  }
+
+  body {
+    top: 0 !important;
+  }
+
   body {
     line-height: inherit;
   }

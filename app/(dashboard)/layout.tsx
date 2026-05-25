@@ -33,7 +33,7 @@ export default function DashboardLayout({
       } else {
         // First-time user: check system preference
         const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
+          "(prefers-color-scheme: dark)",
         ).matches;
         setIsDarkMode(prefersDark);
         if (prefersDark) {
@@ -82,8 +82,21 @@ export default function DashboardLayout({
     }
   }, [isDarkMode, isThemeLoaded]);
 
+  const navigateWithTranslate = (path: string) => {
+    try {
+      const lang = localStorage.getItem("pb_lang");
+      if (lang && lang !== "en") {
+        window.location.href = path;
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to read language preference:", error);
+    }
+    router.push(path);
+  };
+
   const handlePageChange = (page: string) => {
-    router.push(`/${page}`);
+    navigateWithTranslate(`/${page}`);
   };
 
   return (

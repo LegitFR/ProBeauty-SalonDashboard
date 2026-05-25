@@ -32,6 +32,7 @@ export function PublicNavbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
   const router = useRouter();
 
   useEffect(() => {
@@ -40,6 +41,20 @@ export function PublicNavbar({
     const user = localStorage.getItem("user");
     const hasCookie = document.cookie.includes("accessToken=");
     setIsAuthenticated(!!(accessToken && user && hasCookie));
+
+    const storedLanguage = localStorage.getItem("pb_lang");
+    if (storedLanguage) {
+      setSelectedLanguage(storedLanguage);
+    }
+
+    const handleLanguageChange = () => {
+      const nextLanguage = localStorage.getItem("pb_lang");
+      if (nextLanguage) {
+        setSelectedLanguage(nextLanguage);
+      }
+    };
+
+    window.addEventListener("pb_lang_change", handleLanguageChange);
 
     // Check for dark mode (only if not forced to light theme)
     if (!forceLightTheme) {
@@ -52,6 +67,10 @@ export function PublicNavbar({
     } else {
       setIsDarkMode(false);
     }
+
+    return () => {
+      window.removeEventListener("pb_lang_change", handleLanguageChange);
+    };
   }, [forceLightTheme]);
 
   const handleDashboardClick = () => {
@@ -84,6 +103,24 @@ export function PublicNavbar({
 
   const handleHome = () => {
     router.push("/");
+  };
+
+  const languageOptions = [
+    { value: "en", label: "English" },
+    { value: "fr", label: "French" },
+    { value: "de", label: "German" },
+    { value: "es", label: "Spanish" },
+    { value: "pt", label: "Portuguese" },
+  ];
+
+  const handleLanguageSelect = (nextLanguage: string) => {
+    setSelectedLanguage(nextLanguage);
+    window.localStorage.setItem("pb_lang", nextLanguage);
+    const translateWindow = window as Window & {
+      setGoogleTranslateLanguage?: (lang: string) => void;
+    };
+    translateWindow.setGoogleTranslateLanguage?.(nextLanguage);
+    window.dispatchEvent(new CustomEvent("pb_lang_change"));
   };
 
   return (
@@ -159,9 +196,25 @@ export function PublicNavbar({
 
           {/* Right Side Navigation */}
           <div className="hidden lg:flex items-center space-x-4">
+            <select
+              value={selectedLanguage}
+              onChange={(event) => handleLanguageSelect(event.target.value)}
+              aria-label="Translate page"
+              className={`border rounded-md px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/60 ${
+                isDarkMode
+                  ? "bg-gray-900/70 text-gray-200 border-gray-700 hover:border-gray-500"
+                  : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+              }`}
+            >
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             {isAuthenticated ? (
               <Button
-                className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg px-6 py-3"
+                className="bg-linear-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg px-6 py-3"
                 onClick={handleDashboardClick}
               >
                 <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -182,7 +235,7 @@ export function PublicNavbar({
                   Sign In
                 </Button>
                 <Button
-                  className="bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg btn-trial-padding text-sm sm:text-base whitespace-nowrap"
+                  className="bg-linear-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg btn-trial-padding text-sm sm:text-base whitespace-nowrap"
                   onClick={handleGetStarted}
                 >
                   Start Free Trial
@@ -215,6 +268,22 @@ export function PublicNavbar({
             }`}
             style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
           >
+            <select
+              value={selectedLanguage}
+              onChange={(event) => handleLanguageSelect(event.target.value)}
+              aria-label="Translate page"
+              className={`w-full border rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/60 ${
+                isDarkMode
+                  ? "bg-gray-900/70 text-gray-200 border-gray-700 hover:border-gray-500"
+                  : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+              }`}
+            >
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <a
               href="/#features"
               className={`block py-2 font-medium ${
@@ -260,7 +329,7 @@ export function PublicNavbar({
             </Link>
             {isAuthenticated ? (
               <Button
-                className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white"
+                className="btn-auto-width bg-linear-to-r from-primary to-orange-600 text-white"
                 onClick={() => {
                   handleDashboardClick();
                   setMobileMenuOpen(false);
@@ -282,7 +351,7 @@ export function PublicNavbar({
                   Sign In
                 </Button>
                 <Button
-                  className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white btn-trial-padding"
+                  className="btn-auto-width bg-linear-to-r from-primary to-orange-600 text-white btn-trial-padding"
                   onClick={() => {
                     handleGetStarted();
                     setMobileMenuOpen(false);

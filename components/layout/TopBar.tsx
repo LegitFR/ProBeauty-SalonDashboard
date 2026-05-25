@@ -27,6 +27,7 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [addressCount, setAddressCount] = useState(0);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   useEffect(() => {
     // Get user data from localStorage
@@ -35,8 +36,26 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
       setUser(JSON.parse(userData));
     }
 
+    const storedLanguage = localStorage.getItem("pb_lang");
+    if (storedLanguage) {
+      setSelectedLanguage(storedLanguage);
+    }
+
+    const handleLanguageChange = () => {
+      const nextLanguage = localStorage.getItem("pb_lang");
+      if (nextLanguage) {
+        setSelectedLanguage(nextLanguage);
+      }
+    };
+
+    window.addEventListener("pb_lang_change", handleLanguageChange);
+
     // Fetch address count
     fetchAddressCount();
+
+    return () => {
+      window.removeEventListener("pb_lang_change", handleLanguageChange);
+    };
   }, []);
 
   const fetchAddressCount = async () => {
@@ -70,7 +89,38 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
     document.cookie = "refreshToken=; path=/; max-age=0";
 
     // Redirect to landing page
-    router.push("/");
+    navigateWithTranslate("/");
+  };
+
+  const navigateWithTranslate = (path: string) => {
+    try {
+      const lang = localStorage.getItem("pb_lang");
+      if (lang && lang !== "en") {
+        window.location.href = path;
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to read language preference:", error);
+    }
+    router.push(path);
+  };
+
+  const languageOptions = [
+    { value: "en", label: "English" },
+    { value: "fr", label: "French" },
+    { value: "de", label: "German" },
+    { value: "es", label: "Spanish" },
+    { value: "pt", label: "Portuguese" },
+  ];
+
+  const handleLanguageSelect = (nextLanguage: string) => {
+    setSelectedLanguage(nextLanguage);
+    window.localStorage.setItem("pb_lang", nextLanguage);
+    const translateWindow = window as Window & {
+      setGoogleTranslateLanguage?: (lang: string) => void;
+    };
+    translateWindow.setGoogleTranslateLanguage?.(nextLanguage);
+    window.dispatchEvent(new CustomEvent("pb_lang_change"));
   };
 
   // Get user initials for avatar
@@ -109,6 +159,21 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
 
       {/* Right section */}
       <div className="flex items-center gap-4">
+        <div className="block">
+          <select
+            value={selectedLanguage}
+            onChange={(event) => handleLanguageSelect(event.target.value)}
+            aria-label="Translate page"
+            className="bg-background text-foreground border border-border rounded-md px-2 py-1 text-xs font-medium hover:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/60"
+          >
+            {languageOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Mobile search */}
         <Button variant="ghost" size="icon" className="lg:hidden">
           <Search className="w-4 h-4" />
@@ -155,7 +220,9 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings")}>
+            <DropdownMenuItem
+              onClick={() => navigateWithTranslate("/settings")}
+            >
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>
