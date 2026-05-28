@@ -62,6 +62,26 @@ export function GoogleTranslateLoader() {
   const pathname = usePathname();
 
   useEffect(() => {
+    const patchKey = "__pb_safe_remove_child__";
+    const win = window as Window & {
+      [patchKey]?: boolean;
+    };
+    if (!win[patchKey]) {
+      const originalRemoveChild = Node.prototype.removeChild;
+      (Node.prototype as { removeChild: (child: Node) => Node }).removeChild =
+        function removeChildSafe(child: Node) {
+          try {
+            return originalRemoveChild.call(this, child);
+          } catch (error) {
+            if (error instanceof DOMException && error.name === "NotFoundError") {
+              return child;
+            }
+            throw error;
+          }
+        };
+      win[patchKey] = true;
+    }
+
     const storedLang = getStoredLang();
     setTranslateCookie(storedLang);
 
@@ -137,7 +157,34 @@ export function GoogleTranslateLoader() {
     };
 
     attachToastObserver();
-    bodyObserver = new MutationObserver(() => {
+    const popupSelector =
+      "[data-slot='dialog-content'], [data-slot='sheet-content'], [data-slot='drawer-content'], [data-slot='alert-dialog-content']";
+
+    const hasPopupNode = (node: Node) => {
+      if (!(node instanceof HTMLElement)) {
+        return false;
+      }
+      return node.matches(popupSelector) || !!node.querySelector(popupSelector);
+    };
+
+    bodyObserver = new MutationObserver((mutations) => {
+      let shouldReapply = false;
+      for (const mutation of mutations) {
+        if (!mutation.addedNodes.length) {
+          continue;
+        }
+        mutation.addedNodes.forEach((node) => {
+          if (hasPopupNode(node)) {
+            shouldReapply = true;
+          }
+        });
+        if (shouldReapply) {
+          break;
+        }
+      }
+      if (shouldReapply) {
+        requestTranslateReapply();
+      }
       attachToastObserver();
     });
     bodyObserver.observe(document.body, { childList: true, subtree: true });

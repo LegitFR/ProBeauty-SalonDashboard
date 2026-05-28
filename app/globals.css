@@ -254,9 +254,16 @@
   }
 
   .goog-te-banner-frame,
+  .goog-te-banner-frame.skiptranslate,
   .goog-te-gadget,
+  .goog-te-gadget-simple,
+  .goog-te-menu-frame,
   .goog-logo-link,
   .goog-te-gadget-icon,
+  .goog-te-spinner-pos,
+  #goog-gt-tt,
+  body > .skiptranslate,
+  .VIpgJd-ZVi9od-ORHb,
   .VIpgJd-ZVi9od-ORHb-OEVmcd {
     display: none !important;
   }

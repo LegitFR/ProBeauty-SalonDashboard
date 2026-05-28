@@ -48,6 +48,20 @@ function AlertDialogContent({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+  React.useEffect(() => {
+    const lang = localStorage.getItem("pb_lang");
+    if (!lang || lang === "en") {
+      return;
+    }
+    const translateWindow = window as Window & {
+      setGoogleTranslateLanguage?: (next: string) => void;
+    };
+    const timer = window.setTimeout(() => {
+      translateWindow.setGoogleTranslateLanguage?.(lang);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />

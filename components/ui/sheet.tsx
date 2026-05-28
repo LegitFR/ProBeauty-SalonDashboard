@@ -52,6 +52,20 @@ function SheetContent({
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
 }) {
+  React.useEffect(() => {
+    const lang = localStorage.getItem("pb_lang");
+    if (!lang || lang === "en") {
+      return;
+    }
+    const translateWindow = window as Window & {
+      setGoogleTranslateLanguage?: (next: string) => void;
+    };
+    const timer = window.setTimeout(() => {
+      translateWindow.setGoogleTranslateLanguage?.(lang);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <SheetPortal>
       <SheetOverlay />

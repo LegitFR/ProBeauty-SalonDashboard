@@ -51,6 +51,20 @@ function DialogContent({
   children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+  React.useEffect(() => {
+    const lang = localStorage.getItem("pb_lang");
+    if (!lang || lang === "en") {
+      return;
+    }
+    const translateWindow = window as Window & {
+      setGoogleTranslateLanguage?: (next: string) => void;
+    };
+    const timer = window.setTimeout(() => {
+      translateWindow.setGoogleTranslateLanguage?.(lang);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />

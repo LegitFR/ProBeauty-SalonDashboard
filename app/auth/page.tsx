@@ -49,12 +49,14 @@ export default function AuthPage() {
 
   const handleLogin = async (user: any, tokens: any) => {
     try {
-      const preferredLang = localStorage.getItem("pb_lang");
-      if (preferredLang && preferredLang !== "en") {
-        sessionStorage.setItem("pb_lang_restore", preferredLang);
-        localStorage.setItem("pb_lang", "en");
-        document.cookie = "googtrans=/en/en; path=/";
-      }
+      sessionStorage.removeItem("pb_lang_restore");
+      localStorage.setItem("pb_lang", "en");
+      document.cookie = "googtrans=/en/en; path=/";
+      const translateWindow = window as Window & {
+        setGoogleTranslateLanguage?: (lang: string) => void;
+      };
+      translateWindow.setGoogleTranslateLanguage?.("en");
+      window.dispatchEvent(new CustomEvent("pb_lang_change", { detail: "en" }));
     } catch (error) {
       console.error("Failed to adjust language preference:", error);
     }
@@ -108,15 +110,6 @@ export default function AuthPage() {
     }
 
     // Redirect to dashboard
-    try {
-      const restoreLang = sessionStorage.getItem("pb_lang_restore");
-      if (restoreLang && restoreLang !== "en") {
-        window.location.href = "/home";
-        return;
-      }
-    } catch (error) {
-      console.error("Failed to read language restore flag:", error);
-    }
     navigateWithTranslate("/home");
   };
 

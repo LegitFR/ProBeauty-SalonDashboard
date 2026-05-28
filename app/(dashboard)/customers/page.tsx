@@ -126,6 +126,38 @@ export default function CustomersPage() {
     fetchSalonAndReviews();
   }, []);
 
+  const parseMoney = (value: unknown) => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string") {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
+  const getBookingAmount = (booking: any) => {
+    if (!booking) return 0;
+    const directAmount = parseMoney(booking.totalAmount);
+    if (directAmount > 0) return directAmount;
+    const directPrice = parseMoney(booking.totalPrice);
+    if (directPrice > 0) return directPrice;
+    return parseMoney(booking.service?.price);
+  };
+
+  const toIsoDate = (value: string | number | Date | undefined) => {
+    if (!value) return undefined;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  };
+
+  const getValidDate = (value?: string) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+
   const fetchCustomers = async () => {
     setLoading(true);
     try {
@@ -163,6 +195,9 @@ export default function CustomersPage() {
 
           if (!customerMap.has(customerId)) {
             // Create new customer entry
+            const bookingDate = new Date(booking.startTime || Date.now());
+            const serviceTitle = booking.service?.title || "Service";
+            const servicePrice = getBookingAmount(booking);
             customerMap.set(customerId, {
               id: customerId,
               name: booking.user.name || "Unknown",
@@ -170,24 +205,16 @@ export default function CustomersPage() {
               phone: booking.user.phone || "",
               avatar: booking.user.avatar || undefined,
               status: "regular",
-              joinDate: new Date(
-                booking.createdAt || Date.now()
-              ).toLocaleDateString("de-DE"),
-              lastVisit: new Date(booking.startTime).toLocaleDateString(
-                "de-DE"
-              ),
-              totalSpent: parseFloat(booking.service?.price || 0),
+              joinDate: toIsoDate(booking.createdAt || Date.now()),
+              lastVisit: toIsoDate(booking.startTime),
+              totalSpent: servicePrice,
               visits: 1,
-              avgSpend: parseFloat(booking.service?.price || 0),
+              avgSpend: servicePrice,
               satisfaction: 4.5,
-              preferences: booking.service?.title
-                ? [booking.service.title]
-                : [],
+              preferences: booking.service?.title ? [booking.service.title] : [],
               upcomingBooking:
                 booking.status === "CONFIRMED" || booking.status === "PENDING"
-                  ? `${new Date(booking.startTime).toLocaleDateString(
-                      "de-DE"
-                    )} - ${booking.service?.title}`
+                  ? `${bookingDate.toLocaleDateString("de-DE")} - ${serviceTitle}`
                   : undefined,
               notes: "",
               segment: "new",
@@ -198,15 +225,14 @@ export default function CustomersPage() {
             const customer = customerMap.get(customerId)!;
             customer.visits = (customer.visits || 0) + 1;
             customer.totalSpent =
-              (customer.totalSpent || 0) +
-              parseFloat(booking.service?.price || 0);
+              (customer.totalSpent || 0) + getBookingAmount(booking);
             customer.avgSpend = customer.totalSpent / customer.visits;
 
             // Update last visit to most recent
-            const bookingDate = new Date(booking.startTime);
-            const lastVisitDate = new Date(customer.lastVisit || 0);
-            if (bookingDate > lastVisitDate) {
-              customer.lastVisit = bookingDate.toLocaleDateString("de-DE");
+            const bookingDate = new Date(booking.startTime || Date.now());
+            const lastVisitDate = getValidDate(customer.lastVisit);
+            if (!lastVisitDate || bookingDate > lastVisitDate) {
+              customer.lastVisit = bookingDate.toISOString();
             }
 
             // Add service to preferences if not already there
@@ -226,9 +252,10 @@ export default function CustomersPage() {
                 booking.status === "PENDING") &&
               bookingDate > new Date()
             ) {
+              const serviceTitle = booking.service?.title || "Service";
               customer.upcomingBooking = `${bookingDate.toLocaleDateString(
                 "de-DE"
-              )} - ${booking.service?.title}`;
+              )} - ${serviceTitle}`;
             }
           }
         }
@@ -254,10 +281,10 @@ export default function CustomersPage() {
           }
 
           // Determine churn risk based on last visit
-          if (customer.lastVisit) {
+          const lastVisitDate = getValidDate(customer.lastVisit);
+          if (lastVisitDate) {
             const daysSinceLastVisit = Math.floor(
-              (Date.now() - new Date(customer.lastVisit).getTime()) /
-                (1000 * 60 * 60 * 24)
+              (Date.now() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24)
             );
             if (daysSinceLastVisit > 90) {
               customer.churnRisk = "high";
@@ -358,8 +385,8 @@ export default function CustomersPage() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const activeThisMonth = customers.filter((c) => {
-    if (!c.lastVisit) return false;
-    const lastVisitDate = new Date(c.lastVisit);
+    const lastVisitDate = getValidDate(c.lastVisit);
+    if (!lastVisitDate) return false;
     return lastVisitDate >= thirtyDaysAgo;
   }).length;
 
@@ -692,9 +719,10 @@ export default function CustomersPage() {
                           </CardTitle>
                           <CardDescription>
                             Customer since{" "}
-                            {customer.joinDate
-                              ? new Date(customer.joinDate).getFullYear()
-                              : "N/A"}
+                            {(() => {
+                              const joinDate = getValidDate(customer.joinDate);
+                              return joinDate ? joinDate.getFullYear() : "N/A";
+                            })()}
                           </CardDescription>
                         </div>
                       </div>
@@ -791,7 +819,7 @@ export default function CustomersPage() {
                             Upcoming Booking
                           </p>
                           <p className="text-xs text-blue-600">
-                            {customer.upcomingBooking}
+                              {customer.upcomingBooking}
                           </p>
                         </div>
                       ) : (
