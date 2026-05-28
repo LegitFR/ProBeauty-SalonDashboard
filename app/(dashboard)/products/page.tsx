@@ -207,15 +207,32 @@ export default function ProductsPage() {
       console.log(data.data);
 
       // Map API fields to frontend fields
-      const mappedProducts = (data.data || []).map((product: any) => ({
-        ...product,
-        stock: product.quantity || 0, // Map 'quantity' from API to 'stock' for frontend
-        images: Array.isArray(product.images) ? product.images : [], // Ensure images is always an array
-        // If product has 0 quantity, it's hidden; otherwise it's visible
-        isActive: product.quantity > 0,
-        // Store original stock - if quantity is 0 (hidden), default to 1 so it can be re-enabled
-        originalStock: product.quantity > 0 ? product.quantity : 1,
-      }));
+      const mappedProducts = (data.data || []).map((product: any) => {
+        const rawQuantity =
+          typeof product.quantity === "number"
+            ? product.quantity
+            : Number(product.quantity) || 0;
+        const rawCost =
+          typeof product.cost === "number"
+            ? product.cost
+            : Number(product.cost);
+        const rawPrice =
+          typeof product.price === "number"
+            ? product.price
+            : Number(product.price) || 0;
+
+        return {
+          ...product,
+          stock: rawQuantity, // Map 'quantity' from API to 'stock' for frontend
+          images: Array.isArray(product.images) ? product.images : [],
+          // If product has 0 quantity, it's hidden; otherwise it's visible
+          isActive: rawQuantity > 0,
+          // Store original stock - if quantity is 0 (hidden), default to 1 so it can be re-enabled
+          originalStock: rawQuantity > 0 ? rawQuantity : 1,
+          cost: Number.isFinite(rawCost) ? rawCost : rawPrice,
+          price: rawPrice,
+        };
+      });
 
       setProducts(mappedProducts);
     } catch (error) {
@@ -766,10 +783,13 @@ export default function ProductsPage() {
     return (((price - cost) / price) * 100).toFixed(1);
   };
 
-  const totalValue = products.reduce(
-    (sum, p) => sum + p.stock * (p.cost || 0),
-    0,
-  );
+  const totalValue = products.reduce((sum, product) => {
+    const unitCost =
+      typeof product.cost === "number" && Number.isFinite(product.cost)
+        ? product.cost
+        : product.price || 0;
+    return sum + (product.stock || 0) * unitCost;
+  }, 0);
   const lowStockCount = products.filter(
     (p) => getStockStatus(p) === "low-stock",
   ).length;

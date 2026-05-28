@@ -28,6 +28,8 @@ import {
   Tag,
 } from "lucide-react";
 import { useToast } from "../../../components/ui/use-toast";
+import { getAnalytics, formatCurrency } from "../../../lib/analytics";
+import { AnalyticsData } from "../../../lib/types/analytics";
 
 interface Service {
   id: string;
@@ -95,6 +97,7 @@ export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [salon, setSalon] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [serviceImages, setServiceImages] = useState<File[]>([]);
@@ -103,6 +106,20 @@ export default function ServicesPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const totalServices = services.length;
+  const activeServices = services.filter((service) => service.isActive).length;
+  const avgPrice = totalServices
+    ? services.reduce((sum, service) => sum + (service.price || 0), 0) /
+      totalServices
+    : 0;
+  const analyticsServiceRevenue = analytics?.serviceRevenue?.total
+    ? parseFloat(analytics.serviceRevenue.total)
+    : null;
+  const totalRevenue =
+    analyticsServiceRevenue && Number.isFinite(analyticsServiceRevenue)
+      ? analyticsServiceRevenue
+      : services.reduce((sum, service) => sum + (service.revenue || 0), 0);
 
   // Service form state
   const [serviceForm, setServiceForm] = useState({
@@ -178,6 +195,7 @@ export default function ServicesPage() {
         // Fetch services and offers after salon is loaded
         fetchServicesForSalon(data.data[0].id);
         fetchOffers(data.data[0].id);
+        fetchAnalyticsForSalon(data.data[0].id);
       } else {
         toast({
           title: "No salon found",
@@ -200,6 +218,18 @@ export default function ServicesPage() {
   const fetchServices = async () => {
     if (!salon?.id) return;
     await fetchServicesForSalon(salon.id);
+  };
+
+  const fetchAnalyticsForSalon = async (salonId: string) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const response = await getAnalytics({ salonId }, token);
+      setAnalytics(response.data);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+    }
   };
 
   const fetchBookingsForServices = async (
@@ -234,14 +264,32 @@ export default function ServicesPage() {
       // Calculate booking count and revenue per service
       const serviceStats = serviceIds.reduce(
         (acc, serviceId) => {
-          const serviceBookings = bookings.filter(
-            (b: any) => b.serviceId === serviceId,
-          );
+          const serviceBookings = bookings.filter((b: any) => {
+            const directId = b.serviceId;
+            const nestedId = b.service?.id;
+            const listIds = Array.isArray(b.serviceIds) ? b.serviceIds : [];
+            const nestedListIds = Array.isArray(b.services)
+              ? b.services.map((serviceItem: any) => serviceItem?.id)
+              : [];
+            return (
+              directId === serviceId ||
+              nestedId === serviceId ||
+              listIds.includes(serviceId) ||
+              nestedListIds.includes(serviceId)
+            );
+          });
 
           // Count only completed or confirmed bookings
           const completedBookings = serviceBookings.filter((b: any) => {
-            const status = b.status?.toLowerCase();
-            return status === "completed" || status === "confirmed";
+            const status = String(b.status || "").toLowerCase();
+            return [
+              "completed",
+              "confirmed",
+              "paid",
+              "success",
+              "succeeded",
+              "done",
+            ].includes(status);
           });
 
           const bookingCount = completedBookings.length;
@@ -251,7 +299,22 @@ export default function ServicesPage() {
           const servicePrice = service?.price || 0;
 
           // Calculate revenue: service price × number of bookings
-          const revenue = servicePrice * bookingCount;
+          const revenue = completedBookings.reduce(
+            (sum: number, booking: any) => {
+              const bookingPrice =
+                typeof booking.price === "number"
+                  ? booking.price
+                  : typeof booking.totalPrice === "number"
+                    ? booking.totalPrice
+                    : typeof booking.amount === "number"
+                      ? booking.amount
+                      : typeof booking.totalAmount === "number"
+                        ? booking.totalAmount
+                        : servicePrice;
+              return sum + bookingPrice;
+            },
+            0,
+          );
 
           console.log(
             `📈 Service ${serviceId}: ${bookingCount} completed bookings × €${servicePrice} = €${revenue.toFixed(
@@ -306,13 +369,14 @@ export default function ServicesPage() {
 
       // Calculate review stats per service
       const serviceReviewStats = reviews.reduce((acc: any, review: Review) => {
-        if (review.serviceId) {
-          if (!acc[review.serviceId]) {
-            acc[review.serviceId] = { total: 0, count: 0, reviews: [] };
+        const reviewServiceId = review.serviceId;
+        if (reviewServiceId) {
+          if (!acc[reviewServiceId]) {
+            acc[reviewServiceId] = { total: 0, count: 0, reviews: [] };
           }
-          acc[review.serviceId].total += review.rating;
-          acc[review.serviceId].count += 1;
-          acc[review.serviceId].reviews.push(review);
+          acc[reviewServiceId].total += review.rating;
+          acc[reviewServiceId].count += 1;
+          acc[reviewServiceId].reviews.push(review);
         }
         return acc;
       }, {});
@@ -377,6 +441,33 @@ export default function ServicesPage() {
             willBecome: service.isActive ?? true,
           });
 
+          const rawActive =
+            service.isActive ?? service.active ?? service.status ?? "active";
+          let isActive = true;
+          if (typeof rawActive === "boolean") {
+            isActive = rawActive;
+          } else if (typeof rawActive === "string") {
+            const normalized = rawActive.toLowerCase();
+            isActive = ["true", "active", "enabled", "available"].includes(
+              normalized,
+            );
+          } else if (typeof rawActive === "number") {
+            isActive = rawActive === 1;
+          }
+
+          const rawBookings =
+            service.bookings ??
+            service.bookingCount ??
+            service.totalBookings ??
+            0;
+          const rawRevenue =
+            service.revenue ??
+            service.totalRevenue ??
+            service.totalEarnings ??
+            0;
+          const rawRating =
+            service.rating ?? service.averageRating ?? service.avgRating ?? 0;
+
           return {
             id: service.id,
             salonId: service.salonId,
@@ -386,11 +477,20 @@ export default function ServicesPage() {
               !isNaN(parsedPrice) && isFinite(parsedPrice) ? parsedPrice : 0,
             duration: service.durationMinutes || service.duration || 0,
             category: service.category || "",
-            isActive: service.isActive ?? true,
+            isActive,
             image: service.image,
-            bookings: service.bookings || 0,
-            revenue: service.revenue || 0,
-            rating: service.rating || 0,
+            bookings:
+              typeof rawBookings === "number"
+                ? rawBookings
+                : Number(rawBookings) || 0,
+            revenue:
+              typeof rawRevenue === "number"
+                ? rawRevenue
+                : Number(rawRevenue) || 0,
+            rating:
+              typeof rawRating === "number"
+                ? rawRating
+                : Number(rawRating) || 0,
           };
         });
       console.log("Filtered services for salon:", transformedServices);
@@ -1395,7 +1495,7 @@ export default function ServicesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Services</p>
-                <p className="text-2xl font-bold">{services.length}</p>
+                <p className="text-2xl font-bold">{totalServices}</p>
               </div>
               <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                 <Users className="w-4 h-4 text-primary" />
@@ -1408,9 +1508,7 @@ export default function ServicesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active Services</p>
-                <p className="text-2xl font-bold">
-                  {services.filter((s) => s.isActive).length}
-                </p>
+                <p className="text-2xl font-bold">{activeServices}</p>
               </div>
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                 <Eye className="w-4 h-4 text-green-600" />
@@ -1423,13 +1521,7 @@ export default function ServicesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Avg. Price</p>
-                <p className="text-2xl font-bold">
-                  €
-                  {Math.round(
-                    services.reduce((sum, s) => sum + s.price, 0) /
-                      services.length,
-                  )}
-                </p>
+                <p className="text-2xl font-bold">{formatCurrency(avgPrice)}</p>
               </div>
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <DollarSign className="w-4 h-4 text-blue-600" />
@@ -1443,10 +1535,7 @@ export default function ServicesPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
                 <p className="text-2xl font-bold">
-                  €
-                  {services
-                    .reduce((sum, s) => sum + (s.revenue || 0), 0)
-                    .toLocaleString("de-DE")}
+                  {formatCurrency(totalRevenue)}
                 </p>
               </div>
               <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">

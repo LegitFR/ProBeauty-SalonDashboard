@@ -135,6 +135,8 @@ export default function OrdersPage() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<Order["status"]>("PENDING");
+  const [salonId, setSalonId] = useState<string | null>(null);
+  const [salonLoading, setSalonLoading] = useState(true);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 10,
@@ -145,8 +147,55 @@ export default function OrdersPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchOrders();
-  }, [activeTab, currentPage]);
+    fetchSalonId();
+  }, []);
+
+  useEffect(() => {
+    if (!salonLoading) {
+      fetchOrders();
+    }
+  }, [activeTab, currentPage, salonLoading, salonId]);
+
+  const fetchSalonId = async () => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          const storedSalonId = user?.salonId || user?.salon?.id;
+          if (storedSalonId) {
+            setSalonId(storedSalonId);
+            return;
+          }
+        } catch (error) {
+          console.warn("Failed to parse user from storage", error);
+        }
+      }
+
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        return;
+      }
+
+      const response = await fetch("/api/salons/my-salons", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      const firstSalonId = data?.data?.[0]?.id;
+      if (firstSalonId) {
+        setSalonId(firstSalonId);
+      }
+    } catch (error) {
+      console.error("Error fetching salon info:", error);
+    } finally {
+      setSalonLoading(false);
+    }
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -168,6 +217,9 @@ export default function OrdersPage() {
       if (activeTab !== "all") {
         params.append("status", activeTab.toUpperCase());
       }
+      if (salonId) {
+        params.append("salonId", salonId);
+      }
 
       const queryString = params.toString();
       const response = await fetch(`/api/orders?${queryString}`, {
@@ -180,9 +232,21 @@ export default function OrdersPage() {
       console.log("Orders API Response:", result);
       console.log("Orders data:", result.data);
       if (response.ok) {
-        setOrders(result.data || []);
-        if (result.pagination) {
-          setPagination(result.pagination);
+        const ordersData = Array.isArray(result.data)
+          ? result.data
+          : result.data?.orders || result.data?.data || [];
+        const paginationData =
+          result.pagination || result.data?.pagination || null;
+        setOrders(ordersData || []);
+        if (paginationData) {
+          setPagination(paginationData);
+        } else {
+          setPagination((prev) => ({
+            ...prev,
+            page: currentPage,
+            total: Array.isArray(ordersData) ? ordersData.length : 0,
+            totalPages: 1,
+          }));
         }
       } else {
         toast({
@@ -384,7 +448,7 @@ export default function OrdersPage() {
   };
 
   const getValidNextStatuses = (
-    currentStatus: Order["status"]
+    currentStatus: Order["status"],
   ): Order["status"][] => {
     switch (currentStatus) {
       case "PENDING":
@@ -610,7 +674,7 @@ export default function OrdersPage() {
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
                                 {new Date(order.createdAt).toLocaleDateString(
-                                  "de-DE"
+                                  "de-DE",
                                 )}
                               </div>
                             </div>
@@ -800,7 +864,7 @@ export default function OrdersPage() {
                       <p className="font-semibold">
                         $
                         {(parseFloat(item.unitPrice) * item.quantity).toFixed(
-                          2
+                          2,
                         )}
                       </p>
                     </div>

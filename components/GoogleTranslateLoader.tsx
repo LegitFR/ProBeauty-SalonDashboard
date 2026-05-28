@@ -54,11 +54,15 @@ function applyLanguage(lang: string) {
   select.dispatchEvent(new Event("change"));
 }
 
+function getStoredLang() {
+  return localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
+}
+
 export function GoogleTranslateLoader() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const storedLang = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
+    const storedLang = getStoredLang();
     setTranslateCookie(storedLang);
 
     const translateWindow = window as TranslateWindow;
@@ -101,19 +105,62 @@ export function GoogleTranslateLoader() {
       translateWindow.googleTranslateElementInit();
     }
 
+    let toastObserver: MutationObserver | null = null;
+    let bodyObserver: MutationObserver | null = null;
+    let reapplyTimer: number | null = null;
+
+    const requestTranslateReapply = () => {
+      const lang = getStoredLang();
+      if (!lang || lang === DEFAULT_LANG) {
+        return;
+      }
+      if (reapplyTimer) {
+        window.clearTimeout(reapplyTimer);
+      }
+      reapplyTimer = window.setTimeout(() => {
+        applyLanguage(lang);
+      }, 120);
+    };
+
+    const attachToastObserver = () => {
+      const container = document.querySelector<HTMLElement>(".toaster");
+      if (!container || container.getAttribute("data-gt-observe") === "true") {
+        return;
+      }
+
+      container.setAttribute("data-gt-observe", "true");
+      toastObserver?.disconnect();
+      toastObserver = new MutationObserver(() => {
+        requestTranslateReapply();
+      });
+      toastObserver.observe(container, { childList: true, subtree: true });
+    };
+
+    attachToastObserver();
+    bodyObserver = new MutationObserver(() => {
+      attachToastObserver();
+    });
+    bodyObserver.observe(document.body, { childList: true, subtree: true });
+
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<string>).detail;
-      const nextLang =
-        detail || localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
+      const nextLang = detail || getStoredLang();
       applyLanguage(nextLang);
     };
 
     window.addEventListener("pb_lang_change", handler);
-    return () => window.removeEventListener("pb_lang_change", handler);
+    return () => {
+      window.removeEventListener("pb_lang_change", handler);
+      toastObserver?.disconnect();
+      bodyObserver?.disconnect();
+      if (reapplyTimer) {
+        window.clearTimeout(reapplyTimer);
+      }
+    };
   }, []);
 
   useEffect(() => {
-    const storedLang = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
+    const storedLang = getStoredLang();
     if (!storedLang) {
       return;
     }
