@@ -54,6 +54,19 @@ export function LandingPage({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
+  const navigateWithTranslate = (path: string) => {
+    try {
+      const lang = localStorage.getItem("pb_lang");
+      if (lang && lang !== "en") {
+        window.location.href = path;
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to read language preference:", error);
+    }
+    router.push(path);
+  };
+
   useEffect(() => {
     // Check if user is authenticated
     const accessToken = localStorage.getItem("accessToken");
@@ -67,7 +80,7 @@ export function LandingPage({
   }, []);
 
   const handleDashboardClick = () => {
-    router.push("/home");
+    navigateWithTranslate("/home");
   };
 
   const features = [

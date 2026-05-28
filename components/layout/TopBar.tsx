@@ -79,6 +79,20 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
   };
 
   const handleSignOut = () => {
+    try {
+      const lang = localStorage.getItem("pb_lang");
+      if (lang && lang !== "en") {
+        localStorage.setItem("pb_lang", "en");
+        document.cookie = "googtrans=/en/en; path=/";
+        const translateWindow = window as Window & {
+          setGoogleTranslateLanguage?: (lang: string) => void;
+        };
+        translateWindow.setGoogleTranslateLanguage?.("en");
+      }
+    } catch (error) {
+      console.error("Failed to reset language before logout:", error);
+    }
+
     // Clear localStorage
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -202,7 +216,12 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuContent
+            className="w-56 notranslate"
+            translate="no"
+            align="end"
+            forceMount
+          >
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">

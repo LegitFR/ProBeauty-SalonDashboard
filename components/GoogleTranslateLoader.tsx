@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 type TranslateWindow = Window & {
@@ -24,108 +24,103 @@ const STORAGE_KEY = "pb_lang";
 const DEFAULT_LANG = "en";
 const SUPPORTED_LANGS = ["en", "fr", "de", "es", "pt"];
 const GOOGLE_ELEMENT_ID = "google_translate_element";
+const SCRIPT_ID = "google-translate-script";
+const INIT_ATTR = "data-gt-initialized";
 
 function setTranslateCookie(lang: string) {
   const normalized = SUPPORTED_LANGS.includes(lang) ? lang : DEFAULT_LANG;
   document.cookie = `googtrans=/en/${normalized}; path=/`;
 }
 
-function applyLanguageToWidget(lang: string) {
+function ensureTranslateContainer() {
+  let container = document.getElementById(GOOGLE_ELEMENT_ID);
+  if (!container) {
+    container = document.createElement("div");
+    container.id = GOOGLE_ELEMENT_ID;
+    container.style.display = "none";
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+function applyLanguage(lang: string) {
   const normalized = SUPPORTED_LANGS.includes(lang) ? lang : DEFAULT_LANG;
+  setTranslateCookie(normalized);
   const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-  if (!select) {
+  if (!select || select.value === normalized) {
     return;
   }
   select.value = normalized;
   select.dispatchEvent(new Event("change"));
 }
 
-function applyLanguageWithRetry(lang: string, attempts = 12) {
-  const normalized = SUPPORTED_LANGS.includes(lang) ? lang : DEFAULT_LANG;
-  const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-  if (select) {
-    if (!select.value || select.value !== normalized) {
-      select.value = normalized;
-      select.dispatchEvent(new Event("change"));
-    }
-    return;
-  }
-  if (attempts > 0) {
-    window.setTimeout(
-      () => applyLanguageWithRetry(normalized, attempts - 1),
-      150,
-    );
-  }
-}
-
 export function GoogleTranslateLoader() {
   const pathname = usePathname();
-  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    if (!document.getElementById(GOOGLE_ELEMENT_ID)) {
-      const container = document.createElement("div");
-      container.id = GOOGLE_ELEMENT_ID;
-      container.setAttribute("aria-hidden", "true");
-      document.body.appendChild(container);
-    }
-
-    const storedLang =
-      typeof window !== "undefined"
-        ? window.localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG
-        : DEFAULT_LANG;
-
-    const targetLang = SUPPORTED_LANGS.includes(storedLang)
-      ? storedLang
-      : DEFAULT_LANG;
+    const storedLang = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
+    setTranslateCookie(storedLang);
 
     const translateWindow = window as TranslateWindow;
     translateWindow.googleTranslateElementInit = () => {
-      if (translateWindow.google?.translate?.TranslateElement) {
+      if (!translateWindow.google?.translate?.TranslateElement) {
+        return;
+      }
+
+      const container = ensureTranslateContainer();
+      if (container.getAttribute(INIT_ATTR) !== "true") {
         new translateWindow.google.translate.TranslateElement(
           {
-            pageLanguage: "en",
+            pageLanguage: DEFAULT_LANG,
             includedLanguages: SUPPORTED_LANGS.join(","),
             autoDisplay: false,
           },
           GOOGLE_ELEMENT_ID,
         );
-        setTranslateCookie(targetLang);
-        applyLanguageWithRetry(targetLang);
+        container.setAttribute(INIT_ATTR, "true");
       }
+
+      applyLanguage(storedLang);
     };
 
     translateWindow.setGoogleTranslateLanguage = (lang: string) => {
       const nextLang = SUPPORTED_LANGS.includes(lang) ? lang : DEFAULT_LANG;
-      window.localStorage.setItem(STORAGE_KEY, nextLang);
-      setTranslateCookie(nextLang);
-      applyLanguageWithRetry(nextLang);
+      localStorage.setItem(STORAGE_KEY, nextLang);
+      applyLanguage(nextLang);
     };
 
-    if (!document.getElementById("google-translate-script")) {
+    ensureTranslateContainer();
+
+    if (!document.getElementById(SCRIPT_ID)) {
       const script = document.createElement("script");
-      script.id = "google-translate-script";
+      script.id = SCRIPT_ID;
       script.src =
-        "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-      script.async = true;
+        "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
       document.body.appendChild(script);
-    } else {
-      setTranslateCookie(targetLang);
-      applyLanguageWithRetry(targetLang);
+    } else if (translateWindow.google?.translate?.TranslateElement) {
+      translateWindow.googleTranslateElementInit();
     }
+
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      const nextLang =
+        detail || localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
+      applyLanguage(nextLang);
+    };
+
+    window.addEventListener("pb_lang_change", handler);
+    return () => window.removeEventListener("pb_lang_change", handler);
   }, []);
 
   useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
+    const storedLang = localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
+    if (!storedLang) {
       return;
     }
-    const translateWindow = window as TranslateWindow;
-    const storedLang = window.localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG;
-    if (storedLang !== DEFAULT_LANG) {
-      setTranslateCookie(storedLang);
-      translateWindow.setGoogleTranslateLanguage?.(storedLang);
-    }
+    const timer = window.setTimeout(() => {
+      applyLanguage(storedLang);
+    }, 150);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   return null;

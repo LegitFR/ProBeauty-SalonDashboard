@@ -35,6 +35,19 @@ export function PublicNavbar({
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const router = useRouter();
 
+  const navigateWithTranslate = (path: string) => {
+    try {
+      const lang = localStorage.getItem("pb_lang");
+      if (lang && lang !== "en") {
+        window.location.href = path;
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to read language preference:", error);
+    }
+    router.push(path);
+  };
+
   useEffect(() => {
     // Check if user is authenticated
     const accessToken = localStorage.getItem("accessToken");
@@ -74,14 +87,14 @@ export function PublicNavbar({
   }, [forceLightTheme]);
 
   const handleDashboardClick = () => {
-    router.push("/home");
+    navigateWithTranslate("/home");
   };
 
   const handleMarketplace = () => {
     if (onMarketplace) {
       onMarketplace();
     } else {
-      router.push("/marketplace");
+      navigateWithTranslate("/marketplace");
     }
   };
 
@@ -89,7 +102,7 @@ export function PublicNavbar({
     if (onLogin) {
       onLogin();
     } else {
-      router.push("/auth");
+      navigateWithTranslate("/auth");
     }
   };
 
@@ -97,12 +110,12 @@ export function PublicNavbar({
     if (onGetStarted) {
       onGetStarted();
     } else {
-      router.push("/auth");
+      navigateWithTranslate("/auth");
     }
   };
 
   const handleHome = () => {
-    router.push("/");
+    navigateWithTranslate("/");
   };
 
   const languageOptions = [

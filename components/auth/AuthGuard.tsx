@@ -8,6 +8,19 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const navigateWithTranslate = (path: string) => {
+    try {
+      const lang = localStorage.getItem("pb_lang");
+      if (lang && lang !== "en") {
+        window.location.href = path;
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to read language preference:", error);
+    }
+    router.push(path);
+  };
+
   useEffect(() => {
     // Check if user is authenticated and authorized
     const checkAuth = async () => {
@@ -16,7 +29,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       // First check: Token and user data must exist
       if (!accessToken || !userStr) {
-        router.push("/auth");
+        navigateWithTranslate("/auth");
         return;
       }
 
@@ -27,7 +40,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         // Second check: User must have 'owner' role (from stored data)
         if (!storedUser || storedUser.role !== "owner") {
           toast.error(
-            "Access denied. This application is for salon owners only."
+            "Access denied. This application is for salon owners only.",
           );
           // Clear invalid auth data
           localStorage.removeItem("accessToken");
@@ -36,7 +49,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           localStorage.removeItem("salon");
           document.cookie = "accessToken=; path=/; max-age=0";
           document.cookie = "refreshToken=; path=/; max-age=0";
-          router.push("/auth");
+          navigateWithTranslate("/auth");
           return;
         }
 
@@ -61,7 +74,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             // Verify role again from fresh data
             if (user.role !== "owner") {
               toast.error(
-                "Access denied. This application is for salon owners only."
+                "Access denied. This application is for salon owners only.",
               );
               localStorage.removeItem("accessToken");
               localStorage.removeItem("refreshToken");
@@ -69,7 +82,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
               localStorage.removeItem("salon");
               document.cookie = "accessToken=; path=/; max-age=0";
               document.cookie = "refreshToken=; path=/; max-age=0";
-              router.push("/auth");
+              navigateWithTranslate("/auth");
               return;
             }
           }
@@ -90,7 +103,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             localStorage.removeItem("salon");
             document.cookie = "accessToken=; path=/; max-age=0";
             document.cookie = "refreshToken=; path=/; max-age=0";
-            router.push("/auth");
+            navigateWithTranslate("/auth");
             return;
           }
         }
@@ -110,9 +123,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           if (!salonData.data || salonData.data.length === 0) {
             // User hasn't completed salon setup
             toast.error(
-              "Please complete your salon setup to access the dashboard."
+              "Please complete your salon setup to access the dashboard.",
             );
-            router.push("/auth"); // This will show create-salon page
+            navigateWithTranslate("/auth"); // This will show create-salon page
             return;
           }
 
@@ -130,7 +143,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           localStorage.removeItem("salon");
           document.cookie = "accessToken=; path=/; max-age=0";
           document.cookie = "refreshToken=; path=/; max-age=0";
-          router.push("/auth");
+          navigateWithTranslate("/auth");
           return;
         }
 
@@ -147,7 +160,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         document.cookie = "accessToken=; path=/; max-age=0";
         document.cookie = "refreshToken=; path=/; max-age=0";
         toast.error("Authentication error. Please login again.");
-        router.push("/auth");
+        navigateWithTranslate("/auth");
       }
     };
 

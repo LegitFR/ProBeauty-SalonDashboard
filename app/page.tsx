@@ -7,6 +7,19 @@ import { Toaster } from "../components/ui/sonner";
 export default function RootPage() {
   const router = useRouter();
 
+  const navigateWithTranslate = (path: string) => {
+    try {
+      const lang = localStorage.getItem("pb_lang");
+      if (lang && lang !== "en") {
+        window.location.href = path;
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to read language preference:", error);
+    }
+    router.push(path);
+  };
+
   // Force light mode on landing page
   useEffect(() => {
     // Remove dark mode class to force light theme on landing page
@@ -19,7 +32,7 @@ export default function RootPage() {
     if (!savedTheme) {
       try {
         const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
+          "(prefers-color-scheme: dark)",
         ).matches;
         localStorage.setItem("theme", prefersDark ? "dark" : "light");
       } catch (error) {
@@ -39,9 +52,9 @@ export default function RootPage() {
   return (
     <div>
       <LandingPage
-        onGetStarted={() => router.push("/auth")}
-        onLogin={() => router.push("/auth")}
-        onCustomerSite={() => router.push("/marketplace")}
+        onGetStarted={() => navigateWithTranslate("/auth")}
+        onLogin={() => navigateWithTranslate("/auth")}
+        onCustomerSite={() => navigateWithTranslate("/marketplace")}
       />
       <Toaster />
     </div>

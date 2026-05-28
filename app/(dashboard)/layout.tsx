@@ -23,6 +23,18 @@ export default function DashboardLayout({
   // Load theme preference from localStorage on mount
   useEffect(() => {
     try {
+      const restoreLang = sessionStorage.getItem("pb_lang_restore");
+      if (restoreLang && restoreLang !== "en") {
+        localStorage.setItem("pb_lang", restoreLang);
+        document.cookie = `googtrans=/en/${restoreLang}; path=/`;
+        const translateWindow = window as Window & {
+          setGoogleTranslateLanguage?: (lang: string) => void;
+        };
+        translateWindow.setGoogleTranslateLanguage?.(restoreLang);
+        window.dispatchEvent(new CustomEvent("pb_lang_change"));
+        sessionStorage.removeItem("pb_lang_restore");
+      }
+
       const savedTheme = localStorage.getItem("theme");
       if (savedTheme === "dark") {
         setIsDarkMode(true);

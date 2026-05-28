@@ -13,6 +13,19 @@ export default function AuthPage() {
     "login" | "signup" | "create-salon" | "forgot-password"
   >("login");
 
+  const navigateWithTranslate = (path: string) => {
+    try {
+      const lang = localStorage.getItem("pb_lang");
+      if (lang && lang !== "en") {
+        window.location.href = path;
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to read language preference:", error);
+    }
+    router.push(path);
+  };
+
   // Initialize theme for users on auth page
   useEffect(() => {
     try {
@@ -20,7 +33,7 @@ export default function AuthPage() {
       if (!savedTheme) {
         // First-time visitor: detect system preference
         const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
+          "(prefers-color-scheme: dark)",
         ).matches;
         localStorage.setItem("theme", prefersDark ? "dark" : "light");
         if (prefersDark) {
@@ -35,6 +48,17 @@ export default function AuthPage() {
   }, []);
 
   const handleLogin = async (user: any, tokens: any) => {
+    try {
+      const preferredLang = localStorage.getItem("pb_lang");
+      if (preferredLang && preferredLang !== "en") {
+        sessionStorage.setItem("pb_lang_restore", preferredLang);
+        localStorage.setItem("pb_lang", "en");
+        document.cookie = "googtrans=/en/en; path=/";
+      }
+    } catch (error) {
+      console.error("Failed to adjust language preference:", error);
+    }
+
     // Store tokens in localStorage
     if (tokens?.accessToken) {
       localStorage.setItem("accessToken", tokens.accessToken);
@@ -84,7 +108,16 @@ export default function AuthPage() {
     }
 
     // Redirect to dashboard
-    router.push("/home");
+    try {
+      const restoreLang = sessionStorage.getItem("pb_lang_restore");
+      if (restoreLang && restoreLang !== "en") {
+        window.location.href = "/home";
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to read language restore flag:", error);
+    }
+    navigateWithTranslate("/home");
   };
 
   const handleSignupSuccess = async (user: any, tokens: any) => {
@@ -107,7 +140,7 @@ export default function AuthPage() {
     <div>
       {view === "login" ? (
         <LoginPage
-          onBack={() => router.push("/")}
+          onBack={() => navigateWithTranslate("/")}
           onLogin={handleLogin}
           onSignup={() => setView("signup")}
           onForgotPassword={() => setView("forgot-password")}
@@ -120,7 +153,9 @@ export default function AuthPage() {
       ) : view === "forgot-password" ? (
         <ForgotPasswordPage onBack={() => setView("login")} />
       ) : (
-        <CreateSalonPage onSalonCreated={() => router.push("/home")} />
+        <CreateSalonPage
+          onSalonCreated={() => navigateWithTranslate("/home")}
+        />
       )}
       <Toaster />
     </div>
