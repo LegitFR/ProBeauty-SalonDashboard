@@ -218,6 +218,7 @@ export function PublicNavbar({
                   ? "bg-gray-900/70 text-gray-200 border-gray-700 hover:border-gray-500"
                   : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
               }`}
+              style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
             >
               {languageOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -290,6 +291,7 @@ export function PublicNavbar({
                   ? "bg-gray-900/70 text-gray-200 border-gray-700 hover:border-gray-500"
                   : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
               }`}
+              style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
             >
               {languageOptions.map((option) => (
                 <option key={option.value} value={option.value}>

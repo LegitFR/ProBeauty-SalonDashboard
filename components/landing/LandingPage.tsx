@@ -5,38 +5,28 @@ import { Footer } from "./Footer";
 import { PublicNavbar } from "../layout/PublicNavbar";
 import {
   Play,
-  Menu,
-  X,
   Calendar,
-  DollarSign,
   Users,
-  BarChart3,
   Star,
   Shield,
   Smartphone,
-  Clock,
   TrendingUp,
   CheckCircle,
   ArrowRight,
-  Scissors,
   Heart,
   Zap,
-  Globe,
   CreditCard,
+  Globe,
   MessageSquare,
   Award,
-  Target,
   Headphones,
-  BookOpen,
   Sparkles,
   ChevronRight,
-  Palette,
   Brain,
   Rocket,
   LayoutDashboard,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 interface LandingPageProps {
@@ -182,112 +172,136 @@ export function LandingPage({
 
       {/* Hero Section */}
       <section className="hero-padding-y relative overflow-hidden">
-        {/* Background Elements */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-orange-50 to-pink-50"></div>
         <div className="hidden sm:block absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl"></div>
         <div className="hidden sm:block absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-orange-200/20 to-transparent rounded-full blur-3xl"></div>
 
         <div className="safe-container container-padding-mobile max-w-7xl relative">
-          <div className="text-center mb-12 sm:mb-16">
-            <div
-              className="mb-4 sm:mb-6 border-2 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 inline-flex items-center max-w-full shadow-md rounded-full"
-              style={{ backgroundColor: "#fef3c7", borderColor: "#fcd34d" }}
-            >
-              <Rocket
-                className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 sm:mr-2 shrink-0"
-                style={{ color: "#0f172a" }}
-              />
-              <span className="sm:inline font-medium">
-                Trusted by 120,000+ beauty professionals worldwide
-              </span>
-            </div>
-
-            <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-6xl xl:text-7xl font-bold mb-6 sm:mb-8 leading-tight px-2 safe-text">
-              The Future of{" "}
-              <span className="bg-gradient-to-r from-primary via-orange-500 to-pink-500 bg-clip-text text-transparent relative inline-block">
-                Beauty Business
-                <svg
-                  className="hidden md:block absolute -bottom-2 md:-bottom-4 left-0 w-full h-3 md:h-4 text-primary/30"
-                  viewBox="0 0 400 20"
-                  fill="none"
-                  preserveAspectRatio="none"
-                >
-                  <path
-                    d="M5 15C100 5 200 5 395 15"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>{" "}
-              is Here
-            </h1>
-
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-gray-600 max-w-4xl mx-auto mb-8 sm:mb-12 leading-relaxed px-4 safe-text">
-              Supercharge your salon with AI-powered booking, intelligent
-              insights, and seamless customer experiences. Join the beauty
-              revolution and grow your business like never before.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 px-4">
-              <Button
-                size="lg"
-                className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto shadow-2xl shadow-primary/25"
-                onClick={onGetStarted}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div className="text-center sm:text-left">
+              <div
+                className="mb-5 border-2 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 inline-flex items-center max-w-full shadow-md rounded-full"
+                style={{ backgroundColor: "#fef3c7", borderColor: "#fcd34d" }}
               >
-                <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">Start Your Revolution</span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5 sm:ml-2 flex-shrink-0" />
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="btn-auto-width text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto border-2 border-[#1e1e1e] hover:border-primary text-gray-700 hover:text-primary backdrop-blur-sm"
-                style={{ backgroundColor: "#ECE3DC" }}
-              >
-                <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">Watch Demo (2 min)</span>
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 text-xs sm:text-sm text-gray-500 px-4">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span className="whitespace-nowrap">30-day free trial</span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span className="whitespace-nowrap">
-                  No credit card required
+                <Rocket
+                  className="w-5 h-5 sm:w-6 sm:h-6 mr-1.5 sm:mr-2 shrink-0"
+                  style={{ color: "#0f172a" }}
+                />
+                <span className="sm:inline font-medium">
+                  The all-in-one platform for beauty pros
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span className="whitespace-nowrap">Cancel anytime</span>
+
+              <h1 className="font-heading text-3xl sm:text-4xl lg:text-6xl font-bold mb-6 leading-tight safe-text">
+                Run your salon with the confidence of a
+                <span className="bg-gradient-to-r from-primary via-orange-500 to-pink-500 bg-clip-text text-transparent relative inline-block">
+                  {" "}modern business{" "}
+                </span>
+              </h1>
+
+              <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mb-8 leading-relaxed safe-text">
+                Online booking, client management, automated reminders, and
+                smart insights in one beautifully simple platform built for
+                growth.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-start mb-8">
+                <Button
+                  size="lg"
+                  className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto shadow-2xl shadow-primary/25"
+                  onClick={onGetStarted}
+                >
+                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  <span className="truncate">Start Free Trial</span>
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5 sm:ml-2 flex-shrink-0" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="btn-auto-width text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto border-2 border-[#1e1e1e] hover:border-primary text-gray-700 hover:text-primary backdrop-blur-sm"
+                  style={{ backgroundColor: "#ECE3DC" }}
+                >
+                  <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  <span className="truncate">See it in action</span>
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap sm:justify-start justify-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                  <span className="whitespace-nowrap">30-day free trial</span>
+                </div>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                  <span className="whitespace-nowrap">
+                    No credit card required
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Cancel anytime</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Hero Image */}
-          <div className="max-w-6xl mx-auto safe-w-full">
-            <div className="relative mx-4 sm:mx-0">
-              <div className="hidden sm:block absolute -inset-4 bg-gradient-to-r from-primary/20 to-orange-300/20 rounded-3xl blur-2xl"></div>
+            <div className="relative mx-auto w-full max-w-2xl">
+              <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-orange-300/20 rounded-3xl blur-2xl"></div>
               <img
                 src={
                   "https://images.unsplash.com/photo-1653548410459-5dffc2cef115?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzYWxvbiUyMGRhc2hib2FyZCUyMGludGVyZmFjZXxlbnwxfHx8fDE3NTgzMTQ5MzF8MA&ixlib=rb-4.1.0&q=80&w=1080"
                 }
                 alt="ProBeauty Dashboard Interface"
-                className="relative w-full h-auto rounded-xl sm:rounded-2xl shadow-2xl border border-white/20"
+                className="relative w-full h-auto rounded-2xl shadow-2xl border border-white/20 transition-transform hover:scale-105"
               />
 
-              {/* Floating Elements */}
-              <div className="hidden md:flex absolute -top-2 -right-2 md:-top-4 md:-right-4 w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 bg-gradient-to-br from-primary to-orange-500 rounded-xl md:rounded-2xl items-center justify-center shadow-2xl rotate-12">
-                <Sparkles className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8 text-white" />
+              <div
+                className="absolute -top-4 right-4 hidden md:flex flex-col gap-2 border border-white/80 rounded-2xl shadow-2xl px-4 py-3"
+                style={{ backgroundColor: "#ECE3DC" }}
+              >
+                <div className="text-xs text-gray-500">Next appointment</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Ava Thompson</p>
+                    <p className="text-xs text-gray-500">Today, 4:30 PM</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="hidden md:flex absolute -bottom-2 -left-2 md:-bottom-4 md:-left-4 w-10 h-10 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl md:rounded-2xl items-center justify-center shadow-2xl -rotate-12">
-                <Brain className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
+              <div
+                className="absolute -bottom-4 left-4 hidden md:flex flex-col gap-2 border border-white/80 rounded-2xl shadow-2xl px-4 py-3"
+                style={{ backgroundColor: "#ECE3DC" }}
+              >
+                <div className="text-xs text-gray-500">Revenue this week</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">€12,480</p>
+                    <p className="text-xs text-green-600">+18% vs last week</p>
+                  </div>
+                </div>
               </div>
+
+              <div className="hidden md:flex absolute -top-6 -left-6 w-16 h-16 bg-gradient-to-br from-primary to-orange-500 rounded-2xl items-center justify-center shadow-2xl rotate-12">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-xs sm:text-sm text-gray-500 mb-4">
+              Trusted by growth-minded salons and studios
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm sm:text-base text-gray-600">
+              <span className="font-semibold">Luxe Studio</span>
+              <span className="font-semibold">Radiant Barbers</span>
+              <span className="font-semibold">Glow & Co</span>
+              <span className="font-semibold">Velvet Spa</span>
+              <span className="font-semibold">Blush Atelier</span>
             </div>
           </div>
         </div>
@@ -299,18 +313,27 @@ export function LandingPage({
         style={{ backgroundColor: "#ECE3DC" }}
       >
         <div className="safe-container container-padding-mobile max-w-7xl">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="mb-4">
-                  <p className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
-                    {stat.value}
-                  </p>
-                  <p className="text-gray-600 font-medium mt-2">{stat.label}</p>
-                  <p className="text-sm text-green-600 mt-1">{stat.change}</p>
+          <div
+            className="border border-white/80 rounded-3xl shadow-2xl px-6 sm:px-10 py-10"
+            style={{ backgroundColor: "#ECE3DC" }}
+          >
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+              {stats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="mb-2">
+                    <p className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+                      {stat.value}
+                    </p>
+                    <p className="text-gray-600 font-medium mt-2">
+                      {stat.label}
+                    </p>
+                    <p className="text-sm text-green-600 mt-1">
+                      {stat.change}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -378,23 +401,68 @@ export function LandingPage({
 
       <section
         id="features"
-        className="py-16 lg:py-24"
+        className="section-padding-y"
         style={{ backgroundColor: "#ECE3DC" }}
       >
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
-              <Zap className="w-4 h-4 mr-2" />
-              Revolutionary Features
-            </Badge>
-            <h2 className="font-heading text-4xl lg:text-5xl font-bold mb-6">
-              Technology that <span className="text-primary">transforms</span>{" "}
-              businesses
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Every feature is designed with one goal: to help your beauty
-              business thrive in the digital age.
-            </p>
+        <div className="safe-container container-padding-mobile max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-12">
+            <div className="text-center sm:text-left">
+              <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
+                <Zap className="w-4 h-4 mr-2" />
+                Built for modern salons
+              </Badge>
+              <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+                Everything you need to scale, all in one place
+              </h2>
+              <p className="text-base sm:text-lg text-gray-600 max-w-2xl">
+                Inspired by the best in the industry, ProBeauty blends a sleek
+                client experience with powerful tools for your team.
+              </p>
+            </div>
+            <div
+              className="border border-white/80 rounded-3xl shadow-2xl p-6 sm:p-8"
+              style={{ backgroundColor: "#ECE3DC" }}
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
+                  <LayoutDashboard className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Your daily overview</p>
+                  <p className="font-semibold">Unified, actionable, clear</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  className="rounded-2xl p-4"
+                  style={{ backgroundColor: "#ECE3DC" }}
+                >
+                  <p className="text-xs text-gray-500">Bookings</p>
+                  <p className="text-xl font-semibold">124</p>
+                </div>
+                <div
+                  className="rounded-2xl p-4"
+                  style={{ backgroundColor: "#ECE3DC" }}
+                >
+                  <p className="text-xs text-gray-500">No-shows</p>
+                  <p className="text-xl font-semibold">2.1%</p>
+                </div>
+                <div
+                  className="rounded-2xl p-4"
+                  style={{ backgroundColor: "#ECE3DC" }}
+                >
+                  <p className="text-xs text-gray-500">New clients</p>
+                  <p className="text-xl font-semibold">38</p>
+                </div>
+                <div
+                  className="rounded-2xl p-4"
+                  style={{ backgroundColor: "#ECE3DC" }}
+                >
+                  <p className="text-xs text-gray-500">Avg. ticket</p>
+                  <p className="text-xl font-semibold">€86</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -435,6 +503,310 @@ export function LandingPage({
         </div>
       </section>
 
+      {/* Business Types Section */}
+      <section
+        className="section-padding-y"
+        style={{ backgroundColor: "#ECE3DC" }}
+      >
+        <div className="safe-container container-padding-mobile max-w-7xl">
+          <div className="text-center mb-12 sm:mb-16">
+            <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
+              <Heart className="w-4 h-4 mr-2" />
+              Built for every beauty business
+            </Badge>
+            <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+              The platform salons, spas, and studios trust
+            </h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto">
+              Tailored workflows for each specialty, from full-service salons to
+              boutique wellness studios.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                title: "Salon",
+                image:
+                  "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=80",
+              },
+              {
+                title: "Barber",
+                image:
+                  "https://images.unsplash.com/photo-1517832606294-0b51bba4c642?auto=format&fit=crop&w=1200&q=80",
+              },
+              {
+                title: "Nails",
+                image:
+                  "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80",
+              },
+              {
+                title: "Spa",
+                image:
+                  "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80",
+              },
+              {
+                title: "Skincare",
+                image:
+                  "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80",
+              },
+              {
+                title: "Massage",
+                image:
+                  "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="group relative overflow-hidden rounded-3xl shadow-2xl"
+              >
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 100%)",
+                  }}
+                ></div>
+                <div className="absolute bottom-4 left-4">
+                  <p className="text-xl font-semibold text-white">
+                    {item.title}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button
+              size="lg"
+              className="btn-auto-width bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 text-sm sm:text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 h-auto shadow-2xl shadow-primary/25"
+              onClick={onGetStarted}
+            >
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              Get started now
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section
+        className="section-padding-y"
+        style={{ backgroundColor: "#ECE3DC" }}
+      >
+        <div className="safe-container container-padding-mobile max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div
+              className="border border-white/80 rounded-3xl shadow-2xl p-6 sm:p-10"
+              style={{ backgroundColor: "#ECE3DC" }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Client experience</p>
+                  <p className="font-semibold">Smooth from booking to review</p>
+                </div>
+              </div>
+              <img
+                src={
+                  "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1000&q=80"
+                }
+                alt="Salon experience"
+                className="w-full h-auto rounded-2xl transition-transform duration-300 hover:scale-102"
+              />
+            </div>
+            <div className="text-center sm:text-left">
+              <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Designed for conversion
+              </Badge>
+              <h3 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
+                Turn visitors into loyal regulars
+              </h3>
+              <p className="text-base sm:text-lg text-gray-600 mb-6">
+                Your booking flow should feel like a premium experience. We
+                refine every touchpoint to reduce drop-off and increase repeat
+                visits.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <div>
+                    <p className="font-semibold">Instant online booking</p>
+                    <p className="text-sm text-gray-600">
+                      Optimized for mobile with lightning-fast checkout.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <div>
+                    <p className="font-semibold">Automated reminders</p>
+                    <p className="text-sm text-gray-600">
+                      Reduce no-shows with smart confirmations.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <div>
+                    <p className="font-semibold">Built-in reviews</p>
+                    <p className="text-sm text-gray-600">
+                      Collect feedback and build social proof automatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Platform Highlights */}
+      <section
+        className="section-padding-y"
+        style={{ backgroundColor: "#ECE3DC" }}
+      >
+        <div className="safe-container container-padding-mobile max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-12">
+            <div className="text-center sm:text-left">
+              <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
+                <Zap className="w-4 h-4 mr-2" />
+                Loved by teams
+              </Badge>
+              <h3 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
+                The booking platform clients love and teams rely on
+              </h3>
+              <p className="text-base sm:text-lg text-gray-600 mb-6">
+                Built for busy calendars, effortless staff management, and a
+                polished client experience from first click to repeat visit.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <p className="text-sm sm:text-base text-gray-700">
+                    Powerful calendar with unlimited bookings, clients, and
+                    locations.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <p className="text-sm sm:text-base text-gray-700">
+                    Advanced insights with a 360-degree view of each client and
+                    their preferences.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <p className="text-sm sm:text-base text-gray-700">
+                    Crafted to deliver a smooth experience that elevates your
+                    brand.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-6">
+              <div
+                className="rounded-3xl shadow-2xl overflow-hidden"
+                style={{ backgroundColor: "#ECE3DC" }}
+              >
+                <img
+                  src={
+                    "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80"
+                  }
+                  alt="Client profile"
+                  className="w-full h-64 object-cover transition-transform hover:scale-105"
+                />
+              </div>
+              <div
+                className="rounded-3xl shadow-2xl overflow-hidden"
+                style={{ backgroundColor: "#ECE3DC" }}
+              >
+                <img
+                  src={
+                    "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1200&q=80"
+                  }
+                  alt="Booking calendar"
+                  className="w-full h-64 object-cover transition-transform hover:scale-105"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div className="grid grid-cols-1 gap-6">
+              <div
+                className="rounded-3xl shadow-2xl overflow-hidden"
+                style={{ backgroundColor: "#ECE3DC" }}
+              >
+                <img
+                  src={
+                    "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1200&q=80"
+                  }
+                  alt="Marketplace profile"
+                  className="w-full h-64 object-cover transition-transform hover:scale-105"
+                />
+              </div>
+              <div
+                className="rounded-3xl shadow-2xl overflow-hidden"
+                style={{ backgroundColor: "#ECE3DC" }}
+              >
+                <img
+                  src={
+                    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"
+                  }
+                  alt="Marketplace map"
+                  className="w-full h-64 object-cover transition-transform hover:scale-105"
+                />
+              </div>
+            </div>
+            <div className="text-center sm:text-left">
+              <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
+                <Globe className="w-4 h-4 mr-2" />
+                Marketplace growth
+              </Badge>
+              <h3 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
+                The most popular marketplace to grow your business
+              </h3>
+              <p className="text-base sm:text-lg text-gray-600 mb-6">
+                Promote your services and reach new clients on the world’s
+                largest beauty and wellness marketplace.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <p className="text-sm sm:text-base text-gray-700">
+                    Increase online visibility by listing your business on
+                    ProBeauty Marketplace.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <p className="text-sm sm:text-base text-gray-700">
+                    Reach millions of clients ready to book their next
+                    appointment.
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                  <p className="text-sm sm:text-base text-gray-700">
+                    Turn visibility into repeat business with automated follow
+                    ups.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials Section */}
       <section
         id="testimonials"
@@ -468,7 +840,7 @@ export function LandingPage({
                     <img
                       src={testimonial.avatar}
                       alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover shadow-lg"
+                      className="w-16 h-16 rounded-full object-cover shadow-lg transition-transform hover:scale-105"
                     />
                     <div>
                       <div className="flex items-center gap-1 mb-2">
@@ -511,17 +883,24 @@ export function LandingPage({
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-orange-500/10"></div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/20 to-transparent rounded-full blur-3xl"></div>
 
-        <div className="safe-container container-padding-mobile max-w-4xl text-center relative">
+        <div className="safe-container container-padding-mobile max-w-5xl text-center relative">
+          <Badge
+            className="mb-4 text-[#1e1e1e] border-white/80"
+            style={{ backgroundColor: "#ECE3DC" }}
+          >
+            <Rocket className="w-4 h-4 mr-2" />
+            Start in minutes
+          </Badge>
           <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-6 sm:mb-8 text-[#1e1e1e]">
-            Ready to{" "}
+            Ready to launch a booking experience that feels
             <span className="bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
-              revolutionize
-            </span>{" "}
-            your business?
+              {" "}premium{" "}
+            </span>
+            from day one?
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-2">
-            Join over 120,000 beauty professionals who have already transformed
-            their businesses with ProBeauty. Your success story starts today.
+            Join over 120,000 beauty professionals who trust ProBeauty to run
+            their day-to-day operations and grow with confidence.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8 sm:mb-12">
