@@ -75,8 +75,8 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
         throw new Error("Please enter a valid email address");
       }
 
-      if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) {
-        throw new Error("Phone must be 10 digits starting with 6-9");
+      if (!formData.phone || !/^\+351\d{9}$/.test(formData.phone)) {
+        throw new Error("Phone must be in format +351XXXXXXXXX");
       }
 
       if (!formData.password || formData.password.length < 8) {
@@ -231,8 +231,8 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
         }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || "Failed to resend OTP");
       }
 
@@ -245,23 +245,21 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-orange-50/30 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-orange-50/30 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-orange-200/20 to-transparent rounded-full blur-3xl"></div>
 
       <div className="w-full max-w-md relative z-10">
         {/* Back Button */}
-        <div className="mb-4">
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            className="flex items-center"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="mb-6 -ml-4 flex items-center md:fixed md:top-8 md:left-8 md:m-0 z-50 w-fit"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
 
         {/* Header */}
         <div className="text-center mb-8">
@@ -352,15 +350,15 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
                     id="phone"
                     name="phone"
                     type="tel"
-                    placeholder="9876543210"
+                    placeholder="+351912345678"
                     value={formData.phone}
                     onChange={handleInputChange}
                     required
                     className="h-11"
-                    maxLength={10}
+                    maxLength={13}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Must be 10 digits starting with 6, 7, 8, or 9
+                    Format: +351XXXXXXXXX
                   </p>
                 </div>
 
@@ -421,11 +419,11 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating Account...
+                      <span>Creating Account...</span>
                     </>
                   ) : (
                     <>
-                      Create Account
+                      <span>Create Account</span>
                       <Sparkles className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -482,12 +480,12 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying...
+                      <span>Verifying...</span>
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4 mr-2" />
-                      Verify & Continue
+                      <span>Verify & Continue</span>
                     </>
                   )}
                 </Button>

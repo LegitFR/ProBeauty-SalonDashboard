@@ -158,8 +158,8 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
       toast.error("Address must be at least 5 characters");
       return;
     }
-    if (formData.phone && !/^[6-9]\d{9}$/.test(formData.phone)) {
-      toast.error("Phone must be 10 digits starting with 6-9");
+    if (formData.phone && !/^\+351\d{9}$/.test(formData.phone)) {
+      toast.error("Phone must be in format +351XXXXXXXXX");
       return;
     }
     setStep(2);
@@ -439,13 +439,14 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
                     id="phone"
                     name="phone"
                     type="tel"
-                    placeholder="9876543210"
+                    placeholder="+351912345678"
                     value={formData.phone}
                     onChange={handleInputChange}
                     className="h-11"
+                    maxLength={13}
                   />
                   <p className="text-xs text-muted-foreground">
-                    10 digits starting with 6-9
+                    Format: +351XXXXXXXXX
                   </p>
                 </div>
 
@@ -666,12 +667,12 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creating Salon...
+                        <span>Creating Salon...</span>
                       </>
                     ) : (
                       <>
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        Create Salon
+                        <span>Create Salon</span>
                       </>
                     )}
                   </Button>

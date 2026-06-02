@@ -88,19 +88,19 @@ export function LoginPage({
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative">
+      <div className="w-full max-w-md relative z-10">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="mb-6 -ml-4 flex items-center md:fixed md:top-8 md:left-8 md:m-0 z-50 w-fit"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+
         {/* Header */}
         <div className="text-center mb-8">
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            className="absolute top-4 left-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <Calendar className="w-5 h-5 text-primary-foreground" />
