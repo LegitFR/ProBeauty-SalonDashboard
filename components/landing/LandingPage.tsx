@@ -731,7 +731,7 @@ export function LandingPage({
               >
                 <img
                   src={
-                    "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1200&q=80"
+                    "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80"
                   }
                   alt="Booking calendar"
                   className="w-full h-64 object-cover transition-transform hover:scale-105"
@@ -760,7 +760,7 @@ export function LandingPage({
               >
                 <img
                   src={
-                    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"
+                    "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=1200&q=80"
                   }
                   alt="Marketplace map"
                   className="w-full h-64 object-cover transition-transform hover:scale-105"
