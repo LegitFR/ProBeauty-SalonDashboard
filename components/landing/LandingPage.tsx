@@ -42,6 +42,7 @@ export function LandingPage({
 }: LandingPageProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
   const router = useRouter();
 
   const navigateWithTranslate = (path: string) => {
@@ -67,6 +68,22 @@ export function LandingPage({
 
     // User is authenticated if both localStorage and cookie have the token
     setIsAuthenticated(!!(accessToken && user && hasCookie));
+
+    // Handle language changes
+    const storedLanguage = localStorage.getItem("pb_lang");
+    if (storedLanguage) {
+      setSelectedLanguage(storedLanguage);
+    }
+    const handleLanguageChange = () => {
+      const nextLanguage = localStorage.getItem("pb_lang");
+      if (nextLanguage) {
+        setSelectedLanguage(nextLanguage);
+      }
+    };
+    window.addEventListener("pb_lang_change", handleLanguageChange);
+    return () => {
+      window.removeEventListener("pb_lang_change", handleLanguageChange);
+    };
   }, []);
 
   const handleDashboardClick = () => {
@@ -192,17 +209,29 @@ export function LandingPage({
                 </span>
               </div>
 
-              <h1 className="font-heading text-3xl sm:text-4xl lg:text-6xl font-bold mb-6 leading-tight safe-text">
-                Run your salon with the confidence of a
-                <span className="bg-gradient-to-r from-primary via-orange-500 to-pink-500 bg-clip-text text-transparent relative inline-block">
-                  {" "}modern business{" "}
-                </span>
+              <h1 className="font-heading text-3xl sm:text-4xl lg:text-6xl font-bold mb-6 leading-tight safe-text notranslate">
+                {selectedLanguage === "pt" ? (
+                  <>
+                    Administre o seu salão com a confiança de um profissional.<br className="hidden sm:block" />
+                    <span className="bg-gradient-to-r from-primary via-orange-500 to-pink-500 bg-clip-text text-transparent relative inline"> negócios modernos</span>
+                  </>
+                ) : selectedLanguage === "fr" ? (
+                  <>
+                    Gérez votre salon avec la confiance d'une <span className="bg-gradient-to-r from-primary via-orange-500 to-pink-500 bg-clip-text text-transparent relative inline">entreprise moderne</span>
+                  </>
+                ) : (
+                  <>
+                    Manage your salon with the confidence of a <span className="bg-gradient-to-r from-primary via-orange-500 to-pink-500 bg-clip-text text-transparent relative inline">modern business</span>
+                  </>
+                )}
               </h1>
 
-              <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mb-8 leading-relaxed safe-text">
-                Online booking, client management, automated reminders, and
-                smart insights in one beautifully simple platform built for
-                growth.
+              <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mb-8 leading-relaxed safe-text notranslate">
+                {selectedLanguage === "pt"
+                  ? "Agendamento online, gestão de clientes, lembretes automatizados e insights inteligentes numa plataforma incrivelmente simples, criada para o crescimento."
+                  : selectedLanguage === "fr"
+                  ? "Réservation en ligne, gestion des clients, rappels automatisés et analyses pertinentes, tout sur une plateforme d'une simplicité remarquable conçue pour la croissance."
+                  : "Online booking, client management, automated reminders, and smart insights in one beautifully simple platform built for growth."}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-start mb-8">

@@ -351,7 +351,9 @@ export default function OffersPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select offer type">
+                        {formData.offerType === 'salon' ? 'Salon-wide' : formData.offerType === 'product' ? 'Specific Product' : formData.offerType === 'service' ? 'Specific Service' : ''}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="salon">Salon-wide</SelectItem>
@@ -398,8 +400,8 @@ export default function OffersPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {services.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.name}
+                          <SelectItem key={service.id || service._id} value={service.id || service._id}>
+                            {service.name || service.title}
                           </SelectItem>
                         ))}
                       </SelectContent>
