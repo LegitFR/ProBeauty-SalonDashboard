@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Search, MapPin, Star, Calendar, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "../../components/ui/use-toast";
 import { Toaster } from "../../components/ui/sonner";
 import { PublicNavbar } from "../../components/layout/PublicNavbar";
@@ -62,9 +62,10 @@ interface SalonResponse {
 
 export default function MarketplacePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("service") || "");
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState<

@@ -27,47 +27,30 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   const productLinks = [
-    { name: "Booking System", href: "#" },
-    { name: "Point of Sale", href: "#" },
-    { name: "Customer Management", href: "#" },
-    { name: "Staff Scheduling", href: "#" },
-    { name: "Marketing Tools", href: "#" },
+    { name: "Booking System", href: "https://pro-beauty-web.vercel.app/" },
+    // { name: "Point of Sale", href: "#" },
+    { name: "Customer Management", href: "/customer" },
+    { name: "Staff Scheduling", href: "/staff" },
+    { name: "Marketing Tools", href: "/home" },
     { name: "Business Analytics", href: "#" },
-    { name: "Mobile Apps", href: "#" },
-    { name: "Payment Processing", href: "#" },
+    { name: "Mobile Apps", href: "https://play.google.com/store/apps/details?id=com.probeautyapp" },
+    // { name: "Payment Processing", href: "#" },
   ];
 
   const businessTypeLinks = [
-    { name: "Hair Salons", href: "#" },
-    { name: "Nail Salons", href: "#" },
-    { name: "Spas & Wellness", href: "#" },
-    { name: "Barbershops", href: "#" },
-    { name: "Beauty Clinics", href: "#" },
-    { name: "Massage Therapy", href: "#" },
-    { name: "Tattoo Studios", href: "#" },
-    { name: "Fitness Studios", href: "#" },
-  ];
-
-  const resourceLinks = [
-    { name: "Help Center", href: "#" },
-    { name: "API Documentation", href: "#" },
-    { name: "Webinars", href: "#" },
-    { name: "Case Studies", href: "#" },
-    { name: "Blog", href: "#" },
-    { name: "Templates", href: "#" },
-    { name: "Training Videos", href: "#" },
-    { name: "Community Forum", href: "#" },
+    { name: "Hair Salons", href: "/marketplace?service=Hair+Salons" },
+    { name: "Nail Salons", href: "/marketplace?service=Nail+Salons" },
+    { name: "Spas & Wellness", href: "/marketplace?service=Spas+%26+Wellness" },
+    { name: "Barbershops", href: "/marketplace?service=Barbershops" },
+    { name: "Beauty Clinics", href: "/marketplace?service=Beauty+Clinics" },
+    { name: "Massage Therapy", href: "/marketplace?service=Massage+Therapy" },
+    { name: "Tattoo Studios", href: "/marketplace?service=Tattoo+Studios" },
+    { name: "Fitness Studios", href: "/marketplace?service=Fitness+Studios" },
   ];
 
   const companyLinks = [
-    { name: "About Us", href: "#" },
-    { name: "Careers", href: "#" },
-    { name: "Press", href: "#" },
-    { name: "Partners", href: "#" },
-    { name: "Investors", href: "#" },
-    { name: "Contact", href: "#" },
-    { name: "Security", href: "#" },
-    { name: "Privacy Policy", href: "#" },
+    { name: "Privacy Policy", href: "/privacy_policy" },
+    { name: "Terms of Service", href: "/terms_of_service" },
   ];
 
   const features = [
@@ -81,7 +64,7 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
     <footer className="bg-gray-900 text-white">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Company Info */}
           <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center mb-6">
@@ -138,34 +121,35 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
                 href="#"
                 className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
-                <Facebook className="w-4 h-4" />
+                <Facebook className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
               </a>
               <a
                 href="#"
                 className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
-                <Twitter className="w-4 h-4" />
+                <Twitter className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
               </a>
               <a
                 href="#"
                 className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
-                <Instagram className="w-4 h-4" />
+                <Instagram className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
               </a>
               <a
                 href="#"
                 className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
-                <Linkedin className="w-4 h-4" />
+                <Linkedin className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
               </a>
               <a
                 href="#"
                 className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
-                <Youtube className="w-4 h-4" />
+                <Youtube className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
               </a>
             </div>
           </div>
+
           {/* Product Links */}
           <div>
             <h3 className="font-semibold text-white mb-4">Product</h3>
@@ -188,23 +172,6 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
             <h3 className="font-semibold text-white mb-4">Business Types</h3>
             <ul className="space-y-3">
               {businessTypeLinks.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    {link.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <h3 className="font-semibold text-white mb-4">Resources</h3>
-            <ul className="space-y-3">
-              {resourceLinks.map((link, index) => (
                 <li key={index}>
                   <a
                     href={link.href}
@@ -269,7 +236,7 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
               </Button>
               <Button
                 variant="outline"
-                className="btn-auto-width border-gray-600 text-black hover:bg-gray-800"
+                className="btn-auto-width btn-find-salons border-gray-600 hover:bg-gray-800 hover:text-white"
                 onClick={onCustomerSite}
               >
                 <Globe className="w-4 h-4 mr-2" />
@@ -301,7 +268,7 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
               </p>
               <div className="flex items-center gap-4 text-sm">
                 <a
-                  href="/privacy_policy"
+                  href="/terms_of_service"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Terms of Service
@@ -312,12 +279,7 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
                 >
                   Privacy Policy
                 </a>
-                <a
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Cookie Policy
-                </a>
+
               </div>
             </div>
 
