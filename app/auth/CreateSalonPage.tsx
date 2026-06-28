@@ -202,10 +202,6 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
       // Check if we have any files to upload
       const hasFiles = thumbnail || galleryImages.length > 0;
 
-      console.log("🔍 Debug - Has files?", hasFiles);
-      console.log("🔍 Debug - Thumbnail?", thumbnail);
-      console.log("🔍 Debug - Gallery images?", galleryImages.length);
-
       let response;
 
       if (hasFiles) {
@@ -241,13 +237,6 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
           });
         }
 
-        console.log("🏢 Creating salon with files:");
-        console.log("- Thumbnail:", thumbnail ? thumbnail.name : "none");
-        console.log(
-          "- Gallery images:",
-          galleryImages.map((img) => img.name)
-        );
-
         response = await fetch(API_BASE_URL, {
           method: "POST",
           headers: {
@@ -273,8 +262,6 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
           requestBody.geo = geoData;
         }
 
-        console.log("🏢 Creating salon (JSON):", requestBody);
-
         response = await fetch(API_BASE_URL, {
           method: "POST",
           headers: {
@@ -286,7 +273,6 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
       }
 
       const data = await response.json();
-      console.log("📨 Salon creation response:", data);
 
       if (!response.ok) {
         const errorMsg = data.message || "Failed to create salon";

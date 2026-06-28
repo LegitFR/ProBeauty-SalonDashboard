@@ -16,8 +16,6 @@ export async function GET(request: NextRequest) {
       backendUrl.searchParams.append(key, value);
     });
 
-    console.log("Fetching from backend:", backendUrl.toString());
-
     const response = await fetch(backendUrl.toString(), {
       method: "GET",
       headers: {
@@ -51,7 +49,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log("Search results:", data);
 
     return NextResponse.json(data);
   } catch (error) {

@@ -124,15 +124,6 @@ export default function SalonDetailPage({
         }
 
         const data = await response.json();
-        console.log("Salon API Response:", data);
-        console.log("Salon data:", data.data);
-        console.log("Products:", data.data?.products);
-        console.log(
-          "Opening Hours:",
-          data.data?.openingHours,
-          data.data?.hours
-        );
-        console.log("Staff:", data.data?.staff);
         setSalon(data.data);
       } catch (err) {
         const errorMessage =
@@ -211,7 +202,6 @@ export default function SalonDetailPage({
           </div>
         </div>
       </header>
-
       {/* Hero Section */}
       <div className="relative h-80 overflow-hidden">
         <div className="absolute inset-0 bg-linear-to-r from-primary/20 to-orange-600/20">
@@ -248,7 +238,6 @@ export default function SalonDetailPage({
           </div>
         </div>
       </div>
-
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -477,7 +466,6 @@ export default function SalonDetailPage({
               {salon.products && salon.products.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {salon.products.map((product, index) => {
-                    console.log(`Product ${index}:`, product);
                     return (
                       <div
                         key={`product-${index}`}
@@ -628,8 +616,6 @@ export default function SalonDetailPage({
                   hoursArray = salon.openingHours;
                 }
 
-                console.log("Hours array:", hoursArray);
-
                 return (
                   hoursArray.length > 0 && (
                     <div className="mt-6 pt-6 border-t border-border">
@@ -674,7 +660,6 @@ export default function SalonDetailPage({
           </div>
         </div>
       </div>
-
       <Toaster />
     </div>
   );

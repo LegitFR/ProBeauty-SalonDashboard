@@ -12,7 +12,6 @@ export async function PATCH(
   try {
     const { id } = await params;
     const authHeader = request.headers.get("authorization");
-    console.log("🔵 API ROUTE /api/orders/:id/status PATCH CALLED!", id);
 
     if (!authHeader) {
       return NextResponse.json(
@@ -22,7 +21,6 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    console.log("📦 Request body:", body);
 
     const response = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
       method: "PATCH",

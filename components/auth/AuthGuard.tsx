@@ -89,10 +89,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         } else {
           // If API call fails, log it but don't block if we have valid stored data
           const errorData = await userResponse.json().catch(() => ({}));
-          console.warn("User validation API call failed:", {
-            status: userResponse.status,
-            error: errorData,
-          });
+
 
           // Only block on 401 Unauthorized - token is definitely invalid
           if (userResponse.status === 401) {

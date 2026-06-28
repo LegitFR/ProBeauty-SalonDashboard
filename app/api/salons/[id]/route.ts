@@ -50,11 +50,7 @@ export async function PATCH(
     let response;
 
     if (contentType.includes("multipart/form-data")) {
-      // Handle FormData (with file upload) - forward directly
-      console.log("📦 Handling multipart/form-data for salon update...");
       const formData = await request.formData();
-
-      console.log("FormData keys:", Array.from(formData.keys()));
 
       // Forward the FormData directly to backend
       response = await fetch(`${API_BASE_URL}/salons/${id}`, {

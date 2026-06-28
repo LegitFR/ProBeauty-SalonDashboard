@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[REVIEWS PROXY] POST /`, { body });
-
     const response = await fetch(`${BACKEND_URL}`, {
       method: "POST",
       headers: {

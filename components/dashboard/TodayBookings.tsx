@@ -27,7 +27,6 @@ export function TodayBookings() {
     try {
       const token = localStorage.getItem("accessToken");
       if (!token) {
-        console.log("No access token found");
         setLoading(false);
         return;
       }
@@ -39,19 +38,14 @@ export function TodayBookings() {
       const day = String(today.getDate()).padStart(2, "0");
       const dateStr = `${year}-${month}-${day}`;
 
-      console.log("Fetching bookings for date:", dateStr);
-
       const response = await fetch(`/api/bookings?date=${dateStr}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      console.log("Bookings response status:", response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log("Bookings data:", data);
 
         // Handle different possible response structures
         const bookingsData = data.data || data.bookings || [];
@@ -61,8 +55,6 @@ export function TodayBookings() {
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
-
-        console.log("Filtering bookings between:", todayStart, "and", todayEnd);
 
         // Filter and format bookings for today only
         const todayBookings = bookingsData
@@ -74,11 +66,7 @@ export function TodayBookings() {
             const isToday =
               bookingDate >= todayStart && bookingDate <= todayEnd;
 
-            if (!isToday) {
-              console.log(
-                `Filtering out booking ${booking.id} - date: ${bookingDate}`
-              );
-            }
+            if (!isToday) {}
 
             return isToday;
           })
@@ -101,7 +89,6 @@ export function TodayBookings() {
             status: booking.status || "PENDING",
           }));
 
-        console.log(`Filtered to ${todayBookings.length} bookings for today`);
         setBookings(todayBookings);
       } else {
         console.error("Failed to fetch bookings:", response.statusText);

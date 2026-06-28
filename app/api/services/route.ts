@@ -25,11 +25,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  console.log("🔵 API ROUTE /api/services POST CALLED!");
-
   try {
     const authHeader = request.headers.get("authorization");
-    console.log("🔑 Auth header:", authHeader ? "EXISTS" : "MISSING");
 
     if (!authHeader) {
       console.error("❌ Authorization header missing");
@@ -43,14 +40,7 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get("content-type") || "";
 
     if (contentType.includes("multipart/form-data")) {
-      // Handle FormData (with file upload) - forward directly like products API
-      console.log("📦 Handling multipart/form-data - forwarding to backend...");
       const formData = await request.formData();
-
-      console.log("FormData keys:", Array.from(formData.keys()));
-      console.log("=== SENDING TO BACKEND (FormData) ===");
-      console.log("URL:", `${API_BASE_URL}/services`);
-      console.log("Method: POST (multipart/form-data)");
 
       // Forward the FormData directly to backend (like products API does)
       const response = await fetch(`${API_BASE_URL}/services`, {
@@ -62,14 +52,8 @@ export async function POST(request: NextRequest) {
         body: formData,
       });
 
-      console.log("Backend response status:", response.status);
-
       // Get response text first
       const responseText = await response.text();
-      console.log(
-        "Backend response (first 500 chars):",
-        responseText.substring(0, 500),
-      );
 
       // Check if response is JSON
       const responseContentType = response.headers.get("content-type");
@@ -109,27 +93,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log("API Route - Backend response data:", data);
-
       return NextResponse.json(data, { status: response.status });
     } else {
-      // Handle JSON (without file upload)
-      console.log("📦 Parsing JSON...");
       const body = await request.json();
-      console.log("API Route - Received JSON body:", body);
 
       // Extract all fields
       const { salonId, title, description, category, durationMinutes, price } =
         body;
-
-      console.log("API Route - Parsed fields:", {
-        salonId,
-        title,
-        description,
-        category,
-        durationMinutes,
-        price,
-      });
 
       // Validate required fields
       if (
@@ -167,11 +137,6 @@ export async function POST(request: NextRequest) {
         isActive: true,
       };
 
-      console.log("=== SENDING TO BACKEND (JSON) ===");
-      console.log("URL:", `${API_BASE_URL}/services`);
-      console.log("Method: POST");
-      console.log("Body:", JSON.stringify(requestBody, null, 2));
-
       const response = await fetch(`${API_BASE_URL}/services`, {
         method: "POST",
         headers: {
@@ -181,14 +146,8 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify(requestBody),
       });
 
-      console.log("Backend response status:", response.status);
-
       // Get response text first
       const responseText = await response.text();
-      console.log(
-        "Backend response (first 500 chars):",
-        responseText.substring(0, 500),
-      );
 
       // Check if response is JSON
       const responseContentType = response.headers.get("content-type");
@@ -227,8 +186,6 @@ export async function POST(request: NextRequest) {
           { status: 500 },
         );
       }
-
-      console.log("API Route - Backend response data:", data);
 
       return NextResponse.json(data, { status: response.status });
     }

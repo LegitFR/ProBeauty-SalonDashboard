@@ -11,8 +11,6 @@ export async function GET(
   try {
     const { salonId } = await params;
 
-    console.log("Fetching services for salon:", salonId);
-
     // Backend expects salonId as a query parameter
     const response = await fetch(
       `${API_BASE_URL}/services?salonId=${salonId}`,
@@ -24,12 +22,7 @@ export async function GET(
       },
     );
 
-    console.log("Backend response status:", response.status);
     const data = await response.json();
-    console.log(
-      "Backend response data (services):",
-      JSON.stringify(data, null, 2),
-    );
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {

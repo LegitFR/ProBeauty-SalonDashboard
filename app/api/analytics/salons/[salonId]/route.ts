@@ -13,8 +13,6 @@ export async function GET(
     const params = await context.params;
     const salonId = params.salonId;
 
-    console.log("📊 Analytics route called with salon ID:", salonId);
-
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header required" },
@@ -46,8 +44,6 @@ export async function GET(
       url += `?${queryString}`;
     }
 
-    console.log("📊 Fetching analytics from backend:", url);
-
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -55,8 +51,6 @@ export async function GET(
         "Content-Type": "application/json",
       },
     });
-
-    console.log("📊 Analytics response status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -82,11 +76,6 @@ export async function GET(
     }
 
     const data = await response.json();
-    console.log("✅ Analytics data received successfully for salon:", salonId);
-    console.log("✅ Data summary:", {
-      totalRevenue: data.data?.summary?.totalRevenue,
-      transactions: data.data?.summary?.totalTransactions,
-    });
 
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {

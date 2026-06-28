@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get("page") || "1";
     const limit = searchParams.get("limit") || "10";
 
-    console.log(`[REVIEWS PROXY] GET /user/me`, { page, limit });
-
     const response = await fetch(
       `${BACKEND_URL}/user/me?page=${page}&limit=${limit}`,
       {

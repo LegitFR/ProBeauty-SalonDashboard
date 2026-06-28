@@ -12,8 +12,6 @@ export async function GET(
   try {
     const { id } = await params;
 
-    console.log(`[REVIEWS PROXY] GET /${id}`);
-
     const response = await fetch(`${BACKEND_URL}/${id}`, {
       method: "GET",
       headers: {
@@ -56,8 +54,6 @@ export async function PATCH(
         { status: 401 },
       );
     }
-
-    console.log(`[REVIEWS PROXY] PATCH /${id}`, { body });
 
     const response = await fetch(`${BACKEND_URL}/${id}`, {
       method: "PATCH",
@@ -102,8 +98,6 @@ export async function DELETE(
         { status: 401 },
       );
     }
-
-    console.log(`[REVIEWS PROXY] DELETE /${id}`);
 
     const response = await fetch(`${BACKEND_URL}/${id}`, {
       method: "DELETE",

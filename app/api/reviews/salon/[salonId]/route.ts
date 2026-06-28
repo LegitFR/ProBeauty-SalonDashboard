@@ -15,8 +15,6 @@ export async function GET(
     const page = searchParams.get("page") || "1";
     const limit = searchParams.get("limit") || "10";
 
-    console.log(`[REVIEWS PROXY] GET /salon/${salonId}`, { page, limit });
-
     const response = await fetch(
       `${BACKEND_URL}/salon/${salonId}?page=${page}&limit=${limit}`,
       {

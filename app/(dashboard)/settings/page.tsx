@@ -177,8 +177,6 @@ export default function SettingsPage() {
   const getBusinessInfo = () => {
     // Get default address if available
     const defaultAddress = addresses.find((addr) => addr.isDefault);
-    console.log("🏠 Default address:", defaultAddress);
-    console.log("📍 All addresses:", addresses);
 
     const addressString = defaultAddress
       ? `${defaultAddress.addressLine1}, ${defaultAddress.city}, ${defaultAddress.state} ${defaultAddress.postalCode}, ${defaultAddress.country}`
@@ -350,7 +348,6 @@ export default function SettingsPage() {
         const data = await response.json();
         if (data.data?.staff) {
           setStaffMembers(data.data.staff);
-          console.log("Fetched staff members:", data.data.staff);
         }
       }
     } catch (error) {
@@ -429,9 +426,7 @@ export default function SettingsPage() {
   }, []);
 
   // Debug: Log when addresses state changes
-  useEffect(() => {
-    console.log("🔄 Addresses state changed:", addresses);
-  }, [addresses]);
+  useEffect(() => {}, [addresses]);
 
   const fetchUserProfile = async () => {
     try {
@@ -439,7 +434,6 @@ export default function SettingsPage() {
       const userData = localStorage.getItem("user");
       if (userData) {
         const parsed = JSON.parse(userData);
-        console.log("User profile loaded from storage:", parsed);
         setUserProfile(parsed);
       } else {
         console.error("No user data found in localStorage");
@@ -466,7 +460,6 @@ export default function SettingsPage() {
       const data = await response.json();
       if (response.ok && data.data && data.data.length > 0) {
         const salon = data.data[0]; // Get first salon
-        console.log("Salon data fetched from API:", salon);
         setSalonData(salon);
       } else {
         console.error("Failed to fetch salon data:", data.message);
@@ -487,11 +480,6 @@ export default function SettingsPage() {
         return;
       }
 
-      console.log(
-        "🔵 Fetching addresses with token:",
-        token.substring(0, 20) + "...",
-      );
-
       const response = await fetch("/api/addresses", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -499,14 +487,10 @@ export default function SettingsPage() {
       });
 
       const data = await response.json();
-      console.log("📦 Addresses API response:", data);
 
       if (response.ok) {
         const addressList = data.data || [];
-        console.log("✅ Setting addresses:", addressList);
         setAddresses(addressList);
-
-        console.log("📍 Addresses state will be:", addressList);
       } else {
         console.error("❌ Failed to fetch addresses:", data.message);
         toast.error(data.message || "Failed to load addresses");
@@ -561,12 +545,6 @@ export default function SettingsPage() {
         payload.addressLine2 = addressForm.addressLine2.trim();
       }
 
-      console.log("💾 Saving address:", {
-        method,
-        url,
-        payload,
-      });
-
       const response = await fetch(url, {
         method,
         headers: {
@@ -577,10 +555,6 @@ export default function SettingsPage() {
       });
 
       const data = await response.json();
-      console.log("📨 Save address response:", {
-        status: response.status,
-        data,
-      });
 
       if (response.ok) {
         await fetchAddresses();
@@ -764,8 +738,6 @@ export default function SettingsPage() {
       const formData = new FormData();
       formData.append("thumbnail", logoFile);
 
-      console.log("📤 Uploading logo for salon:", salon.id);
-
       const response = await fetch(`/api/salons/${salon.id}`, {
         method: "PATCH",
         headers: {
@@ -775,7 +747,6 @@ export default function SettingsPage() {
       });
 
       const data = await response.json();
-      console.log("📥 Logo upload response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to upload logo");
@@ -1006,7 +977,6 @@ export default function SettingsPage() {
               console.error(`Failed to delete booking ${booking.id}:`, error);
             }
           }
-          console.log(`Deleted ${bookings.length} bookings`);
         }
       } catch (error) {
         console.error("Error deleting bookings:", error);
@@ -1036,7 +1006,6 @@ export default function SettingsPage() {
               console.error(`Failed to delete customer ${customer.id}:`, error);
             }
           }
-          console.log(`Deleted ${customers.length} customers`);
         }
       } catch (error) {
         console.error("Error deleting customers:", error);
@@ -1069,7 +1038,6 @@ export default function SettingsPage() {
               console.error(`Failed to delete service ${service.id}:`, error);
             }
           }
-          console.log(`Deleted ${services.length} services`);
         }
       } catch (error) {
         console.error("Error deleting services:", error);
@@ -1096,7 +1064,6 @@ export default function SettingsPage() {
               console.error(`Failed to delete order ${order.id}:`, error);
             }
           }
-          console.log(`Deleted ${orders.length} orders`);
         }
       } catch (error) {
         console.error("Error deleting orders:", error);
@@ -1129,7 +1096,6 @@ export default function SettingsPage() {
               console.error(`Failed to delete product ${product.id}:`, error);
             }
           }
-          console.log(`Deleted ${products.length} products`);
         }
       } catch (error) {
         console.error("Error deleting products:", error);
@@ -1199,8 +1165,6 @@ export default function SettingsPage() {
         }
       });
       updateData.hours = hoursForApi;
-
-      console.log("Saving salon updates:", updateData);
 
       const response = await fetch(`/api/salons/${salonId}`, {
         method: "PATCH",

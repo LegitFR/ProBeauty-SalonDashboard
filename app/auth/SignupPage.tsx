@@ -100,9 +100,6 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
         role: "owner", // Fixed role from salon_owner to owner
       };
 
-      console.log("=== SIGNUP REQUEST ===");
-      console.log("Request body:", requestBody);
-
       const response = await fetch(`${API_BASE_URL}/signup`, {
         method: "POST",
         headers: {
@@ -112,11 +109,6 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
       });
 
       const data = await response.json();
-
-      console.log("=== SIGNUP RESPONSE ===");
-      console.log("Status:", response.status);
-      console.log("Response data:", data);
-      console.log("=====================");
 
       if (!response.ok) {
         // Show detailed error message from backend
@@ -249,7 +241,6 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-orange-200/20 to-transparent rounded-full blur-3xl"></div>
-
       <div className="w-full max-w-md relative z-10">
         {/* Back Button */}
         <Button

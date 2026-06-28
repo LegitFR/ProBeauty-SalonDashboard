@@ -229,8 +229,6 @@ export default function OrdersPage() {
       });
 
       const result = await response.json();
-      console.log("Orders API Response:", result);
-      console.log("Orders data:", result.data);
       if (response.ok) {
         const ordersData = Array.isArray(result.data)
           ? result.data
@@ -508,7 +506,6 @@ export default function OrdersPage() {
           Refresh
         </Button>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
         <Card>
@@ -591,7 +588,6 @@ export default function OrdersPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filters and Search */}
       <Card>
         <CardContent className="p-4">
@@ -608,7 +604,6 @@ export default function OrdersPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Orders Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
@@ -707,7 +702,6 @@ export default function OrdersPage() {
           )}
         </TabsContent>
       </Tabs>
-
       {/* Pagination - Add after TabsContent and before closing Dialog */}
       {!loading && filteredOrders.length > 0 && pagination.totalPages > 1 && (
         <div className="flex items-center justify-between mt-6">
@@ -739,7 +733,6 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
-
       {/* Order Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -920,7 +913,6 @@ export default function OrdersPage() {
           )}
         </DialogContent>
       </Dialog>
-
       {/* Update Status Dialog */}
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent>

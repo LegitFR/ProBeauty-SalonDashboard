@@ -23,8 +23,6 @@ export async function POST(
       headers.Authorization = authHeader;
     }
 
-    console.log(`[AUTH PROXY] POST /${pathString}`, { body });
-
     const response = await fetch(`${BACKEND_URL}/${pathString}`, {
       method: "POST",
       headers,

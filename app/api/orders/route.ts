@@ -11,9 +11,6 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
 
-    console.log("🔵 API ROUTE /api/orders GET CALLED!");
-    console.log("🔑 Auth header present:", !!authHeader);
-
     if (!authHeader) {
       return NextResponse.json(
         { message: "Authorization header missing" },
@@ -22,7 +19,6 @@ export async function GET(request: NextRequest) {
     }
 
     const url = `${API_BASE_URL}/orders${queryString ? `?${queryString}` : ""}`;
-    console.log("🌐 Fetching from:", url);
 
     const response = await fetch(url, {
       method: "GET",
@@ -31,8 +27,6 @@ export async function GET(request: NextRequest) {
         Authorization: authHeader,
       },
     });
-
-    console.log("📊 Backend response status:", response.status);
 
     const data = await response.json();
 
@@ -50,7 +44,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
-    console.log("🔵 API ROUTE /api/orders POST CALLED!");
 
     if (!authHeader) {
       return NextResponse.json(
@@ -60,7 +53,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log("📦 Request body:", body);
 
     const response = await fetch(`${API_BASE_URL}/orders`, {
       method: "POST",
@@ -70,8 +62,6 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(body),
     });
-
-    console.log("📊 Backend response status:", response.status);
 
     const data = await response.json();
 

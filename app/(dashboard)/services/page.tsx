@@ -133,15 +133,10 @@ export default function ServicesPage() {
   useEffect(() => {
     fetchSalon();
 
-    // Debug: Check localStorage data
-    console.log("=== Debug Info ===");
-    console.log("All localStorage keys:", Object.keys(localStorage));
-    console.log("localStorage contents:");
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key) {
         const value = localStorage.getItem(key);
-        console.log(`  ${key}:`, value?.substring(0, 100));
       }
     }
 
@@ -150,22 +145,13 @@ export default function ServicesPage() {
       localStorage.getItem("token") ||
       localStorage.getItem("accessToken") ||
       localStorage.getItem("authToken");
-    console.log("Token exists:", !!token);
-    console.log("User data:", userStr);
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        console.log("Parsed user:", user);
-        console.log("SalonId options:", {
-          direct: user.salonId,
-          nested: user.salon?.id,
-          userId: user.id,
-        });
       } catch (e) {
         console.error("Error parsing user:", e);
       }
     }
-    console.log("==================");
   }, []);
 
   const fetchSalon = async () => {
@@ -243,9 +229,6 @@ export default function ServicesPage() {
       const token = localStorage.getItem("accessToken");
       if (!token) return;
 
-      console.log("Fetching bookings for services:", serviceIds);
-      console.log("Using salonId:", salonId);
-
       // Fetch all bookings for the salon
       const response = await fetch(`/api/bookings?salonId=${salonId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -258,8 +241,6 @@ export default function ServicesPage() {
 
       const data = await response.json();
       const bookings = data.data || [];
-      console.log("📊 Total bookings fetched:", bookings.length);
-      console.log("📊 Bookings data sample:", bookings.slice(0, 2));
 
       // Calculate booking count and revenue per service
       const serviceStats = serviceIds.reduce(
@@ -316,19 +297,11 @@ export default function ServicesPage() {
             0,
           );
 
-          console.log(
-            `📈 Service ${serviceId}: ${bookingCount} completed bookings × €${servicePrice} = €${revenue.toFixed(
-              2,
-            )} revenue`,
-          );
-
           acc[serviceId] = { bookings: bookingCount, revenue };
           return acc;
         },
         {} as Record<string, { bookings: number; revenue: number }>,
       );
-
-      console.log("📊 Final service stats:", serviceStats);
 
       // Update services with booking data
       setServices((prevServices) =>
@@ -356,13 +329,6 @@ export default function ServicesPage() {
       const data = await response.json();
       const reviews = data.data || [];
       const averageRating = data.averageRating || 0;
-
-      console.log(
-        "📊 Reviews fetched:",
-        reviews.length,
-        "Average:",
-        averageRating,
-      );
 
       setSalonReviews(reviews);
       setSalonAverageRating(averageRating);
@@ -405,16 +371,12 @@ export default function ServicesPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      console.log("Fetching services for salon:", salonId);
 
       const response = await fetch(`/api/services/salon/${salonId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
-      console.log("Response status:", response.status);
-
       const data = await response.json();
-      console.log("Response data:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to fetch services");
@@ -422,78 +384,67 @@ export default function ServicesPage() {
 
       // Transform and filter services by salon ID
       const rawServices = data.data || [];
-      console.log(
-        "Raw services from backend:",
-        JSON.stringify(rawServices, null, 2),
-      );
 
       const transformedServices = rawServices
         .filter((service: any) => service.salonId === salonId)
         .map((service: any) => {
-          const parsedPrice =
-            typeof service.price === "string"
-              ? parseFloat(service.price)
-              : service.price;
+        const parsedPrice =
+          typeof service.price === "string"
+            ? parseFloat(service.price)
+            : service.price;
 
-          console.log(`Service ${service.id} isActive field:`, {
-            rawValue: service.isActive,
-            type: typeof service.isActive,
-            willBecome: service.isActive ?? true,
-          });
+        const rawActive =
+          service.isActive ?? service.active ?? service.status ?? "active";
+        let isActive = true;
+        if (typeof rawActive === "boolean") {
+          isActive = rawActive;
+        } else if (typeof rawActive === "string") {
+          const normalized = rawActive.toLowerCase();
+          isActive = ["true", "active", "enabled", "available"].includes(
+            normalized,
+          );
+        } else if (typeof rawActive === "number") {
+          isActive = rawActive === 1;
+        }
 
-          const rawActive =
-            service.isActive ?? service.active ?? service.status ?? "active";
-          let isActive = true;
-          if (typeof rawActive === "boolean") {
-            isActive = rawActive;
-          } else if (typeof rawActive === "string") {
-            const normalized = rawActive.toLowerCase();
-            isActive = ["true", "active", "enabled", "available"].includes(
-              normalized,
-            );
-          } else if (typeof rawActive === "number") {
-            isActive = rawActive === 1;
-          }
+        const rawBookings =
+          service.bookings ??
+          service.bookingCount ??
+          service.totalBookings ??
+          0;
+        const rawRevenue =
+          service.revenue ??
+          service.totalRevenue ??
+          service.totalEarnings ??
+          0;
+        const rawRating =
+          service.rating ?? service.averageRating ?? service.avgRating ?? 0;
 
-          const rawBookings =
-            service.bookings ??
-            service.bookingCount ??
-            service.totalBookings ??
-            0;
-          const rawRevenue =
-            service.revenue ??
-            service.totalRevenue ??
-            service.totalEarnings ??
-            0;
-          const rawRating =
-            service.rating ?? service.averageRating ?? service.avgRating ?? 0;
-
-          return {
-            id: service.id,
-            salonId: service.salonId,
-            name: service.title || service.name || "",
-            description: service.description || "",
-            price:
-              !isNaN(parsedPrice) && isFinite(parsedPrice) ? parsedPrice : 0,
-            duration: service.durationMinutes || service.duration || 0,
-            category: service.category || "",
-            isActive,
-            image: service.image,
-            bookings:
-              typeof rawBookings === "number"
-                ? rawBookings
-                : Number(rawBookings) || 0,
-            revenue:
-              typeof rawRevenue === "number"
-                ? rawRevenue
-                : Number(rawRevenue) || 0,
-            rating:
-              typeof rawRating === "number"
-                ? rawRating
-                : Number(rawRating) || 0,
-          };
-        });
-      console.log("Filtered services for salon:", transformedServices);
+        return {
+          id: service.id,
+          salonId: service.salonId,
+          name: service.title || service.name || "",
+          description: service.description || "",
+          price:
+            !isNaN(parsedPrice) && isFinite(parsedPrice) ? parsedPrice : 0,
+          duration: service.durationMinutes || service.duration || 0,
+          category: service.category || "",
+          isActive,
+          image: service.image,
+          bookings:
+            typeof rawBookings === "number"
+              ? rawBookings
+              : Number(rawBookings) || 0,
+          revenue:
+            typeof rawRevenue === "number"
+              ? rawRevenue
+              : Number(rawRevenue) || 0,
+          rating:
+            typeof rawRating === "number"
+              ? rawRating
+              : Number(rawRating) || 0,
+        };
+      });
       setServices(transformedServices);
 
       // Fetch bookings data for services - pass the current services
@@ -706,19 +657,13 @@ export default function ServicesPage() {
   };
 
   const handleCreateService = async () => {
-    console.log("🚀 handleCreateService CALLED!");
-    console.log("Current form state:", serviceForm);
-
     try {
       setSubmitting(true);
-      console.log("Submitting set to true");
 
       const token = localStorage.getItem("accessToken");
-      console.log("Token retrieved:", token ? "EXISTS" : "MISSING");
 
       if (!token) {
         console.error("❌ No token found in any storage key!");
-        console.log("All localStorage keys:", Object.keys(localStorage));
         toast({
           title: "Authentication required",
           description: "Please login again to create services",
@@ -727,8 +672,6 @@ export default function ServicesPage() {
         setSubmitting(false);
         return;
       }
-
-      console.log("✅ Token found:", token.substring(0, 20) + "...");
 
       // Use salon state instead of fetching from localStorage or API
       if (!salon?.id) {
@@ -743,7 +686,6 @@ export default function ServicesPage() {
       }
 
       const salonId = salon.id;
-      console.log("✅ Using salonId from state:", salonId);
 
       // Prepare request body matching backend API
       const duration = parseInt(serviceForm.duration);
@@ -788,16 +730,6 @@ export default function ServicesPage() {
 
         formData.append("image", serviceImages[0]);
 
-        console.log("📦 Sending with FormData (with image):", {
-          salonId,
-          title: serviceForm.name,
-          category: serviceForm.category,
-          durationMinutes: duration,
-          price: price,
-          image: serviceImages[0].name,
-        });
-        console.log("🌐 Sending POST to /api/services with image...");
-
         response = await fetch("/api/services", {
           method: "POST",
           headers: {
@@ -817,9 +749,6 @@ export default function ServicesPage() {
           price: price,
         };
 
-        console.log("📦 Request body prepared (JSON):", requestBody);
-        console.log("🌐 Sending POST to /api/services...");
-
         response = await fetch("/api/services", {
           method: "POST",
           headers: {
@@ -830,10 +759,7 @@ export default function ServicesPage() {
         });
       }
 
-      console.log("📥 Response received, status:", response.status);
-
       const data = await response.json();
-      console.log("📥 Response data:", data);
 
       if (!response.ok) {
         console.error("❌ API Error - Status:", response.status);
@@ -849,8 +775,6 @@ export default function ServicesPage() {
         }
         throw new Error(data.message || "Failed to create service");
       }
-
-      console.log("✅ Service created successfully!");
 
       toast({
         title: "Success!",
@@ -870,10 +794,7 @@ export default function ServicesPage() {
       setServiceImages([]);
       setServiceImages([]);
 
-      // Refresh services
-      console.log("🔄 Refreshing services list...");
       await fetchServices();
-      console.log("✅ All done!");
     } catch (error) {
       console.error("❌ CATCH BLOCK - Error creating service:", error);
       console.error("❌ Error type:", typeof error);
@@ -885,7 +806,6 @@ export default function ServicesPage() {
         variant: "destructive",
       });
     } finally {
-      console.log("🔚 Finally block - setting submitting to false");
       setSubmitting(false);
     }
   };
@@ -1102,9 +1022,6 @@ export default function ServicesPage() {
         isActive: !service.isActive,
       };
 
-      console.log("🔄 Updating service:", serviceId);
-      console.log("📦 Update data:", updateData);
-
       // Send complete service object for PUT request
       const response = await fetch(`/api/services/${serviceId}`, {
         method: "PUT",
@@ -1115,19 +1032,13 @@ export default function ServicesPage() {
         body: JSON.stringify(updateData),
       });
 
-      console.log("📥 Update response status:", response.status);
-
       const data = await response.json();
-      console.log("📥 Update response data:", data);
-      console.log("📥 Updated service from backend:", data.data);
-      console.log("📥 isActive in response:", data.data?.isActive);
 
       if (!response.ok) {
         console.error("❌ Update failed:", data);
         throw new Error(data.message || "Failed to update service");
       }
 
-      console.log("✅ Update successful, fetching fresh data from backend...");
       // Refresh services from backend to ensure sync
       await fetchServices();
 

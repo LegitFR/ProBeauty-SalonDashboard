@@ -43,12 +43,6 @@ export async function POST(request: NextRequest) {
     // Get FormData from request (for image uploads)
     const formData = await request.formData();
 
-    console.log("Sending product to backend:", {
-      url: `${API_BASE_URL}/products`,
-      authHeader: authHeader ? "Present" : "Missing",
-      formDataKeys: Array.from(formData.keys()),
-    });
-
     // Forward the FormData to backend (supporting multipart/form-data for image uploads)
     const response = await fetch(`${API_BASE_URL}/products`, {
       method: "POST",
@@ -58,18 +52,9 @@ export async function POST(request: NextRequest) {
       },
       body: formData,
     });
-    console.log("Backend response status:", response.status);
-    console.log(
-      "Backend response headers:",
-      Object.fromEntries(response.headers.entries()),
-    );
 
     // Get response text first
     const responseText = await response.text();
-    console.log(
-      "Backend response (first 500 chars):",
-      responseText.substring(0, 500),
-    );
 
     // Check if response is JSON
     const contentType = response.headers.get("content-type");
@@ -105,8 +90,6 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
-
-    console.log("Backend response data:", data);
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {

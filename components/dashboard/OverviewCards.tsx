@@ -43,7 +43,6 @@ export function OverviewCards() {
       }
 
       const salonId = salonData.data[0].id;
-      console.log("OverviewCards: Fetching analytics for salon:", salonId);
 
       const response = await getTodayAnalytics(salonId, token);
       if (response.data) {

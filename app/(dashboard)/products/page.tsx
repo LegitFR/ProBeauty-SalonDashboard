@@ -204,7 +204,6 @@ export default function ProductsPage() {
       }
 
       const data = await response.json();
-      console.log(data.data);
 
       // Map API fields to frontend fields
       const mappedProducts = (data.data || []).map((product: any) => {
@@ -289,16 +288,9 @@ export default function ProductsPage() {
   };
 
   async function handleAddProduct() {
-    console.log("=== handleAddProduct called ===");
-    console.log("newProd state:", newProd);
-
     const token = localStorage.getItem("accessToken");
 
-    console.log("Token:", token ? "Present" : "Missing");
-    console.log("Salon:", salon);
-
     if (!salon?.id) {
-      console.log("ERROR: No salon found");
       toast({
         title: "Error",
         description: "Salon information not found. Please refresh the page.",
@@ -307,17 +299,7 @@ export default function ProductsPage() {
       return;
     }
 
-    console.log("Salon loaded:", salon);
-
-    // Validate required fields
-    console.log("Validating fields:", {
-      title: newProd?.title,
-      price: newProd?.price,
-      quantity: newProd?.quantity,
-    });
-
     if (!newProd?.title || !newProd?.price || !newProd?.quantity) {
-      console.log("ERROR: Missing required fields");
       toast({
         title: "Error",
         description:
@@ -326,8 +308,6 @@ export default function ProductsPage() {
       });
       return;
     }
-
-    console.log("Validation passed!");
 
     // Create FormData for multipart/form-data submission
     const formData = new FormData();
@@ -342,8 +322,6 @@ export default function ProductsPage() {
       formData.append("images", file);
     });
 
-    console.log("Sending product data with", newProductImages.length, "images");
-
     setSubmitting(true);
     try {
       const res = await fetch(`/api/products`, {
@@ -356,7 +334,6 @@ export default function ProductsPage() {
       });
 
       const data = await res.json();
-      console.log("Response:", data);
 
       if (!res.ok) {
         toast({
@@ -412,14 +389,6 @@ export default function ProductsPage() {
       return;
     }
 
-    console.log(
-      "Updating product:",
-      selectedProduct.id,
-      "with",
-      editProductImages.length,
-      "new images",
-    );
-
     setSubmitting(true);
     try {
       let res;
@@ -463,7 +432,6 @@ export default function ProductsPage() {
       }
 
       const data = await res.json();
-      console.log("Update response:", data);
 
       if (!res.ok) {
         toast({
@@ -678,13 +646,6 @@ export default function ProductsPage() {
       const product = products.find((p) => p.id === productId);
       if (!product) return;
 
-      console.log("Toggle product:", {
-        id: productId,
-        currentStock: product.stock,
-        originalStock: product.originalStock,
-        isActive: product.isActive,
-      });
-
       // Toggle visibility state
       // isActive=true means visible (checked), isActive=false means hidden (unchecked)
       const currentVisibleState = product.isActive ?? true;
@@ -699,8 +660,6 @@ export default function ProductsPage() {
         // Hiding the product - send "0"
         quantityToSend = "0";
       }
-
-      console.log("Sending quantity:", quantityToSend);
 
       const updateData: any = {
         quantity: quantityToSend,
@@ -721,7 +680,6 @@ export default function ProductsPage() {
       }
 
       const responseData = await response.json();
-      console.log("Update response:", responseData);
 
       // Update local state
       setProducts(
@@ -741,12 +699,6 @@ export default function ProductsPage() {
               // We're showing a product - keep the originalStock or use the restored value
               newOriginalStock = p.originalStock || updatedQuantity;
             }
-
-            console.log("State update:", {
-              isActive: newVisibleState,
-              stock: updatedQuantity,
-              originalStock: newOriginalStock,
-            });
 
             return {
               ...p,

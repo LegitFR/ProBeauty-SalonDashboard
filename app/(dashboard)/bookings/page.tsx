@@ -299,7 +299,6 @@ export default function BookingsPage() {
       }
 
       const data = await response.json();
-      console.log("Bookings API response:", data);
 
       let bookingsData = data.data || [];
 
@@ -317,23 +316,10 @@ export default function BookingsPage() {
             const salonData = await salonResponse.json();
             const staffList = salonData.data?.staff || [];
 
-            console.log("Salon staff list:", staffList);
-            console.log("Bookings before merge:", bookingsData);
-
             // Merge staff details into bookings
             bookingsData = bookingsData.map((booking: any) => {
-              console.log(
-                `Looking for staffId: ${booking.staffId}, Staff IDs in list:`,
-                staffList.map((s: any) => s.id),
-              );
-
               const fullStaffInfo = staffList.find(
                 (s: any) => s.id === booking.staffId,
-              );
-
-              console.log(
-                `Booking ${booking.id} - staffId: ${booking.staffId}, found staff:`,
-                fullStaffInfo,
               );
 
               if (fullStaffInfo) {
@@ -347,13 +333,10 @@ export default function BookingsPage() {
                     user: fullStaffInfo.user,
                   },
                 };
-                console.log("Merged booking:", mergedBooking);
                 return mergedBooking;
               }
               return booking;
             });
-
-            console.log("Bookings after merge:", bookingsData);
           }
         } catch (error) {
           console.error("Error fetching staff details:", error);
@@ -452,7 +435,6 @@ export default function BookingsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Services API response:", data);
         setServices(data.data || []);
       }
     } catch (error) {
@@ -471,7 +453,6 @@ export default function BookingsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Staff API response:", data);
         setStaff(data.data || []);
       }
     } catch (error) {
@@ -496,7 +477,6 @@ export default function BookingsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Availability API response:", data);
         setAvailableTimeSlots(data.data?.slots || []);
       }
     } catch (error) {
@@ -551,8 +531,6 @@ export default function BookingsPage() {
         startTime: selectedSlot.startTime,
       };
 
-      console.log("Creating booking with data:", bookingData);
-
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: {
@@ -563,7 +541,6 @@ export default function BookingsPage() {
       });
 
       const data = await response.json();
-      console.log("Create booking response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to create booking");

@@ -469,9 +469,6 @@ export default function StaffPage() {
   };
 
   const handleEditStaff = (staff: StaffMember) => {
-    console.log("Editing staff:", staff);
-    console.log("Staff services:", staff.services);
-    
     setEditingStaff(staff);
 
     // Set image preview if staff has an image
@@ -514,7 +511,7 @@ export default function StaffPage() {
 
     // Get all service IDs - handle multiple possible data structures
     let existingServiceIds: string[] = [];
-    
+
     if (staff.services && Array.isArray(staff.services)) {
       existingServiceIds = staff.services
         .map((s: any) => {
@@ -527,8 +524,6 @@ export default function StaffPage() {
         })
         .filter((id): id is string => Boolean(id));
     }
-    
-    console.log("Extracted service IDs:", existingServiceIds);
 
     setStaffForm({
       name: staff.name || staff.user?.name || "",
@@ -639,8 +634,7 @@ export default function StaffPage() {
 
       // Refresh staff list to get updated data
       await fetchStaff();
-      console.log("Staff list refreshed after update");
-      
+
       setIsEditDialogOpen(false);
       setEditingStaff(null);
       setSelectedImage(null);
@@ -984,8 +978,6 @@ export default function StaffPage() {
 
       // Extract staff from salon data
       const staffData = result.data?.staff || [];
-      console.log("Fetched staff data:", staffData);
-      console.log("First staff member services:", staffData[0]?.services);
       setStaffMembers(Array.isArray(staffData) ? staffData : []);
     } catch (error) {
       console.error("Error fetching staff:", error);

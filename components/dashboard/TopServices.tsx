@@ -34,7 +34,6 @@ export function TopServices() {
       }
 
       const salonId = salonData.data[0].id;
-      console.log("TopServices: Fetching analytics for salon:", salonId);
 
       const response = await getMonthAnalytics(salonId, token);
       const serviceCategories = response.data.serviceRevenue.byCategory;

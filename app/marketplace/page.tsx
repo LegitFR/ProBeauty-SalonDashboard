@@ -108,8 +108,6 @@ function MarketplaceContent() {
         if (venueType) params.append("venueType", venueType);
         if (maxPrice) params.append("maxPrice", maxPrice);
 
-        console.log("Fetching salons with params:", params.toString());
-
         const response = await fetch(`/api/salons/search?${params}`);
 
         if (!response.ok) {
@@ -120,20 +118,9 @@ function MarketplaceContent() {
         }
 
         const data: SalonResponse = await response.json();
-        console.log("Salons data received:", data);
 
         // Log first salon to see available fields
-        if (data.data && data.data.length > 0) {
-          console.log("First salon data:", data.data[0]);
-          console.log("Available image fields:", {
-            image: data.data[0].image,
-            images: (data.data[0] as any).images,
-            photo: (data.data[0] as any).photo,
-            picture: (data.data[0] as any).picture,
-            thumbnail: (data.data[0] as any).thumbnail,
-            logo: (data.data[0] as any).logo,
-          });
-        }
+        if (data.data && data.data.length > 0) {}
 
         setSalons(data.data || []);
         setTotalPages(data.pagination?.totalPages || 1);
@@ -173,7 +160,6 @@ function MarketplaceContent() {
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Navigation */}
       <PublicNavbar logo="/probeauty-header.svg" />
-
       {/* Hero Section */}
       <section className="marketplace-hero pt-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -363,7 +349,6 @@ function MarketplaceContent() {
           </Button>
         </div>
       </section>
-
       {/* Recommended Section */}
       <section className="py-16 sm:py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -462,7 +447,6 @@ function MarketplaceContent() {
                         alt={salon.name}
                         className="salon-card-image"
                         onError={(e) => {
-                          console.log(`Image failed to load for ${salon.name}`);
                           (e.target as HTMLImageElement).src =
                             `https://images.unsplash.com/photo-1611211235015-e2e3a7d09e97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400`;
                         }}
@@ -537,7 +521,6 @@ function MarketplaceContent() {
           )}
         </div>
       </section>
-
       <Toaster />
     </div>
   );

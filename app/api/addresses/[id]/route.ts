@@ -12,7 +12,6 @@ export async function GET(
   try {
     const { id } = await params;
     const authHeader = request.headers.get("authorization");
-    console.log("🔵 API ROUTE /api/addresses/:id GET CALLED!", id);
 
     if (!authHeader) {
       return NextResponse.json(
@@ -49,7 +48,6 @@ export async function PATCH(
   try {
     const { id } = await params;
     const authHeader = request.headers.get("authorization");
-    console.log("🔵 API ROUTE /api/addresses/:id PATCH CALLED!", id);
 
     if (!authHeader) {
       return NextResponse.json(
@@ -89,7 +87,6 @@ export async function DELETE(
   try {
     const { id } = await params;
     const authHeader = request.headers.get("authorization");
-    console.log("🔵 API ROUTE /api/addresses/:id DELETE CALLED!", id);
 
     if (!authHeader) {
       return NextResponse.json(

@@ -12,10 +12,6 @@ export async function PATCH(
   try {
     const { id } = await params;
     const authHeader = request.headers.get("authorization");
-    console.log(
-      "🔵 API ROUTE /api/addresses/:id/set-default PATCH CALLED!",
-      id,
-    );
 
     if (!authHeader) {
       return NextResponse.json(
