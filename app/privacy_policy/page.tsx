@@ -1,10 +1,22 @@
+"use client";
+
 import { PublicNavbar as Header } from "@/components/layout/PublicNavbar";
 import { Footer } from "@/components/landing/Footer";
+import { useRouter } from "next/navigation";
 
 export default function PrivacyPolicyPage() {
+  const router = useRouter();
+
+  const handleGetStarted = () => router.push("/auth");
+  const handleCustomerSite = () => router.push("/marketplace");
+
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#ECE3DC" }}>
-      <Header forceLightTheme={true} />
+      <Header 
+        forceLightTheme={true}
+        onGetStarted={handleGetStarted}
+        onMarketplace={handleCustomerSite}
+      />
 
       <main className="pt-24 pb-16 px-4 md:px-8 max-w-4xl mx-auto">
         <div className="p-8 md:p-12">
@@ -143,7 +155,10 @@ export default function PrivacyPolicyPage() {
         </div>
       </main>
 
-      <Footer />
+      <Footer 
+        onGetStarted={handleGetStarted}
+        onCustomerSite={handleCustomerSite}
+      />
     </div>
   );
 }
