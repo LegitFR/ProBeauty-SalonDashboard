@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Search, MapPin, Star, Calendar, Loader2 } from "lucide-react";
@@ -60,7 +60,7 @@ interface SalonResponse {
   };
 }
 
-export default function MarketplacePage() {
+function MarketplaceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -540,5 +540,13 @@ export default function MarketplacePage() {
 
       <Toaster />
     </div>
+  );
+}
+
+export default function MarketplacePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+      <MarketplaceContent />
+    </Suspense>
   );
 }
