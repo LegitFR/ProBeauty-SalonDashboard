@@ -180,7 +180,7 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <Calendar className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-heading text-2xl font-bold">ProBeauty</span>
+            <span className="font-heading text-2xl font-bold notranslate">ProBeauty</span>
           </div>
 
           <h1 className="font-heading text-2xl font-bold mb-2">

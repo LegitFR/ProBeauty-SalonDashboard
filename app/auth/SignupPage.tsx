@@ -267,18 +267,18 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
             <div className="w-12 h-12 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
               <Calendar className="w-6 h-6 text-white" />
             </div>
-            <span className="font-heading text-3xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
-              ProBeauty
+            <span className="font-heading text-3xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent notranslate">
+              Probeauty
             </span>
           </div>
 
           {step === "signup" ? (
             <>
-              <h1 className="font-heading text-3xl font-bold mb-2">
-                Start Your Journey
+              <h1 className="font-heading text-3xl font-bold mb-2 notranslate">
+                Criar uma conta
               </h1>
-              <p className="text-muted-foreground">
-                Create your salon owner account and transform your business
+              <p className="text-muted-foreground notranslate">
+                Junte-se a milhares de proprietários de salões de beleza que gerenciam seus negócios de forma mais inteligente
               </p>
             </>
           ) : (
@@ -294,16 +294,16 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
         </div>
 
         <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-sm">
-          <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-2xl">
-              {step === "signup" ? "Create Account" : "Enter Verification Code"}
-            </CardTitle>
-            <CardDescription>
-              {step === "signup"
-                ? "Join thousands of salon owners managing their business smarter"
-                : "Please enter the OTP sent to your email"}
-            </CardDescription>
-          </CardHeader>
+          {step !== "signup" && (
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-2xl notranslate">
+                Enter Verification Code
+              </CardTitle>
+              <CardDescription className="notranslate">
+                Please enter the OTP sent to your email
+              </CardDescription>
+            </CardHeader>
+          )}
           <CardContent>
             {step === "signup" ? (
               <form onSubmit={handleSignup} className="space-y-4">
@@ -401,8 +401,8 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-primary mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-primary">
-                      Salon Owner Account
+                    <p className="text-sm font-medium text-primary notranslate">
+                      Conta de proprietário de salão
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       You're signing up as a salon owner with full management
@@ -423,7 +423,7 @@ export function SignupPage({ onBack, onSignupSuccess }: SignupPageProps) {
                     </>
                   ) : (
                     <>
-                      <span>Create Account</span>
+                      <span className="notranslate">Criar uma conta</span>
                       <Sparkles className="w-4 h-4 ml-2" />
                     </>
                   )}

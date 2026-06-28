@@ -301,13 +301,13 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
               </p>
               <div className="flex items-center gap-4 text-sm">
                 <a
-                  href="#"
+                  href="/privacy_policy"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Terms of Service
                 </a>
                 <a
-                  href="#"
+                  href="/privacy_policy"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Privacy Policy

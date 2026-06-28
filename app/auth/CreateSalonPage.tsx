@@ -332,7 +332,7 @@ export function CreateSalonPage({ onSalonCreated }: CreateSalonPageProps) {
             <div className="w-12 h-12 bg-gradient-to-br from-primary to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
               <Calendar className="w-6 h-6 text-white" />
             </div>
-            <span className="font-heading text-3xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+            <span className="font-heading text-3xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent notranslate">
               ProBeauty
             </span>
           </div>
