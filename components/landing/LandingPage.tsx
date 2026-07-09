@@ -276,9 +276,7 @@ export function LandingPage({
             <div className="relative mx-auto w-full max-w-2xl">
               <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-orange-300/20 rounded-3xl blur-2xl"></div>
               <img
-                src={
-                  "https://images.unsplash.com/photo-1653548410459-5dffc2cef115?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzYWxvbiUyMGRhc2hib2FyZCUyMGludGVyZmFjZXxlbnwxfHx8fDE3NTgzMTQ5MzF8MA&ixlib=rb-4.1.0&q=80&w=1080"
-                }
+                src={"/girl-haircut.svg"}
                 alt="ProBeauty Dashboard Interface"
                 className="relative w-full h-auto rounded-2xl shadow-2xl border border-white/20 transition-transform hover:scale-105"
               />
