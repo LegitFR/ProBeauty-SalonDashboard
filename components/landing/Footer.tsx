@@ -101,17 +101,17 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
             <div className="space-y-2 mb-6">
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-primary" />
-                <span className="text-sm text-gray-400">+1 (555) 123-4567</span>
+                <span className="text-sm text-gray-400">00351 913746748</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
                 <span className="text-sm text-gray-400">
-                  support@probeauty.com
+                  suporte@probeautyapp.net
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" />
-                <span className="text-sm text-gray-400">San Francisco, CA</span>
+                <span translate="no" className="text-sm text-gray-400 notranslate">Ferreiros, Amares, Portugal</span>
               </div>
             </div>
 
