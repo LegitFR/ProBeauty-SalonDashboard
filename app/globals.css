@@ -5619,3 +5619,68 @@ html {
     }
   }
 }
+
+
+@layer utilities {
+  .text-2xl { font-size: var(--text-2xl); line-height: var(--text-2xl--line-height); }
+  .text-3xl { font-size: var(--text-3xl); line-height: var(--text-3xl--line-height); }
+  .text-4xl { font-size: var(--text-4xl); line-height: var(--text-4xl--line-height); }
+  .text-5xl { font-size: var(--text-5xl); line-height: var(--text-5xl--line-height); }
+  .text-6xl { font-size: var(--text-6xl); line-height: var(--text-6xl--line-height); }
+
+  @media (min-width: 640px) {
+    .sm\:text-3xl { font-size: var(--text-3xl); line-height: var(--text-3xl--line-height); }
+    .sm\:text-4xl { font-size: var(--text-4xl); line-height: var(--text-4xl--line-height); }
+  }
+
+  @media (min-width: 1024px) {
+    .lg\:text-4xl { font-size: var(--text-4xl); line-height: var(--text-4xl--line-height); }
+    .lg\:text-5xl { font-size: var(--text-5xl); line-height: var(--text-5xl--line-height); }
+    .lg\:text-6xl { font-size: var(--text-6xl); line-height: var(--text-6xl--line-height); }
+  }
+
+  @media (min-width: 1280px) {
+    .xl\:flex { display: flex; }
+    .xl\:hidden { display: none; }
+    .xl\:items-center { align-items: center; }
+  }
+}
+
+
+@layer utilities {
+  .justify-evenly { justify-content: space-evenly; }
+  .flex-1 { flex: 1 1 0%; }
+  .px-4 { padding-left: 1rem; padding-right: 1rem; }
+  .space-x-2 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.5rem; }
+  .space-x-4 > :not([hidden]) ~ :not([hidden]) { margin-left: 1rem; }
+  .space-x-8 > :not([hidden]) ~ :not([hidden]) { margin-left: 2rem; }
+}
+
+
+@layer utilities {
+  .shrink-0 { flex-shrink: 0; }
+  .whitespace-nowrap { white-space: nowrap; }
+  .backdrop-blur-2xl { backdrop-filter: blur(40px); }
+  .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+  .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+  .duration-500 { transition-duration: 500ms; }
+  .duration-300 { transition-duration: 300ms; }
+}
+
+
+@layer utilities {
+  .bg-\[\#ECE3DC\]\/90 { background-color: rgba(236, 227, 220, 0.9); }
+  .bg-\[\#ECE3DC\] { background-color: #ECE3DC; }
+  .top-2 { top: 0.5rem; }
+  .top-6 { top: 1.5rem; }
+  .sm\:top-6 { top: 1.5rem; }
+  .border-black\/5 { border-color: rgba(0, 0, 0, 0.05); }
+}
+
+
+@layer utilities {
+  @media (min-width: 640px) {
+    .sm\:rounded-3xl { border-radius: 1.5rem; }
+    .sm\:rounded-full { border-radius: 9999px; }
+  }
+}

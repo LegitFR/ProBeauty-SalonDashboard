@@ -6,7 +6,6 @@ import {
   Menu,
   X,
   Globe,
-  Sparkles,
   LayoutDashboard,
   ArrowRight,
 } from "lucide-react";
@@ -33,6 +32,7 @@ export function PublicNavbar({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
 
   const navigateWithTranslate = (path: string) => {
@@ -49,6 +49,11 @@ export function PublicNavbar({
   };
 
   useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    
     // Check if user is authenticated
     const accessToken = localStorage.getItem("accessToken");
     const user = localStorage.getItem("user");
@@ -69,7 +74,6 @@ export function PublicNavbar({
 
     window.addEventListener("pb_lang_change", handleLanguageChange);
 
-    // Check for dark mode (only if not forced to light theme)
     if (!forceLightTheme) {
       const savedTheme = localStorage.getItem("theme");
       const prefersDark = window.matchMedia(
@@ -83,19 +87,12 @@ export function PublicNavbar({
 
     return () => {
       window.removeEventListener("pb_lang_change", handleLanguageChange);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, [forceLightTheme]);
 
   const handleDashboardClick = () => {
     navigateWithTranslate("/home");
-  };
-
-  const handleMarketplace = () => {
-    if (onMarketplace) {
-      onMarketplace();
-    } else {
-      navigateWithTranslate("/marketplace");
-    }
   };
 
   const handleLogin = () => {
@@ -119,11 +116,11 @@ export function PublicNavbar({
   };
 
   const languageOptions = [
-    { value: "en", label: "English" },
-    { value: "fr", label: "French" },
-    { value: "de", label: "German" },
-    { value: "es", label: "Spanish" },
-    { value: "pt", label: "Portuguese" },
+    { value: "en", label: "EN" },
+    { value: "fr", label: "FR" },
+    { value: "de", label: "DE" },
+    { value: "es", label: "ES" },
+    { value: "pt", label: "PT" },
   ];
 
   const handleLanguageSelect = (nextLanguage: string) => {
@@ -137,68 +134,61 @@ export function PublicNavbar({
   };
 
   return (
-    <nav
-      className={`fixed top-0 w-full z-50 backdrop-blur-lg border-b ${
-        isDarkMode ? "bg-gray-900/80 border-gray-700" : "border-border"
-      }`}
-      style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
-    >
-      <div className="safe-container max-w-7xl">
-        <div className="flex items-center justify-between h-16">
+    <nav className={`fixed w-full z-50 flex justify-center px-0 sm:px-4 lg:px-8 pointer-events-none transition-all duration-500 ${scrolled ? "top-2 sm:top-6" : "top-0 sm:top-4"}`}>
+      <div 
+        className={`pointer-events-auto w-full max-w-7xl backdrop-blur-2xl border-b sm:border transition-all duration-500 ${
+          mobileMenuOpen ? "sm:rounded-3xl" : "sm:rounded-full"
+        } ${
+          scrolled || mobileMenuOpen
+            ? isDarkMode 
+              ? "bg-gray-900/90 border-gray-700/50 shadow-2xl shadow-black/20 py-2 px-4 sm:px-6" 
+              : "bg-[#ECE3DC]/90 border-black/5 shadow-2xl shadow-primary/5 py-2 px-4 sm:px-6"
+            : isDarkMode
+              ? "bg-transparent border-transparent py-4 px-4 sm:px-6"
+              : "bg-transparent border-transparent py-4 px-4 sm:px-6"
+        }`}
+      >
+        <div className="flex items-center justify-between">
           {/* Logo */}
           <div
-            className="flex items-center space-x-2 sm:space-x-3 cursor-pointer"
+            className="flex items-center space-x-2 sm:space-x-3 cursor-pointer shrink-0"
             onClick={handleHome}
           >
             <Image
               src={logo || "/probeauty-header-black.svg"}
               alt="ProBeauty"
-              width={170}
-              height={44}
-              className="h-9 sm:h-11 w-auto"
+              width={150}
+              height={40}
+              className="h-8 sm:h-10 w-auto transition-transform hover:scale-105"
               priority
             />
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-8">
-            <a
-              href="/#features"
-              className={`transition-colors font-medium ${
-                isDarkMode
-                  ? "text-gray-300 hover:text-primary"
-                  : "text-gray-700 hover:text-primary"
-              }`}
-            >
-              Features
-            </a>
-            <a
-              href="/#pricing"
-              className={`transition-colors font-medium ${
-                isDarkMode
-                  ? "text-gray-300 hover:text-primary"
-                  : "text-gray-700 hover:text-primary"
-              }`}
-            >
-              Pricing
-            </a>
-            <a
-              href="/#testimonials"
-              className={`transition-colors font-medium ${
-                isDarkMode
-                  ? "text-gray-300 hover:text-primary"
-                  : "text-gray-700 hover:text-primary"
-              }`}
-            >
-              Success Stories
-            </a>
+          <div className="hidden xl:flex items-center justify-center gap-1 xl:gap-2">
+            {[
+              { label: 'Features', href: '/#features' },
+              { label: 'Pricing', href: '/#pricing' },
+              { label: 'Success Stories', href: '/#testimonials' }
+            ].map(item => (
+              <a
+                key={item.label}
+                href={item.href}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+                  isDarkMode
+                    ? "text-gray-300 hover:text-white hover:bg-white/10"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-black/5"
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
             <Link href="https://probeautyapp.com">
               <button
-                // onClick={handleMarketplace}
-                className={`flex items-center transition-colors font-medium ${
+                className={`flex items-center px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
                   isDarkMode
-                    ? "text-gray-300 hover:text-primary"
-                    : "text-gray-700 hover:text-primary"
+                    ? "text-gray-300 hover:text-white hover:bg-white/10"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-black/5"
                 }`}
               >
                 <Globe className="w-4 h-4 mr-2" />
@@ -208,31 +198,32 @@ export function PublicNavbar({
           </div>
 
           {/* Right Side Navigation */}
-          <div className="hidden lg:flex items-center space-x-4">
-            <select
-              value={selectedLanguage}
-              onChange={(event) => handleLanguageSelect(event.target.value)}
-              aria-label="Translate page"
-              className={`border rounded-md px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/60 ${
-                isDarkMode
-                  ? "bg-gray-900/70 text-gray-200 border-gray-700 hover:border-gray-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
-              }`}
-              style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
-            >
-              {languageOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+          <div className="hidden xl:flex items-center gap-2 xl:gap-3 shrink-0">
+            <div className={`flex items-center rounded-full px-1 ${isDarkMode ? 'bg-white/10' : 'bg-black/5'}`}>
+              <Globe className={`w-3.5 h-3.5 ml-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+              <select
+                value={selectedLanguage}
+                onChange={(event) => handleLanguageSelect(event.target.value)}
+                aria-label="Translate page"
+                className={`notranslate appearance-none bg-transparent border-0 pl-1.5 pr-6 py-2 text-xs font-semibold focus:outline-none focus:ring-0 cursor-pointer ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                }`}
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value} className="bg-[#ECE3DC] text-black dark:bg-gray-800 dark:text-white">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             {isAuthenticated ? (
               <Button
-                className="bg-linear-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg px-6 py-3"
+                className="rounded-full bg-gradient-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg px-6"
                 onClick={handleDashboardClick}
               >
                 <LayoutDashboard className="w-4 h-4 mr-2" />
-                Go to Dashboard
+                Dashboard
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
@@ -240,16 +231,16 @@ export function PublicNavbar({
                 <Button
                   variant="ghost"
                   onClick={handleLogin}
-                  className={`px-6 py-3 ${
+                  className={`rounded-full px-5 font-medium whitespace-nowrap transition-all duration-300 ${
                     isDarkMode
-                      ? "text-gray-300 hover:text-primary"
-                      : "text-gray-700 hover:text-primary"
+                      ? "text-gray-300 hover:text-white hover:bg-white/10"
+                      : "text-gray-700 hover:text-gray-900 hover:bg-black/5"
                   }`}
                 >
                   Sign In
                 </Button>
                 <Button
-                  className="bg-linear-to-r from-primary to-orange-600 text-white hover:from-primary/90 hover:to-orange-600/90 shadow-lg btn-trial-padding text-sm sm:text-base whitespace-nowrap"
+                  className="rounded-full bg-gradient-to-r from-primary to-orange-600 text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:scale-105 transition-all duration-300 px-6 whitespace-nowrap font-semibold border-0"
                   onClick={handleGetStarted}
                 >
                   Start Free Trial
@@ -263,7 +254,7 @@ export function PublicNavbar({
           <Button
             variant="ghost"
             size="icon"
-            className={`lg:hidden ${isDarkMode ? "text-gray-300" : ""}`}
+            className={`xl:hidden rounded-full shrink-0 ${isDarkMode ? "text-gray-300 hover:bg-white/10" : "hover:bg-black/5"}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? (
@@ -276,106 +267,87 @@ export function PublicNavbar({
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div
-            className={`lg:hidden border-t py-4 space-y-4 backdrop-blur-lg ${
-              isDarkMode ? "bg-gray-900/95 border-gray-700" : "border-border"
-            }`}
-            style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
-          >
-            <select
-              value={selectedLanguage}
-              onChange={(event) => handleLanguageSelect(event.target.value)}
-              aria-label="Translate page"
-              className={`w-full border rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/60 ${
-                isDarkMode
-                  ? "bg-gray-900/70 text-gray-200 border-gray-700 hover:border-gray-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
-              }`}
-              style={isDarkMode ? undefined : { backgroundColor: "#ECE3DC" }}
-            >
-              {languageOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <a
-              href="/#features"
-              className={`block py-2 font-medium ${
-                isDarkMode
-                  ? "text-gray-300 hover:text-primary"
-                  : "text-gray-700 hover:text-primary"
-              }`}
-            >
-              Features
-            </a>
-            <a
-              href="/#pricing"
-              className={`block py-2 font-medium ${
-                isDarkMode
-                  ? "text-gray-300 hover:text-primary"
-                  : "text-gray-700 hover:text-primary"
-              }`}
-            >
-              Pricing
-            </a>
-            <a
-              href="/#testimonials"
-              className={`block py-2 font-medium ${
-                isDarkMode
-                  ? "text-gray-300 hover:text-primary"
-                  : "text-gray-700 hover:text-primary"
-              }`}
-            >
-              Success Stories
-            </a>
+          <div className="xl:hidden border-t mt-4 pt-4 space-y-2">
+             <div className={`flex items-center rounded-xl p-3 ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>
+              <Globe className={`w-4 h-4 mr-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+              <select
+                value={selectedLanguage}
+                onChange={(event) => handleLanguageSelect(event.target.value)}
+                aria-label="Translate page"
+                className="notranslate w-full bg-transparent border-0 text-sm font-semibold focus:outline-none"
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {[{label: 'Features', href: '/#features'}, {label: 'Pricing', href: '/#pricing'}, {label: 'Success Stories', href: '/#testimonials'}].map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className={`block px-4 py-3 rounded-xl font-medium ${
+                  isDarkMode
+                    ? "text-gray-300 hover:bg-white/10"
+                    : "text-gray-700 hover:bg-black/5"
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
+            
             <Link href="https://probeautyapp.com">
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center w-full py-2 font-medium ${
+                className={`flex items-center w-full px-4 py-3 rounded-xl font-medium ${
                   isDarkMode
-                    ? "text-gray-300 hover:text-primary"
-                    : "text-gray-700 hover:text-primary"
+                    ? "text-gray-300 hover:bg-white/10"
+                    : "text-gray-700 hover:bg-black/5"
                 }`}
               >
                 <Globe className="w-4 h-4 mr-2" />
                 Find Salons
               </button>
             </Link>
-            {isAuthenticated ? (
-              <Button
-                className="btn-auto-width bg-linear-to-r from-primary to-orange-600 text-white"
-                onClick={() => {
-                  handleDashboardClick();
-                  setMobileMenuOpen(false);
-                }}
-              >
-                <LayoutDashboard className="w-4 h-4 mr-2" />
-                Go to Dashboard
-              </Button>
-            ) : (
-              <>
+
+            <div className="grid grid-cols-1 gap-2 pt-2">
+              {isAuthenticated ? (
                 <Button
-                  variant="ghost"
-                  className="btn-auto-width justify-start"
+                  className="w-full rounded-xl bg-gradient-to-r from-primary to-orange-600 text-white py-6"
                   onClick={() => {
-                    handleLogin();
+                    handleDashboardClick();
                     setMobileMenuOpen(false);
                   }}
                 >
-                  Sign In
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
                 </Button>
-                <Button
-                  className="btn-auto-width bg-linear-to-r from-primary to-orange-600 text-white btn-trial-padding"
-                  onClick={() => {
-                    handleGetStarted();
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Start Free Trial
-                </Button>
-              </>
-            )}
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl py-6 border-2"
+                    onClick={() => {
+                      handleLogin();
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Sign In
+                  </Button>
+                  <Button
+                    className="w-full rounded-xl bg-gradient-to-r from-primary to-orange-600 text-white py-6 shadow-lg shadow-orange-500/25"
+                    onClick={() => {
+                      handleGetStarted();
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Start Free Trial
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

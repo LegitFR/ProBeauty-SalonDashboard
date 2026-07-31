@@ -209,7 +209,13 @@ export function LandingPage({
                 </span>
               </div>
 
-              <h1 className="font-heading text-3xl sm:text-4xl lg:text-6xl font-bold mb-6 leading-tight safe-text notranslate">
+              <h1
+                className={`font-heading ${
+                  selectedLanguage === "pt"
+                    ? "text-2xl sm:text-3xl lg:text-5xl"
+                    : "text-3xl sm:text-4xl lg:text-6xl"
+                } font-bold mb-6 leading-tight safe-text notranslate`}
+              >
                 {selectedLanguage === "pt" ? (
                   <>
                     Administre o seu salão com a confiança de um profissional.<br className="hidden sm:block" />
