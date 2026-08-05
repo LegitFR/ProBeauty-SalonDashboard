@@ -93,39 +93,48 @@ export function LandingPage({
   const features = [
     {
       icon: Calendar,
-      title: "Smart Booking Engine",
-      description:
-        "AI-powered scheduling that learns from your business patterns",
+      title: selectedLanguage === "pt" ? "Motor de reservas inteligente" : "Smart Booking Engine",
+      description: selectedLanguage === "pt" 
+        ? "Agendamento com inteligência artificial que aprende com os padrões do seu negócio."
+        : "AI-powered scheduling that learns from your business patterns",
       color: "from-blue-500 to-cyan-500",
     },
     {
       icon: Brain,
-      title: "AI Business Insights",
-      description: "Get intelligent recommendations to grow your revenue",
+      title: selectedLanguage === "pt" ? "Análises de negócios com IA" : "AI Business Insights",
+      description: selectedLanguage === "pt" 
+        ? "Receba recomendações inteligentes para aumentar a sua receita." 
+        : "Get intelligent recommendations to grow your revenue",
       color: "from-purple-500 to-pink-500",
     },
     {
       icon: CreditCard,
-      title: "Seamless Payments",
-      description: "Accept payments anywhere with our unified payment system",
+      title: selectedLanguage === "pt" ? "Pagamentos sem complicações" : "Seamless Payments",
+      description: selectedLanguage === "pt" 
+        ? "Aceite pagamentos em qualquer lugar com o nosso sistema de pagamento unificado." 
+        : "Accept payments anywhere with our unified payment system",
       color: "from-green-500 to-emerald-500",
     },
     {
       icon: Users,
-      title: "Customer Intelligence",
-      description: "Deep customer insights and automated marketing campaigns",
+      title: selectedLanguage === "pt" ? "Inteligência do Cliente" : "Customer Intelligence",
+      description: selectedLanguage === "pt" 
+        ? "Análises aprofundadas do cliente e campanhas de marketing automatizadas" 
+        : "Deep customer insights and automated marketing campaigns",
       color: "from-orange-500 to-red-500",
     },
     {
       icon: Smartphone,
-      title: "Mobile-First Design",
-      description: "Beautiful apps for you and your customers",
+      title: selectedLanguage === "pt" ? "Aplicações móveis" : "Mobile-First Design",
+      description: selectedLanguage === "pt" ? "Aplicações móveis bonitas para si e para os seus clientes." : "Beautiful apps for you and your customers",
       color: "from-indigo-500 to-purple-500",
     },
     {
       icon: Shield,
-      title: "Enterprise Security",
-      description: "Bank-level security with 99.99% uptime guarantee",
+      title: selectedLanguage === "pt" ? "Segurança Empresarial" : "Enterprise Security",
+      description: selectedLanguage === "pt" 
+        ? "Segurança de nível bancário com garantia de disponibilidade de 99,99%." 
+        : "Bank-level security with 99.99% uptime guarantee",
       color: "from-gray-600 to-gray-800",
     },
   ];
@@ -159,7 +168,7 @@ export function LandingPage({
       avatar:
         "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
       rating: 5,
-      text: "The AI insights are incredible. It predicted our busy periods and helped us optimize staffing.",
+      text: selectedLanguage === "pt" ? "Os insights de IA são incríveis. Previu os nossos períodos de maior movimento e ajudou-nos a otimizar a gestão de pessoal." : "The AI insights are incredible. It predicted our busy periods and helped us optimize staffing.",
       metric: "+40% Efficiency",
     },
     {
@@ -444,12 +453,11 @@ export function LandingPage({
                 <Zap className="w-4 h-4 mr-2" />
                 Built for modern salons
               </Badge>
-              <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-                Everything you need to scale, all in one place
+              <h2 className={`font-heading text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                {selectedLanguage === "pt" ? "Tudo o que você precisa para expandir, num só lugar" : "Everything you need to scale, all in one place"}
               </h2>
-              <p className="text-base sm:text-lg text-gray-600 max-w-2xl">
-                Inspired by the best in the industry, ProBeauty blends a sleek
-                client experience with powerful tools for your team.
+              <p className={`text-base sm:text-lg text-gray-600 max-w-2xl ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                {selectedLanguage === "pt" ? "Inspirado nos melhores do setor, o ProBeauty combina uma experiência elegante para o cliente com ferramentas poderosas para sua equipe." : "Inspired by the best in the industry, ProBeauty blends a sleek client experience with powerful tools for your team."}
               </p>
             </div>
             <div
@@ -461,7 +469,7 @@ export function LandingPage({
                   <LayoutDashboard className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Your daily overview</p>
+                  <p className={`text-sm text-gray-500 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>{selectedLanguage === "pt" ? "O seu resumo diário" : "Your daily overview"}</p>
                   <p className="font-semibold">Unified, actionable, clear</p>
                 </div>
               </div>
@@ -516,10 +524,10 @@ export function LandingPage({
                     >
                       <Icon className="w-7 h-7" />
                     </div>
-                    <h3 className="font-heading text-xl font-semibold mb-4 group-hover:text-primary transition-colors">
+                    <h3 className={`font-heading text-xl font-semibold mb-4 group-hover:text-primary transition-colors ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
                       {feature.title}
                     </h3>
-                    <p className="text-gray-600 leading-relaxed mb-4">
+                    <p className={`text-gray-600 leading-relaxed mb-4 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
                       {feature.description}
                     </p>
                     <Button
@@ -660,13 +668,11 @@ export function LandingPage({
                 <Sparkles className="w-4 h-4 mr-2" />
                 Designed for conversion
               </Badge>
-              <h3 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
-                Turn visitors into loyal regulars
+              <h3 className={`font-heading text-3xl sm:text-4xl font-bold mb-4 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                {selectedLanguage === "pt" ? "Transforme visitantes em clientes habituais" : "Turn visitors into loyal regulars"}
               </h3>
-              <p className="text-base sm:text-lg text-gray-600 mb-6">
-                Your booking flow should feel like a premium experience. We
-                refine every touchpoint to reduce drop-off and increase repeat
-                visits.
+              <p className={`text-base sm:text-lg text-gray-600 mb-6 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                {selectedLanguage === "pt" ? "O seu processo de reserva deve parecer uma experiência premium. Refinamos cada ponto de contacto para reduzir abandonos e aumentar visitas repetidas." : "Your booking flow should feel like a premium experience. We refine every touchpoint to reduce drop-off and increase repeat visits."}
               </p>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -690,9 +696,9 @@ export function LandingPage({
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
                   <div>
-                    <p className="font-semibold">Built-in reviews</p>
-                    <p className="text-sm text-gray-600">
-                      Collect feedback and build social proof automatically.
+                    <p className={`font-semibold ${selectedLanguage === "pt" ? "notranslate" : ""}`}>{selectedLanguage === "pt" ? "Avaliações integradas" : "Built-in reviews"}</p>
+                    <p className={`text-sm text-gray-600 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                      {selectedLanguage === "pt" ? "Recolha feedback e construa uma prova social automatizada" : "Collect feedback and build social proof automatically."}
                     </p>
                   </div>
                 </div>
@@ -712,14 +718,13 @@ export function LandingPage({
             <div className="text-center sm:text-left">
               <Badge className="mb-4 bg-gradient-to-r from-primary/10 to-orange-100 text-[#1e1e1e] border-primary/20">
                 <Zap className="w-4 h-4 mr-2" />
-                Loved by teams
+                {selectedLanguage === "pt" ? "Adorado pelas equipas" : "Loved by teams"}
               </Badge>
-              <h3 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
-                The booking platform clients love and teams rely on
+              <h3 className={`font-heading text-3xl sm:text-4xl font-bold mb-4 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                {selectedLanguage === "pt" ? "A plataforma de reservas que os clientes adoram e em que as equipas confiam" : "The booking platform clients love and teams rely on"}
               </h3>
-              <p className="text-base sm:text-lg text-gray-600 mb-6">
-                Built for busy calendars, effortless staff management, and a
-                polished client experience from first click to repeat visit.
+              <p className={`text-base sm:text-lg text-gray-600 mb-6 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                {selectedLanguage === "pt" ? "Feito para agendas cheias, gestão de pessoal sem esforço e uma experiência polida para o cliente, do primeiro clique à visita repetida." : "Built for busy calendars, effortless staff management, and a polished client experience from first click to repeat visit."}
               </p>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -738,9 +743,8 @@ export function LandingPage({
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
-                  <p className="text-sm sm:text-base text-gray-700">
-                    Crafted to deliver a smooth experience that elevates your
-                    brand.
+                  <p className={`text-sm sm:text-base text-gray-700 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                    {selectedLanguage === "pt" ? "Criado para proporcionar uma experiência suave que valoriza a sua marca." : "Crafted to deliver a smooth experience that elevates your brand."}
                   </p>
                 </div>
               </div>
@@ -805,19 +809,17 @@ export function LandingPage({
                 <Globe className="w-4 h-4 mr-2" />
                 Marketplace growth
               </Badge>
-              <h3 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
-                The most popular marketplace to grow your business
+              <h3 className={`font-heading text-3xl sm:text-4xl font-bold mb-4 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                {selectedLanguage === "pt" ? "O mercado mais popular para expandir o seu negócio" : "The most popular marketplace to grow your business"}
               </h3>
-              <p className="text-base sm:text-lg text-gray-600 mb-6">
-                Promote your services and reach new clients on the world’s
-                largest beauty and wellness marketplace.
+              <p className={`text-base sm:text-lg text-gray-600 mb-6 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                {selectedLanguage === "pt" ? "Promova os seus serviços e alcance novos clientes no maior mercado de beleza e bem-estar do mundo." : "Promote your services and reach new clients on the world’s largest beauty and wellness marketplace."}
               </p>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
-                  <p className="text-sm sm:text-base text-gray-700">
-                    Increase online visibility by listing your business on
-                    ProBeauty Marketplace.
+                  <p className={`text-sm sm:text-base text-gray-700 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+                    {selectedLanguage === "pt" ? "Aumente a visibilidade online da sua empresa registando-a no Probeauty Marketplace" : "Increase online visibility by listing your business on ProBeauty Marketplace."}
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
@@ -931,9 +933,8 @@ export function LandingPage({
             </span>
             from day one?
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-2">
-            Join over 120,000 beauty professionals who trust ProBeauty to run
-            their day-to-day operations and grow with confidence.
+          <p className={`text-base sm:text-lg md:text-xl text-gray-600 mb-8 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-2 ${selectedLanguage === "pt" ? "notranslate" : ""}`}>
+            {selectedLanguage === "pt" ? "Junte-se a mais de 120.000 profissionais de beleza que confiam na ProBeauty para gerir as suas operações diárias e crescer com segurança." : "Join over 120,000 beauty professionals who trust ProBeauty to run their day-to-day operations and grow with confidence."}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8 sm:mb-12">

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import {
   Facebook,
@@ -25,6 +26,24 @@ interface FooterProps {
 
 export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
   const currentYear = new Date().getFullYear();
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+
+  useEffect(() => {
+    const storedLanguage = localStorage.getItem("pb_lang");
+    if (storedLanguage) {
+      setSelectedLanguage(storedLanguage);
+    }
+    const handleLanguageChange = () => {
+      const nextLanguage = localStorage.getItem("pb_lang");
+      if (nextLanguage) {
+        setSelectedLanguage(nextLanguage);
+      }
+    };
+    window.addEventListener("pb_lang_change", handleLanguageChange);
+    return () => {
+      window.removeEventListener("pb_lang_change", handleLanguageChange);
+    };
+  }, []);
 
   const productLinks = [
     { name: "Booking System", href: "https://pro-beauty-web.vercel.app/" },
@@ -154,16 +173,29 @@ export function Footer({ onGetStarted, onCustomerSite }: FooterProps) {
           <div>
             <h3 className="font-semibold text-white mb-4">Product</h3>
             <ul className="space-y-3">
-              {productLinks.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors text-sm"
-                  >
-                    {link.name}
-                  </a>
-                </li>
-              ))}
+              {productLinks.map((link, index) => {
+                let displayName = link.name;
+                let isPtOverride = false;
+                if (selectedLanguage === "pt") {
+                  if (link.name === "Mobile Apps") {
+                    displayName = "Aplicações móveis";
+                    isPtOverride = true;
+                  } else if (link.name === "Customer Management") {
+                    displayName = "Gestão de pessoal";
+                    isPtOverride = true;
+                  }
+                }
+                return (
+                  <li key={index}>
+                    <a
+                      href={link.href}
+                      className={`text-gray-400 hover:text-white transition-colors text-sm ${isPtOverride ? "notranslate" : ""}`}
+                    >
+                      {displayName}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
